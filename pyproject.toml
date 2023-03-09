@@ -1,0 +1,17 @@
+[tool.kedro]
+package_name = "predicting_the_formation_of_chromatin_loops_using_genomic_data"
+project_name = "predicting-the-formation-of-chromatin-loops-using-genomic-data"
+kedro_init_version = "0.18.6"
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+addopts = """
+--cov-report term-missing \
+--cov src/predicting_the_formation_of_chromatin_loops_using_genomic_data -ra"""
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+exclude_lines = ["pragma: no cover", "raise NotImplementedError"]
