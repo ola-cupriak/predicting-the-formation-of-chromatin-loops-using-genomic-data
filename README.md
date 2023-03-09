@@ -1,8 +1,8 @@
-# predicting-the-formation-of-chromatin-loops-using-genomic-data
+# Predicting the formation of chromatin loops using genomic data
 
 ## Overview
 
-This is your new Kedro project, which was generated using `Kedro 0.18.6`.
+This is your new Kedro project, which was generated using `Kedro 0.18.6`. 
 
 Take a look at the [Kedro documentation](https://kedro.readthedocs.io) to get started.
 
