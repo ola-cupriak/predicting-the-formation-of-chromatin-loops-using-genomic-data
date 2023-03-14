@@ -1,0 +1,11 @@
+Hi-C loops (ref. genome: g37): https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63525
+
+DNAse-seq (ref. genome: hg19):
+	- IMR-90: https://www.encodeproject.org/experiments/ENCSR477RTP/ 
+	- GM12878: https://www.encodeproject.org/experiments/ENCSR000EMT/
+	- HMEC: https://www.encodeproject.org/experiments/ENCSR000ENV/
+	- KBM-7: https://www.encodeproject.org/experiments/ENCSR426IEA/ 
+	- HUVEC: https://www.encodeproject.org/experiments/ENCSR000EOQ/
+	- NHEK: https://www.encodeproject.org/experiments/ENCSR000EPQ/
+	- K-562: https://www.encodeproject.org/experiments/ENCSR000EKS/
+	- HeLa-S3: https://www.encodeproject.org/experiments/ENCSR000ENO/
