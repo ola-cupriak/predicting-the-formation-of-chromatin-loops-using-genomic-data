@@ -11,3 +11,12 @@ HiCCUPS_loops_anotations:
     load_args:
       delimiter: "\t"
   filename_suffix: ".txt"
+
+concat_label_HiCCUPS_loops_anotations:
+  type: PartitionedDataSet
+  path: data/02_intermediate/HiCCUPS_looplist_preprocessed
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+  filename_suffix: ".txt"
