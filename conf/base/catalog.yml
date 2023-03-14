@@ -2,3 +2,12 @@
 #
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
+
+HiCCUPS_loops_anotations:
+  type: PartitionedDataSet
+  path: data/01_raw/HiCCUPS_looplist
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+  filename_suffix: ".txt"
