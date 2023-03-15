@@ -12,6 +12,31 @@ HiCCUPS_loops_anotations:
       delimiter: "\t"
   filename_suffix: ".txt"
 
+
+DNAse_seq_signals:
+  type: PartitionedDataSet
+  path: data/01_raw/DNase-seq
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+      usecols: [0, 1, 2]
+      names: ['chr', 'i', 'j']
+  filename_suffix: ".bed"
+
+
+CTCF_ChIP_seq_signals:
+  type: PartitionedDataSet
+  path: data/01_raw/CTCF_ChIP-seq
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+      usecols: [0, 1, 2]
+      names: ['chr', 'i', 'j']
+  filename_suffix: ".bed"
+
+
 concat_label_HiCCUPS_loops_anotations:
   type: PartitionedDataSet
   path: data/02_intermediate/HiCCUPS_looplist_preprocessed
