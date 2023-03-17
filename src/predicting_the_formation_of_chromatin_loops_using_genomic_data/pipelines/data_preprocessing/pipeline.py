@@ -27,17 +27,23 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="readed_DNase_seq_signals",
                 name="read_DNase_seq_signals_node",
             ),
-            # node(
-            #     func=read_signals,
-            #     inputs="CTCF_ChIP_seq_signals",
-            #     outputs="readed_CTCF_ChIP_seq_signals",
-            #     name="read_CTCF_ChIP_seq_signals_node",
-            # ),
+            node(
+                func=read_signals,
+                inputs="CTCF_ChIP_seq_signals",
+                outputs="readed_CTCF_ChIP_seq_signals",
+                name="read_CTCF_ChIP_seq_signals_node",
+            ),
             node(
                 func=count_signals,
-                inputs=["concat_label_HiCCUPS_loops_anotations", "readed_DNase_seq_signals", "params:DNAse-seq_name", "params:radius"],
+                inputs=["concat_label_HiCCUPS_loops_anotations", "readed_CTCF_ChIP_seq_signals", "params:CTCT_ChIP-seq_name", "params:radius"],
+                outputs="HiCCUPS_loops_anotations_with_CTCF_ChIP_seq_signals",
+                name="add_CTCF_ChIP_seq_signals_node",
+            ),
+            node(
+                func=count_signals,
+                inputs=["HiCCUPS_loops_anotations_with_CTCF_ChIP_seq_signals", "readed_DNase_seq_signals", "params:DNAse-seq_name", "params:radius"],
                 outputs="combined_functional_genomics_data",
-                name="combine_functional_genomics_data_node",
+                name="add_DNase_seq_signals_node",
             ),
         ]
     )

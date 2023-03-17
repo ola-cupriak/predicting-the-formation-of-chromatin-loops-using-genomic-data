@@ -125,7 +125,9 @@ def count_signals(main_dfs_dict: Dict[str, Callable[[], Any]], signals_dfs_dict:
     Returns:
         pandas DataFrame with chromatin loops and the numbers of signals in both regions of each loop
     """
-    main_dfs_dict = _dict_partitions(main_dfs_dict)
+    # if main_dfs_dict values are not DataFrames, load them
+    if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
+        main_dfs_dict = _dict_partitions(main_dfs_dict)
     for signals_name, signals_df in signals_dfs_dict.items():
         for main_name, main_df in main_dfs_dict.items():
             if main_name.split('_')[0] == signals_name.split('_')[0]:

@@ -34,7 +34,7 @@ CTCF_ChIP_seq_signals:
       delimiter: "\t"
       usecols: [0, 1, 2]
       names: ['chr', 'start', 'end']
-  filename_suffix: ".bed"
+  filename_suffix: ".narrowPeak"
 
 
 concat_label_HiCCUPS_loops_anotations:
