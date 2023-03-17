@@ -21,7 +21,7 @@ DNAse_seq_signals:
     load_args:
       delimiter: "\t"
       usecols: [0, 1, 2]
-      names: ['chr', 'i', 'j']
+      names: ['chr', 'start', 'end']
   filename_suffix: ".bed"
 
 
@@ -33,7 +33,7 @@ CTCF_ChIP_seq_signals:
     load_args:
       delimiter: "\t"
       usecols: [0, 1, 2]
-      names: ['chr', 'i', 'j']
+      names: ['chr', 'start', 'end']
   filename_suffix: ".bed"
 
 
@@ -44,4 +44,18 @@ concat_label_HiCCUPS_loops_anotations:
     type: pandas.CSVDataSet
     load_args:
       delimiter: "\t"
+    save_args:
+      sep: "\t"
+  filename_suffix: ".txt"
+
+
+combined_functional_genomics_data:
+  type: PartitionedDataSet
+  path: data/03_primary
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+    save_args:
+      sep: "\t"
   filename_suffix: ".txt"
