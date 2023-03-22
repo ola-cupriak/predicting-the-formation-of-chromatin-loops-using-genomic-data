@@ -3,16 +3,19 @@ import os
 import yaml
     
     
-def _create_dir(dir_path):
+def _create_dir(dir_path: str) -> None:
     """
-    Creates a directory if it does not exist.
+    Creates a directory if it does not exist
+    and add .gitkeep file to it.
     ::param dir_path: path to the directory
     """
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+    with open(dir_path+'/.gitkeep', 'w') as f:
+        pass
 
 
-def download_data(datasources_dict: dict):
+def download_data(datasources_dict: dict) -> None:
     """
     Downloads the data from the urls in the datasources_dict 
     to created experiments directories.
