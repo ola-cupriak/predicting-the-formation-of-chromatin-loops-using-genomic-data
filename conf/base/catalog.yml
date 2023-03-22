@@ -3,9 +3,9 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
-HiCCUPS_loops_anotations:
+HiC_loops_annoatations:
   type: PartitionedDataSet
-  path: data/01_raw/HiCCUPS_looplist
+  path: data/01_raw/HiC_loops_annotations
   dataset: 
     type: pandas.CSVDataSet
     load_args:

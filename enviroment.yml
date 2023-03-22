@@ -10,5 +10,6 @@ dependencies:
   - prettytable~=3.5.0
   - bioconda::pybigwig~=0.3.18
   - python=3.9.11
+  - conda-forge::pyyaml~=6.0
   - scipy~=1.9.3
   - conda-forge::tqdm~=4.64.1
