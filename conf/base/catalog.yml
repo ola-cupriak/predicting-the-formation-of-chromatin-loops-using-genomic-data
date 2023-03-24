@@ -3,6 +3,11 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
+cells2names:
+  type: yaml.YAMLDataSet
+  filepath: data/01_raw/cells2names.yml
+
+
 HiC_loops_annoatations:
   type: PartitionedDataSet
   path: data/01_raw/HiC_loops_annotations
@@ -13,9 +18,9 @@ HiC_loops_annoatations:
   filename_suffix: ".txt"
 
 
-DNAse_seq_signals:
+DNAse_seq_peaks:
   type: PartitionedDataSet
-  path: data/01_raw/DNase-seq
+  path: data/01_raw/DNase_seq_peaks
   dataset: 
     type: pandas.CSVDataSet
     load_args:
@@ -25,21 +30,34 @@ DNAse_seq_signals:
   filename_suffix: ".bed"
 
 
-CTCF_ChIP_seq_signals:
+DNAse_seq_bigWig:
   type: PartitionedDataSet
-  path: data/01_raw/CTCF_ChIP-seq
+  path: data/01_raw/DNase_seq_bigWig
+  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
+  filename_suffix: ".bigWig"
+
+CTCF_ChIP_seq_peaks:
+  type: PartitionedDataSet
+  path: data/01_raw/CTCF_ChIP_seq_peaks
   dataset: 
     type: pandas.CSVDataSet
     load_args:
       delimiter: "\t"
       usecols: [0, 1, 2]
       names: ['chr', 'start', 'end']
-  filename_suffix: ".narrowPeak"
+  filename_suffix: ".bed"
 
 
-concat_label_HiCCUPS_loops_anotations:
+CTCF_ChIP_seq_bigWig:
   type: PartitionedDataSet
-  path: data/02_intermediate/HiCCUPS_looplist_preprocessed
+  path: data/01_raw/CTCF_ChIP_seq_bigWig
+  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
+  filename_suffix: ".bigWig"
+
+
+concat_label_HiC_loops_anotations:
+  type: PartitionedDataSet
+  path: data/02_intermediate/HiC_looplist_preprocessed
   dataset: 
     type: pandas.CSVDataSet
     load_args:
