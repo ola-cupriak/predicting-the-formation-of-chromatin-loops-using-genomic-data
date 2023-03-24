@@ -1,5 +1,5 @@
-import subprocess
 import os
+import subprocess
 import yaml
     
     
@@ -7,7 +7,8 @@ def _create_dir(dir_path: str) -> None:
     """
     Creates a directory if it does not exist
     and add .gitkeep file to it.
-    ::param dir_path: path to the directory
+    Args:
+        dir_path: path to the directory
     """
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
@@ -19,8 +20,9 @@ def download_data(datasources_dict: dict) -> None:
     """
     Downloads the data from the urls in the datasources_dict 
     to created experiments directories.
-    Creates a yml file in which the names of downloaded files correspond to cell types.
-    ::param datasources_dict: dictionary with the urls to download the data
+    Creates a yml file with dictionary in the template: {dataset_name: {file_name: cell_type}}}
+    Args:
+        datasources_dict: dictionary with the urls to download the data
     """
     names_dict = {}
     for experiment, cell_dict in datasources_dict.items():
@@ -40,7 +42,7 @@ def download_data(datasources_dict: dict) -> None:
             if file_name.endswith(".gz"):
                 gunzip = True
                 file_name = file_name[:-3]
-            names_dict[experiment][cell_type] = file_name
+            names_dict[experiment][file_name] = cell_type
             files_before = files_after
         # gunzip
         if gunzip:

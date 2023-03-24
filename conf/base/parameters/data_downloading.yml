@@ -1,5 +1,5 @@
 to_download:
-  HiC_loops_annoatations:
+  HiC_loops_annotations:
     GM12878: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_GM12878_primary%2Breplicate_HiCCUPS_looplist.txt.gz
     HMEC: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HMEC_HiCCUPS_looplist.txt.gz
     HUVEC: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HUVEC_HiCCUPS_looplist.txt.gz
@@ -8,7 +8,7 @@ to_download:
     K562: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_K562_HiCCUPS_looplist.txt.gz
     KBM7: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_KBM7_HiCCUPS_looplist.txt.gz
     NHEK: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_NHEK_HiCCUPS_looplist.txt.gz
-  DNAse_seq_peaks:
+  DNase_seq_peaks:
     GM12878: https://www.encodeproject.org/files/ENCFF273MVV/@@download/ENCFF273MVV.bed.gz
     HMEC: https://www.encodeproject.org/files/ENCFF672BMB/@@download/ENCFF672BMB.bed.gz
     HUVEC: https://www.encodeproject.org/files/ENCFF097KBE/@@download/ENCFF097KBE.bed.gz
@@ -17,7 +17,7 @@ to_download:
     K562: https://www.encodeproject.org/files/ENCFF621ZJY/@@download/ENCFF621ZJY.bed.gz
     KBM7: https://www.encodeproject.org/files/ENCFF384AQH/@@download/ENCFF384AQH.bed.gz
     NHEK: https://www.encodeproject.org/files/ENCFF894LMB/@@download/ENCFF894LMB.bed.gz
-  DNAse_seq_bigWig:
+  DNase_seq_bigWig:
     GM12878: https://www.encodeproject.org/files/ENCFF901GZH/@@download/ENCFF901GZH.bigWig
     HMEC: https://www.encodeproject.org/files/ENCFF061JPV/@@download/ENCFF061JPV.bigWig
     HUVEC: https://www.encodeproject.org/files/ENCFF558DRT/@@download/ENCFF558DRT.bigWig
