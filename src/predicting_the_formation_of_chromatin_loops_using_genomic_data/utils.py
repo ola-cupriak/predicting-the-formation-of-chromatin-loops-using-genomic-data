@@ -1,16 +1,15 @@
 from typing import Any, Callable, Dict
-import pandas as pd
 
 
 
-def _dict_partitions(partitioned_input: Dict[str, Callable[[], Any]]) -> Dict[str, pd.DataFrame]:
+def _dict_partitions(partitioned_input: Dict[str, Callable[[], Any]]) -> dict:
     """
     Load all partitions and save them in a dictionary.
     Args:
         partitioned_input: A dictionary with partition ids as keys and load functions as values.
 
     Returns:
-        dictionary with partition ids as keys and pandas DataFrames as values.
+        dictionary with partition ids as keys and loaded load functions as values.
     """
     result = dict()
 
