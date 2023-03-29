@@ -42,3 +42,7 @@ to_download:
     IMR90: https://www.encodeproject.org/files/ENCFF583IZF/@@download/ENCFF583IZF.bigWig
     K562: https://www.encodeproject.org/files/ENCFF468HJA/@@download/ENCFF468HJA.bigWig
     NHEK: https://www.encodeproject.org/files/ENCFF636MGS/@@download/ENCFF636MGS.bigWig
+  reference_genomes:
+    hg19: https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh37_latest/refseq_identifiers/GRCh37_latest_genomic.fna.gz
+  motifs_JASPAR:
+    motifs_JASPAR_vertebrates: https://jaspar.genereg.net/download/data/2022/CORE/JASPAR2022_CORE_non-redundant_pfms_jaspar.txt

@@ -41,3 +41,7 @@ HiC_loops_annotations:
   GSE63525_K562_HiCCUPS_looplist.txt: K562
   GSE63525_KBM7_HiCCUPS_looplist.txt: KBM7
   GSE63525_NHEK_HiCCUPS_looplist.txt: NHEK
+reference_genomes:
+  GRCh37_latest_genomic.fna: hg19
+motifs_JASPAR:
+  JASPAR2022_CORE_non-redundant_pfms_jaspar.txt: motifs_JASPAR_vertebrates
