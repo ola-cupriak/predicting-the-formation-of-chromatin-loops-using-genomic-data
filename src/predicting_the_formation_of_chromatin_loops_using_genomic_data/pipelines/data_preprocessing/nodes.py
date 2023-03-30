@@ -119,10 +119,13 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
             if main_chr == peaks_chr:
                     for idx, row in main_df_chr.iterrows():
                         for region in ['x', 'y']:
-                            overlapping_peaks = peaks_df_chr[(peaks_df_chr['start'] >= row[region] - r)&
-                                                                (peaks_df_chr['start'] <= row[region] + r)&
-                                                                (peaks_df_chr['end'] >= row[region] - r)&
-                                                                (peaks_df_chr['end'] <= row[region] + r)]
+                            # TO CHANGE !!! - to overlapping peaks
+                            # overlapping_peaks = peaks_df_chr[(peaks_df_chr['start'] >= row[region] - r)&
+                            #                                     (peaks_df_chr['start'] <= row[region] + r)&
+                            #                                     (peaks_df_chr['end'] >= row[region] - r)&
+                            #                                     (peaks_df_chr['end'] <= row[region] + r)]
+                            overlapping_peaks = peaks_df_chr[~(peaks_df_chr['start'] > row[region] + r)&
+                                                             ~(peaks_df_chr['end'] < row[region] - r)]
                             main_df.loc[idx, f'{region}_{experiment}_count'] = len(overlapping_peaks)
 
     return main_df
@@ -242,3 +245,6 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     print('Done!')
 
     return main_dfs_dict
+
+
+def
