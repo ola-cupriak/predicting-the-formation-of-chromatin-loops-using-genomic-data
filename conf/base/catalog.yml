@@ -36,6 +36,7 @@ DNAse_seq_bigWig:
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
 
+
 CTCF_ChIP_seq_peaks:
   type: PartitionedDataSet
   path: data/01_raw/CTCF_ChIP_seq_peaks
@@ -70,6 +71,28 @@ concat_label_HiC_loops_anotations:
 combined_functional_genomics_data:
   type: PartitionedDataSet
   path: data/03_primary
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+    save_args:
+      sep: "\t"
+  filename_suffix: ".txt"
+
+
+motifs_JASPAR_vertebrates:
+  type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
+  filepath: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_non-redundant_pfms_jaspar.txt
+
+
+hg19:
+  type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
+  filepath: data/01_raw/reference_genomes/GRCh37_latest_genomic.fna
+
+
+motifs_found:
+  type: PartitionedDataSet
+  path: data/02_intermediate/motifs_found
   dataset: 
     type: pandas.CSVDataSet
     load_args:
