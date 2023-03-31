@@ -7,10 +7,10 @@ class PathDataSet(AbstractDataSet):
     """
 
     def __init__(self, filepath: str):
-        """Creates a new instance of bigWigDataSet to load / save image data for given filepath.
+        """Creates a new instance of PathDataSet to load given filepath.
 
         Args:
-            filepath: The location of the bigWig file to load / save data.
+            filepath: The location of the file to load data.
         """
         self._filepath = filepath
 
