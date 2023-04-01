@@ -5,10 +5,30 @@ import pandas as pd
 import copy
 from tqdm import tqdm
 from Bio import Seq, SeqIO
+from Bio.SeqRecord import SeqRecord
 from Bio import motifs
 import warnings
 
 warnings.simplefilter(action="ignore")
+
+
+def simplify_genome_file(path: str) -> dict:
+    """Get chromosomes dict from fasta file.
+    Args:
+        path (str): path to fasta file with genome.
+    Returns:
+        dict: chromosomes dict {chr: sequence}
+    """
+    genome = SeqIO.parse(open(path), 'fasta')
+    chromosomes = []
+    for sequence in genome:
+        desc = sequence.description
+        seq_id = sequence.id
+        if seq_id.startswith('NC') and 'chromosome' in desc:
+            chrom = 'chr' + desc.split('chromosome ')[1].split(',')[0]
+            chromosomes.append(SeqRecord(sequence.seq, id=chrom, description=''))
+    
+    return chromosomes
 
 
 
@@ -70,10 +90,11 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     """
     df = _concat_dfs(dfs_dict)
     for name, cell_df in dfs_dict.items():
-        cell_type = cell_df['cell_type'].unique()[0]
-        f = lambda x: 1 if x['cell_type'] == cell_type else 0
-        df['label'] = df.apply(f, axis=1)
-        dfs_dict[name] = copy.deepcopy(df)
+        if name == 'GM12878': # TO DELETE
+            cell_type = cell_df['cell_type'].unique()[0]
+            f = lambda x: 1 if x['cell_type'] == cell_type else 0
+            df['label'] = df.apply(f, axis=1)
+            dfs_dict[name] = copy.deepcopy(df)
     
     return dfs_dict
 
@@ -95,15 +116,20 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
-        f = lambda x: x['chr'].split("chr")[-1]
-        df["chr"] = df.apply(f, axis=1)
-        df = df.sort_values(by=['start'])
-        new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
+        if cells2names_dataset_dict[keys_dict[name]] == 'GM12878': # TO DELETE
+            f = lambda x: x['chr'].split("chr")[-1]
+            df["chr"] = df.apply(f, axis=1)
+            df = df.sort_values(by=['start'])
+            new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
 
     return new_dfs_dict
 
 
-def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str, r: int) -> pd.DataFrame:
+def _count_motifs():
+    pass
+
+
+def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str, r: int, motifs_path: str=None, genome_path: str=None) -> pd.DataFrame:
     """
     Count the number of experiment peaks in both regions of each chromatin loop.
     Args:
@@ -117,22 +143,64 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
 
     peaks_df = peaks_df.sort_values(by=['start'])
 
+    if motifs_path and genome_path:
+        genome_dict = _genome2dict(genome_path)
+        motifs_list = []
+        for m in motifs.parse(open(motifs_path), "jaspar"):
+            motif_name = m.name.upper()
+            motifs_list.append((motif_name, m.pssm))
+            if not f'x_{motif_name}_f' in main_df.columns:
+                main_df[f'x_motif_{motif_name}_f'] = 0
+                main_df[f'x_motif_{motif_name}_b'] = 0
+                main_df[f'y_motif_{motif_name}_f'] = 0
+                main_df[f'y_motif_{motif_name}_b'] = 0
+
+    elif motifs_path or genome_path:
+        raise ValueError("Both motifs_path and genome_path should be specified or none of them.")
+
     # group by chromosome
     main_df_grouped = main_df.groupby('chr')
     peaks_df_grouped = peaks_df.groupby('chr')
 
-    for main_chr, main_df_chr in main_df_grouped:
+    for main_chr, main_df_chr in tqdm(main_df_grouped):
         for peaks_chr, peaks_df_chr in peaks_df_grouped:
             if main_chr == peaks_chr:
                     for idx, row in main_df_chr.iterrows():
                         for region in ['x', 'y']:
-                            # TO CHANGE !!! - to overlapping peaks
+                            anchor_start = row[region] - r
+                            anchor_end = row[region] + r
+                            # Peaks fully contained in the region
                             # overlapping_peaks = peaks_df_chr[(peaks_df_chr['start'] >= row[region] - r)&
                             #                                     (peaks_df_chr['start'] <= row[region] + r)&
                             #                                     (peaks_df_chr['end'] >= row[region] - r)&
                             #                                     (peaks_df_chr['end'] <= row[region] + r)]
-                            overlapping_peaks = peaks_df_chr[~(peaks_df_chr['start'] > row[region] + r)&
-                                                             ~(peaks_df_chr['end'] < row[region] - r)]
+                            overlapping_peaks = peaks_df_chr[~(peaks_df_chr['start'] > anchor_end)&
+                                                             ~(peaks_df_chr['end'] < anchor_start)]
+                            if motifs_path and genome_path:
+                                chr_seq = genome_dict[main_chr]
+                                # iteracja przez motywy
+                                for motif_name, motif_pssm in motifs_list:
+                                    for _, peak in overlapping_peaks.iterrows():
+                                        peak_start = max(peak['start'], anchor_start)
+                                        peak_end = min(peak['end'], anchor_end)
+                                        seq_to_search = chr_seq[peak_start:peak_end+1]
+                                        
+                                        count_peak_f = 0
+                                        count_peak_b = 0
+                                        
+                                        for position, _ in motif_pssm.search(seq_to_search):
+                                            if position >= 0:
+                                                if region == 'x':
+                                                    count_peak_f += 1
+                                                else:
+                                                    count_peak_b += 1
+                                        for position, _ in motif_pssm.search(seq_to_search[::-1]):
+                                            if position >= 0:
+                                                if region == 'x':
+                                                    count_peak_b += 1
+                                                else:
+                                                    count_peak_f += 1
+                            
                             main_df.loc[idx, f'{region}_{experiment}_count'] = len(overlapping_peaks)
 
     return main_df
@@ -338,25 +406,6 @@ def _add_overlapping_peaks(regions_df: pd.DataFrame,
     print('Done!')
 
     return df_open_chromatin_dict
-    
-
-def _genome2dict(genome_path: str) -> dict:
-    """Get chromosomes dictionary from fasta file.
-    Args:
-        path (str): path to fasta file with genome.
-    Returns:
-        dict: chromosomes dict {chr: sequence}
-    """
-    print('Saving genome to dictionary...')
-    genome = SeqIO.parse(open(genome_path), 'fasta')
-    chromosomes = {}
-    for sequence in genome:
-        desc = sequence.description
-        if 'Primary Assembly' in desc:
-            chr = desc.split('chromosome ')[1][0]
-            chromosomes[chr] = sequence.seq
-
-    return chromosomes
 
 
 def _find_motif_single_df(df_open_chromatin: pd.DataFrame, 
@@ -409,14 +458,10 @@ def find_all_motifs(main_dfs_dict: Dict[str, Callable[[], Any]],
         main_dfs_dict = _dict_partitions(main_dfs_dict)
 
     df2cols = main_dfs_dict[list(main_dfs_dict.keys())[0]]
-    print('Done')
     df_regions = _create_one_region_col(df2cols)
-    print('Done')
     df_open_chromatin_dict = _add_overlapping_peaks(df_regions, peaks_dfs_dict, r)
-    print('Done')
 
     genome = _genome2dict(genome_path)
-    print('Done')
 
     print('Finding motifs...')
     motifs_object = motifs.parse(open(motifs_path), 'jaspar')
@@ -428,14 +473,4 @@ def find_all_motifs(main_dfs_dict: Dict[str, Callable[[], Any]],
 
     return df_open_chromatin_dict
 
-
-def _add_motifs_to_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Count the number of experiment peaks in both regions of each chromatin loop.
-    Args:
-        main_df: pandas DataFrame with chromatin loops.
-        motifs_df: pandas DataFrame with motifs for specific cell type.
-    Returns:
-        pandas DataFrame with chromatin loops and motifs.
-    """
     

@@ -85,10 +85,18 @@ motifs_JASPAR_vertebrates:
   filepath: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_non-redundant_pfms_jaspar.txt
 
 
-hg19:
+hg19_raw:
   type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filepath: data/01_raw/reference_genomes/GRCh37_latest_genomic.fna
 
+hg19_simplified:
+  type: kedro_datasets.biosequence.BioSequenceDataSet
+  filepath: data/02_intermediate/reference_genomes/hg19.fasta
+  load_args:
+    format: "fasta"
+  save_args:
+    format: "fasta"
+  
 
 motifs_found:
   type: PartitionedDataSet
