@@ -56,16 +56,14 @@ CTCF_ChIP_seq_bigWig:
   filename_suffix: ".bigWig"
 
 
-concat_label_HiC_loops_anotations:
-  type: PartitionedDataSet
-  path: data/02_intermediate/HiC_looplist_preprocessed
-  dataset: 
-    type: pandas.CSVDataSet
-    load_args:
-      delimiter: "\t"
-    save_args:
-      sep: "\t"
-  filename_suffix: ".txt"
+gathered_HiC_loops_anotations:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/HiC_looplist_gathered.csv
+  load_args:
+    delimiter: "\t"
+  save_args:
+    sep: "\t"
+    header: False
 
 
 combined_functional_genomics_data:
@@ -91,7 +89,7 @@ hg19_raw:
 
 hg19_simplified:
   type: kedro_datasets.biosequence.BioSequenceDataSet
-  filepath: data/02_intermediate/reference_genomes/hg19.fasta
+  filepath: data/02_intermediate/reference_genomes_simp/hg19.fasta
   load_args:
     format: "fasta"
   save_args:

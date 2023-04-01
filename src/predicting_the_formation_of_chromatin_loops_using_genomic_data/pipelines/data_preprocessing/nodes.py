@@ -80,21 +80,51 @@ def _concat_dfs(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     return df
 
 
+def gather_all_anchors_into_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.DataFrame:
+    """
+    Combines two columns with regions into one colun and removes duplicate rows.
+    Args:
+        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
+    Returns:
+        pandas DataFrame with one column with regions.
+    """
+    df2cols = _concat_dfs(dfs_dict)
+    df_part1 = df2cols[['chr', 'x']]
+    df_part2 = df2cols[['chr', 'y']]
+    # rename columns
+    df_part1.columns = ['chr', 'anchor']
+    df_part2.columns = ['chr', 'anchor']
+    # combine two columns into one
+    df_one_col = pd.concat([df_part1, df_part2], axis=0)
+    # remove duplicate rows
+    df_one_col = df_one_col.drop_duplicates()
+    # add start and end columns
+    df_one_col['start'] = (df_one_col['anchor'] - r).astype(int)
+    df_one_col['end'] = (df_one_col['anchor'] + r).astype(int)
+    # sort by chr and region
+    df_one_col = df_one_col.sort_values(by=['chr', 'start'])
+    df_one_col['chr'] = 'chr' + df_one_col['chr'].astype(str)
+    # reset index
+    df_one_col = df_one_col.reset_index(drop=True)
+    df_one_col = df_one_col[['chr', 'start', 'end']]
+
+    return df_one_col
+
+
 def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     """
     Add labels to the dataframes depending on the cell type.
     Args:
-        dictionary with cell types as keys and pandas DataFrames as values.
+        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
     Returns:
         dictionary with cell types as keys and changed pandas DataFrames as values.
     """
     df = _concat_dfs(dfs_dict)
     for name, cell_df in dfs_dict.items():
-        if name == 'GM12878': # TO DELETE
-            cell_type = cell_df['cell_type'].unique()[0]
-            f = lambda x: 1 if x['cell_type'] == cell_type else 0
-            df['label'] = df.apply(f, axis=1)
-            dfs_dict[name] = copy.deepcopy(df)
+        cell_type = cell_df['cell_type'].unique()[0]
+        f = lambda x: 1 if x['cell_type'] == cell_type else 0
+        df['label'] = df.apply(f, axis=1)
+        dfs_dict[name] = copy.deepcopy(df)
     
     return dfs_dict
 
@@ -116,11 +146,10 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
-        if cells2names_dataset_dict[keys_dict[name]] == 'GM12878': # TO DELETE
-            f = lambda x: x['chr'].split("chr")[-1]
-            df["chr"] = df.apply(f, axis=1)
-            df = df.sort_values(by=['start'])
-            new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
+        f = lambda x: x['chr'].split("chr")[-1]
+        df["chr"] = df.apply(f, axis=1)
+        df = df.sort_values(by=['start'])
+        new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
 
     return new_dfs_dict
 
@@ -320,31 +349,6 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     print('Done!')
 
     return main_dfs_dict
-
-
-def _create_one_region_col(df2cols: pd.DataFrame) -> pd.DataFrame:
-    """
-    Combines two columns with regions into one colun and removes duplicate rows.
-    Args:
-        df2cols: pandas DataFrame with two columns with regions.
-    Returns:
-        pandas DataFrame with one column with regions.
-    """
-    df_part1 = df2cols[['chr', 'x']]
-    df_part2 = df2cols[['chr', 'y']]
-    # rename columns
-    df_part1.columns = ['chr', 'region']
-    df_part2.columns = ['chr', 'region']
-    # combine two columns into one
-    df_one_col = pd.concat([df_part1, df_part2], axis=0)
-    # remove duplicate rows
-    df_one_col = df_one_col.drop_duplicates()
-    # sort by chr and region
-    df_one_col = df_one_col.sort_values(by=['chr', 'region'])
-    # reset index
-    df_one_col = df_one_col.reset_index(drop=True)
-
-    return df_one_col
 
 
 def _add_overlapping_peaks_single_df(df_regions: pd.DataFrame, peaks_df: pd.DataFrame, r: int) -> pd.DataFrame:

@@ -4,22 +4,29 @@ generated using Kedro 0.18.6
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import read_hic, add_labels, read_peaks, count_peaks, read_bigWig, add_bigWig_data, find_all_motifs, simplify_genome_file
+from .nodes import read_hic, add_labels, read_peaks, count_peaks, read_bigWig, add_bigWig_data, find_all_motifs, simplify_genome_file, gather_all_anchors_into_df
 
 def create_pipeline(**kwargs) -> Pipeline:
     return pipeline(
-        [    node(
-                func=simplify_genome_file,
-                inputs="hg19_raw",
-                outputs="hg19_simplified",
-                name="simplify_hg19_node",
-            ),
+        [
             # node(
-            #     func=read_hic,
-            #     inputs=["HiC_loops_annoatations", "cells2names", "params:HiC_data"],
-            #     outputs="readed_HiC_loops_anotations",
-            #     name="read_HiC_loops_anotations_node",
+            #     func=simplify_genome_file,
+            #     inputs="hg19_raw",
+            #     outputs="hg19_simplified",
+            #     name="simplify_hg19_node",
             # ),
+            node(
+                func=read_hic,
+                inputs=["HiC_loops_annoatations", "cells2names", "params:HiC_data"],
+                outputs="readed_HiC_loops_anotations",
+                name="read_HiC_loops_anotations_node",
+            ),
+            node(
+                func=gather_all_anchors_into_df,
+                inputs=["readed_HiC_loops_anotations", "params:radius"],
+                outputs="gathered_HiC_loops_anotations",
+                name="gather_HiC_loops_anotations_into_df_node",
+            ),
             # node(
             #     func=add_labels,
             #     inputs="readed_HiC_loops_anotations",
