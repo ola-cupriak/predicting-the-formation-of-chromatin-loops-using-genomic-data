@@ -1,4 +1,4 @@
-radius: 50000
+radius: 15000
 # datasets names 
 HiC_data: HiC_loops_annotations
 CTCF_ChIP-seq_peaks: CTCF_ChIP_seq_peaks
