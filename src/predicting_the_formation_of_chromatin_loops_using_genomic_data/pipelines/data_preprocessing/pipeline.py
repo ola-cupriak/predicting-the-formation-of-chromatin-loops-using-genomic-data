@@ -4,17 +4,17 @@ generated using Kedro 0.18.6
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import read_hic, add_labels, read_peaks, count_peaks, read_bigWig, add_bigWig_data, find_all_motifs, simplify_genome_file, gather_all_anchors_into_df
+from .nodes import read_hic, add_labels, read_peaks, count_peaks, read_bigWig, add_bigWig_data, find_all_motifs, simplify_genome_file, gather_all_anchors_into_df, getfasta_anchors
 
 def create_pipeline(**kwargs) -> Pipeline:
     return pipeline(
         [
-            # node(
-            #     func=simplify_genome_file,
-            #     inputs="hg19_raw",
-            #     outputs="hg19_simplified",
-            #     name="simplify_hg19_node",
-            # ),
+            node(
+                func=simplify_genome_file,
+                inputs="path_hg19_raw",
+                outputs="hg19_simplified",
+                name="simplify_hg19_node",
+            ),
             node(
                 func=read_hic,
                 inputs=["HiC_loops_annoatations", "cells2names", "params:HiC_data"],
@@ -27,12 +27,18 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="gathered_HiC_loops_anotations",
                 name="gather_HiC_loops_anotations_into_df_node",
             ),
-            # node(
-            #     func=add_labels,
-            #     inputs="readed_HiC_loops_anotations",
-            #     outputs="concat_label_HiC_loops_anotations",
-            #     name="concat_label_HiC_loops_anotations_node",
-            # ),
+            node(
+                func=getfasta_anchors,
+                inputs=["path_gathered_HiC_loops_anotations", "path_hg19_simplified"],
+                outputs="fasta_anchors",
+                name="getfasta_anchors_node",
+            ),
+            node(
+                func=add_labels,
+                inputs="readed_HiC_loops_anotations",
+                outputs="concat_label_HiC_loops_anotations",
+                name="concat_label_HiC_loops_anotations_node",
+            ),
             # node(
             #     func=read_peaks,
             #     inputs=["DNAse_seq_peaks", "cells2names", "params:DNase-seq_peaks"],

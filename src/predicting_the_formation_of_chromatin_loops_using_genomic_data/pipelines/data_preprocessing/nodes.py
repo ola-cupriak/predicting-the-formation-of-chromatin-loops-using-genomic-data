@@ -7,17 +7,18 @@ from tqdm import tqdm
 from Bio import Seq, SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio import motifs
+import subprocess
 import warnings
 
 warnings.simplefilter(action="ignore")
 
 
-def simplify_genome_file(path: str) -> dict:
+def simplify_genome_file(path: str) -> list:
     """Get chromosomes dict from fasta file.
     Args:
         path (str): path to fasta file with genome.
     Returns:
-        dict: chromosomes dict {chr: sequence}
+        list of SeqRecord objects.
     """
     genome = SeqIO.parse(open(path), 'fasta')
     chromosomes = []
@@ -74,7 +75,7 @@ def _concat_dfs(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     Returns:
         concatenated pandas DataFrame.
     """
-    df = pd.concat(dfs_dict.values())
+    df = pd.concat(list(dfs_dict.values()))
     df = df.sort_values(by=['x'])
 
     return df
@@ -95,20 +96,35 @@ def gather_all_anchors_into_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.
     df_part1.columns = ['chr', 'anchor']
     df_part2.columns = ['chr', 'anchor']
     # combine two columns into one
-    df_one_col = pd.concat([df_part1, df_part2], axis=0)
+    anchors_df = pd.concat([df_part1, df_part2], axis=0)
     # remove duplicate rows
-    df_one_col = df_one_col.drop_duplicates()
+    anchors_df = anchors_df.drop_duplicates()
     # add start and end columns
-    df_one_col['start'] = (df_one_col['anchor'] - r).astype(int)
-    df_one_col['end'] = (df_one_col['anchor'] + r).astype(int)
+    anchors_df['start'] = (anchors_df['anchor'] - r).astype(int)
+    anchors_df['end'] = (anchors_df['anchor'] + r).astype(int)
     # sort by chr and region
-    df_one_col = df_one_col.sort_values(by=['chr', 'start'])
-    df_one_col['chr'] = 'chr' + df_one_col['chr'].astype(str)
+    anchors_df = anchors_df.sort_values(by=['chr', 'start'])
+    anchors_df['chr'] = 'chr' + anchors_df['chr'].astype(str)
     # reset index
-    df_one_col = df_one_col.reset_index(drop=True)
-    df_one_col = df_one_col[['chr', 'start', 'end']]
+    anchors_df = anchors_df.reset_index(drop=True)
+    anchors_df = anchors_df[['chr', 'start', 'end']]
 
-    return df_one_col
+    return anchors_df
+
+
+def getfasta_anchors(path_anchors: str, path_simp_genome: str) -> str:
+    """
+    Cut sequences for anchors from chromosomes using bedtools.
+    Args:
+        path_anchors: path to bed file with anchors.
+        path_simp_genome: path to fasta file with chromosomes.
+    Returns:
+        string with fasta sequences for anchors.
+    """
+    proc = subprocess.Popen(f'bedtools getfasta -fi {path_simp_genome} -bed {path_anchors}', shell=True, stdout=subprocess.PIPE)
+    output = proc.stdout.read().decode("utf-8")
+
+    return output
 
 
 def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
