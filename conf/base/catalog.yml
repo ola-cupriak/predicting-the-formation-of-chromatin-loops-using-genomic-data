@@ -91,8 +91,21 @@ path_hg19_simplified:
 
 
 fasta_anchors:
-  type: text.TextDataSet
+  type: kedro_datasets.biosequence.BioSequenceDataSet
   filepath: data/02_intermediate/anchors.fasta
+  load_args:
+    format: "fasta"
+  save_args:
+    format: "fasta"
+
+
+anchors_df:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/anchors.csv
+  load_args:
+    delimiter: "\t"
+  save_args:
+    sep: "\t"
 
 
 combined_functional_genomics_data:
@@ -107,9 +120,9 @@ combined_functional_genomics_data:
   filename_suffix: ".txt"
 
 
-motifs_JASPAR_vertebrates:
+path_motifs_JASPAR_vertebrates:
   type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filepath: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_non-redundant_pfms_jaspar.txt
+  filepath: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt
 
 
 motifs_found:
