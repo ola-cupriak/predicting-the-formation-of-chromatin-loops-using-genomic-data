@@ -1,3 +1,5 @@
+from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
 import os
 import subprocess
 import yaml
@@ -16,15 +18,18 @@ def _create_dir(dir_path: str) -> None:
         pass
 
 
-def download_data(datasources_dict: dict) -> None:
+def download_data(datasources_dict: dict) -> str:
     """
     Downloads the data from the urls in the datasources_dict 
     to created experiments directories.
     Creates a yml file with dictionary in the template: {dataset_name: {file_name: cell_type}}}
     Args:
         datasources_dict: dictionary with the urls to download the data
+    Returns:
+        empty (dummy) string
     """
     names_dict = {}
+    to_return = ''
     for experiment, cell_dict in datasources_dict.items():
         names_dict[experiment] = {}
         # create directory for the experiment
@@ -44,6 +49,9 @@ def download_data(datasources_dict: dict) -> None:
                 file_name = file_name[:-3]
             names_dict[experiment][file_name] = cell_type
             files_before = files_after
+
+            if experiment == 'reference_genomes' and 'hg19' in cell_dict.keys():
+                to_return = f'data/01_raw/{experiment}/{file_name}'
         # gunzip
         if gunzip:
             subprocess.run(f'gunzip {" ".join(list(files_after))}', shell=True)
@@ -52,3 +60,24 @@ def download_data(datasources_dict: dict) -> None:
     yaml_string=yaml.dump(names_dict)
     with open('data/01_raw/cells2names.yml', 'w') as f:
         f.write(yaml_string)
+
+    return to_return
+
+
+def simplify_genome_file(path: str) -> list:
+    """Get chromosomes dict from fasta file.
+    Args:
+        path (str): path to fasta file with genome.
+    Returns:
+        list of SeqRecord objects.
+    """
+    genome = SeqIO.parse(open(path), 'fasta')
+    chromosomes = []
+    for sequence in genome:
+        desc = sequence.description
+        seq_id = sequence.id
+        if seq_id.startswith('NC') and 'chromosome' in desc:
+            chrom = 'chr' + desc.split('chromosome ')[1].split(',')[0]
+            chromosomes.append(SeqRecord(sequence.seq, id=chrom, description=''))
+    
+    return chromosomes

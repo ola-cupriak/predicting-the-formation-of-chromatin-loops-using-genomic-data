@@ -3,6 +3,7 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
+
 cells2names:
   type: yaml.YAMLDataSet
   filepath: data/01_raw/cells2names.yml
@@ -71,10 +72,6 @@ path_gathered_HiC_loops_anotations:
   filepath: data/02_intermediate/HiC_looplist_gathered.csv
 
 
-path_hg19_raw:
-  type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filepath: data/01_raw/reference_genomes/GRCh37_latest_genomic.fna
-
 
 hg19_simplified:
   type: kedro_datasets.biosequence.BioSequenceDataSet
@@ -122,7 +119,7 @@ combined_functional_genomics_data:
 
 path_motifs_JASPAR_vertebrates:
   type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filepath: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt
+  filepath: data/01_raw/motifs_JASPAR/test.txt
 
 
 motifs_found:
