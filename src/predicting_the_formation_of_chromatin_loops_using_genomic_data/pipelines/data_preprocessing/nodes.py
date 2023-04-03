@@ -14,24 +14,6 @@ import warnings
 warnings.simplefilter(action="ignore")
 
 
-def simplify_genome_file(path: str) -> list:
-    """Get chromosomes dict from fasta file.
-    Args:
-        path (str): path to fasta file with genome.
-    Returns:
-        list of SeqRecord objects.
-    """
-    genome = SeqIO.parse(open(path), 'fasta')
-    chromosomes = []
-    for sequence in genome:
-        desc = sequence.description
-        seq_id = sequence.id
-        if seq_id.startswith('NC') and 'chromosome' in desc:
-            chrom = 'chr' + desc.split('chromosome ')[1].split(',')[0]
-            chromosomes.append(SeqRecord(sequence.seq, id=chrom, description=''))
-    
-    return chromosomes
-
     
 def read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
@@ -59,11 +41,38 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         df.rename(columns={'chr1': 'chr'}, inplace=True)
         df['x'] = round((df['x1'] + df['x2'])/2)
         df['y'] = round((df['y1'] + df['y2'])/2)
+        df['len_anchors'] = (df['x2']-df['x1'])+(df['y2']-df['y1']) # add length of both anchors
+        df['len_loop'] = (df['y2']-df['x1']) # add length of loop
         df['cell_type'] = cell_type
         df = df[df.columns.intersection(['x', 'y', 'chr', 'cell_type'])]
         df = df.sort_values(by=['x'])
-        if cell_type == 'HMEC':
-            new_dfs_dict[cell_type] = df
+        new_dfs_dict[cell_type] = df
+
+    return new_dfs_dict
+
+
+def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
+                cells2names: Dict[str, dict],
+                dataset_name: str) -> Dict[str, pd.DataFrame]:
+    """
+    Load dataframes with DNase-seq/ChIP-seq peaks and modify the chromosome columns.
+    Args:
+        partitioned_input: dictionary with partition ids as keys and load functions as values.
+        cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
+        dataset_name: name of the dataset to select from cells2names.
+    Returns:
+        dictionary with cell types as keys and pandas DataFrames as values.
+    """
+    dfs_dict = _dict_partitions(partitioned_input)
+    cells2names_dataset_dict = cells2names[dataset_name]
+    keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
+    new_dfs_dict = dict()
+    for name, df in dfs_dict.items():
+        f = lambda x: x['chr'].split("chr")[-1]
+        df["chr"] = df.apply(f, axis=1)
+        df = df.sort_values(by=['chr', 'start'])
+        #if cells2names_dataset_dict[keys_dict[name]] == 'HMEC':
+        new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
 
     return new_dfs_dict
 
@@ -77,22 +86,22 @@ def _concat_dfs(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         concatenated pandas DataFrame.
     """
     df = pd.concat(list(dfs_dict.values()))
-    df = df.sort_values(by=['x'])
 
     return df
 
 
-def gather_all_anchors_into_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.DataFrame:
+def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.DataFrame:
     """
     Combines two columns with regions into one colun and removes duplicate rows.
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
+        r: radius of the region.
     Returns:
         pandas DataFrame with one column with regions.
     """
-    df2cols = _concat_dfs(dfs_dict)
-    df_part1 = df2cols[['chr', 'x']]
-    df_part2 = df2cols[['chr', 'y']]
+    df_with_2_regions = _concat_dfs(dfs_dict)
+    df_part1 = df_with_2_regions[['chr', 'x']]
+    df_part2 = df_with_2_regions[['chr', 'y']]
     # rename columns
     df_part1.columns = ['chr', 'anchor']
     df_part2.columns = ['chr', 'anchor']
@@ -104,25 +113,63 @@ def gather_all_anchors_into_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.
     anchors_df['start'] = (anchors_df['anchor'] - r).astype(int)
     anchors_df['end'] = (anchors_df['anchor'] + r).astype(int)
     # sort by chr and region
+    anchors_df.loc[anchors_df['chr'] == 'X', 'chr'] = 100
+    anchors_df['chr'] = anchors_df['chr'].astype(int)
     anchors_df = anchors_df.sort_values(by=['chr', 'start'])
+    anchors_df.loc[anchors_df['chr'] == 100, 'chr'] = 'X'
     anchors_df['chr'] = 'chr' + anchors_df['chr'].astype(str)
     # reset index
     anchors_df = anchors_df.reset_index(drop=True)
     anchors_df = anchors_df[['chr', 'start', 'end']]
-
+    
     return anchors_df
 
 
-def getfasta_anchors(path_anchors: str, path_simp_genome: str) -> str:
+def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    df = _concat_dfs(peaks_dict)
+    # sort by chr and region
+    df.loc[df['chr'] == 'X', 'chr'] = 100
+    df['chr'] = df['chr'].astype(int)
+    df = df.sort_values(by=['chr', 'start'])
+    df.loc[df['chr'] == 100, 'chr'] = 'X'
+    df['chr'] = 'chr' + df['chr'].astype(str)
+    # remove duplicate rows
+    df = df.drop_duplicates()
+    # reset index
+    df = df.reset_index(drop=True)
+    df = df[['chr', 'start', 'end']]
+
+    return df
+
+
+def get_overlapping_regions_bed_files(path_bedfile1: str, path_bedfile2: str, path_output: str, count: bool = False):
     """
-    Cut sequences for anchors from chromosomes using bedtools.
+    Get overlapping regions from two bed files.
     Args:
-        path_anchors: path to bed file with anchors.
+        path_bedfile1: path to bed file 1.
+        path_bedfile2: path to bed file 2.
+        path_output: path to output file.
+    Returns:
+        path_output
+    """
+    if count:
+        subprocess.run(f'bedtools intersect -a {path_bedfile1} -b {path_bedfile2} -c > {path_output}', shell=True)
+    else:
+        subprocess.run(f'bedtools intersect -a {path_bedfile1} -b {path_bedfile2} > {path_output}', shell=True)
+    
+    return path_output
+
+
+def getfasta_bedfile(path_bedfile: str, path_simp_genome: str) -> str:
+    """
+    Cut sequences from chromosomes using bedtools for coordinates from bed file.
+    Args:
+        path_bedfile: path to bed file with coordinates
         path_simp_genome: path to fasta file with chromosomes.
     Returns:
-        string with fasta sequences for anchors.
+        string with fasta sequences.
     """
-    proc = subprocess.Popen(f'bedtools getfasta -fi {path_simp_genome} -bed {path_anchors}', shell=True, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(f'bedtools getfasta -fi {path_simp_genome} -bed {path_bedfile}', shell=True, stdout=subprocess.PIPE)
     output = proc.stdout.read().decode("utf-8").split('>')[1:]
 
     records = []
@@ -171,32 +218,6 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
         dfs_dict[name] = copy.deepcopy(df)
     
     return dfs_dict
-
-
-def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
-                cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
-    """
-    Load dataframes with DNase-seq/ChIP-seq peaks and modify the chromosome columns.
-    Args:
-        partitioned_input: dictionary with partition ids as keys and load functions as values.
-        cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
-        dataset_name: name of the dataset to select from cells2names.
-    Returns:
-        dictionary with cell types as keys and pandas DataFrames as values.
-    """
-    dfs_dict = _dict_partitions(partitioned_input)
-    cells2names_dataset_dict = cells2names[dataset_name]
-    keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
-    new_dfs_dict = dict()
-    for name, df in dfs_dict.items():
-        f = lambda x: x['chr'].split("chr")[-1]
-        df["chr"] = df.apply(f, axis=1)
-        df = df.sort_values(by=['start'])
-        if cells2names_dataset_dict[keys_dict[name]] == 'HMEC':
-            new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
-
-    return new_dfs_dict
 
 
 
@@ -248,7 +269,7 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame,
         for peaks_chr, peaks_df_chr in peaks_df_grouped:
             # if chromosome is the same
             if main_chr == peaks_chr:
-                    for idx, row in main_df_chr.iterrows():
+                    for idx, row in tqdm(main_df_chr.iterrows()):
                         for region in ['x', 'y']:
                             anchor_start = row[region] - r
                             anchor_end = row[region] + r
@@ -343,7 +364,8 @@ def read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     bigWig_data_dict = dict()
     for name, bigWig_path in input_dict.items():
-        bigWig_data_dict[cells2names_dataset_dict[keys_dict[name]]] = bigWig_path
+        if cells2names_dataset_dict[keys_dict[name]] == 'HMEC':
+            bigWig_data_dict[cells2names_dataset_dict[keys_dict[name]]] = bigWig_path
 
     return bigWig_data_dict
 

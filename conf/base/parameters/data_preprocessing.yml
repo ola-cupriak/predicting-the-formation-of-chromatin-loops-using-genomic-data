@@ -1,7 +1,10 @@
-radius: 15000
+radius: 2500
 # datasets names 
 HiC_data: HiC_loops_annotations
 CTCF_ChIP-seq_peaks: CTCF_ChIP_seq_peaks
 CTCF_ChIP-seq_bigWig: CTCF_ChIP_seq_bigWig
 DNase-seq_peaks: DNase_seq_peaks
 DNase-seq_bigWig: DNase_seq_bigWig
+# paths
+path_hg19_simplified: data/02_intermediate/reference_genomes_simp/hg19.fasta
+path_motifs_JASPAR_vertebrates: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_non-redundant_pfms_jaspar.txt

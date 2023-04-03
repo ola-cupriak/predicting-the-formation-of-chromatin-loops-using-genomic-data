@@ -1,5 +1,5 @@
 """
-This is a boilerplate pipeline 'hiccups_preprocessing'
+This is a boilerplate pipeline 'data_preprocessing'
 generated using Kedro 0.18.6
 """
 

@@ -1,0 +1,7 @@
+# radius: 2500
+# # datasets names 
+# HiC_data: HiC_loops_annotations
+# CTCF_ChIP-seq_peaks: CTCF_ChIP_seq_peaks
+# CTCF_ChIP-seq_bigWig: CTCF_ChIP_seq_bigWig
+# DNase-seq_peaks: DNase_seq_peaks
+# DNase-seq_bigWig: DNase_seq_bigWig

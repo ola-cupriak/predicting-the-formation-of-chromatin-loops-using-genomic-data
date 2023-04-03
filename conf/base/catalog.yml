@@ -57,48 +57,45 @@ CTCF_ChIP_seq_bigWig:
   filename_suffix: ".bigWig"
 
 
-gathered_HiC_loops_anotations:
+merged_HiC_loops_anotations:
   type: pandas.CSVDataSet
-  filepath: data/02_intermediate/HiC_looplist_gathered.csv
+  filepath: data/02_intermediate/merged_HiC_looplist.csv
   load_args:
     delimiter: "\t"
   save_args:
     sep: "\t"
-    header: False
 
-
-path_gathered_HiC_loops_anotations:
-  type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filepath: data/02_intermediate/HiC_looplist_gathered.csv
-
-
-
-hg19_simplified:
-  type: kedro_datasets.biosequence.BioSequenceDataSet
-  filepath: data/02_intermediate/reference_genomes_simp/hg19.fasta
-  load_args:
-    format: "fasta"
-  save_args:
-    format: "fasta"
-
-
-path_hg19_simplified:
-  type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filepath: data/02_intermediate/reference_genomes_simp/hg19.fasta
-
-
-fasta_anchors:
-  type: kedro_datasets.biosequence.BioSequenceDataSet
-  filepath: data/02_intermediate/anchors.fasta
-  load_args:
-    format: "fasta"
-  save_args:
-    format: "fasta"
-
-
-anchors_df:
+  
+merged_DNase_seq_peaks:
   type: pandas.CSVDataSet
-  filepath: data/02_intermediate/anchors.csv
+  filepath: data/02_intermediate/merged_DNase_seq_peaks.csv
+  load_args:
+    delimiter: "\t"
+  save_args:
+    sep: "\t"
+
+
+overlaps_HiC_loops_DNase_seq:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/overlaps_HiC_loops_DNase_seq.csv
+  load_args:
+    delimiter: "\t"
+  save_args:
+    sep: "\t"
+
+
+fasta_anchors_with_open_chromtin:
+  type: kedro_datasets.biosequence.BioSequenceDataSet
+  filepath: data/02_intermediate/anchors_with_open_chromtin.fasta
+  load_args:
+    format: "fasta"
+  save_args:
+    format: "fasta"
+
+
+df_anchors_with_open_chromtin:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/anchors_with_open_chromtin.csv
   load_args:
     delimiter: "\t"
   save_args:
@@ -115,11 +112,6 @@ combined_functional_genomics_data:
     save_args:
       sep: "\t"
   filename_suffix: ".txt"
-
-
-path_motifs_JASPAR_vertebrates:
-  type: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filepath: data/01_raw/motifs_JASPAR/test.txt
 
 
 motifs_found:

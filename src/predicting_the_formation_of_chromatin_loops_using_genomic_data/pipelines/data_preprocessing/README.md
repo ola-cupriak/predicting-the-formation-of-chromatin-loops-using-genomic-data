@@ -1,4 +1,4 @@
-# Pipeline hiccups_preprocessing
+# Pipeline data_preprocessing
 
 > *Note:* This is a `README.md` boilerplate generated using `Kedro 0.18.6`.
 
