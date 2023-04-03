@@ -1,47 +1,47 @@
 to_download:
-  # HiC_loops_annotations:
-  #   GM12878: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_GM12878_primary%2Breplicate_HiCCUPS_looplist.txt.gz
-  #   HMEC: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HMEC_HiCCUPS_looplist.txt.gz
-  #   HUVEC: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HUVEC_HiCCUPS_looplist.txt.gz
-  #   HeLa: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HeLa_HiCCUPS_looplist.txt.gz
-  #   IMR90: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_IMR90_HiCCUPS_looplist.txt.gz
-  #   K562: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_K562_HiCCUPS_looplist.txt.gz
-  #   KBM7: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_KBM7_HiCCUPS_looplist.txt.gz
-  #   NHEK: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_NHEK_HiCCUPS_looplist.txt.gz
-  # DNase_seq_peaks:
-  #   GM12878: https://www.encodeproject.org/files/ENCFF273MVV/@@download/ENCFF273MVV.bed.gz
-  #   HMEC: https://www.encodeproject.org/files/ENCFF672BMB/@@download/ENCFF672BMB.bed.gz
-  #   HUVEC: https://www.encodeproject.org/files/ENCFF097KBE/@@download/ENCFF097KBE.bed.gz
-  #   HeLa: https://www.encodeproject.org/files/ENCFF775GBM/@@download/ENCFF775GBM.bed.gz
-  #   IMR90: https://www.encodeproject.org/files/ENCFF895BJS/@@download/ENCFF895BJS.bed.gz
-  #   K562: https://www.encodeproject.org/files/ENCFF621ZJY/@@download/ENCFF621ZJY.bed.gz
-  #   KBM7: https://www.encodeproject.org/files/ENCFF384AQH/@@download/ENCFF384AQH.bed.gz
-  #   NHEK: https://www.encodeproject.org/files/ENCFF894LMB/@@download/ENCFF894LMB.bed.gz
-  # DNase_seq_bigWig:
-  #   GM12878: https://www.encodeproject.org/files/ENCFF901GZH/@@download/ENCFF901GZH.bigWig
-  #   HMEC: https://www.encodeproject.org/files/ENCFF061JPV/@@download/ENCFF061JPV.bigWig
-  #   HUVEC: https://www.encodeproject.org/files/ENCFF558DRT/@@download/ENCFF558DRT.bigWig
-  #   HeLa: https://www.encodeproject.org/files/ENCFF830TNF/@@download/ENCFF830TNF.bigWig
-  #   IMR90: https://www.encodeproject.org/files/ENCFF291DOH/@@download/ENCFF291DOH.bigWig
-  #   K562: https://www.encodeproject.org/files/ENCFF352SET/@@download/ENCFF352SET.bigWig
-  #   KBM7: https://www.encodeproject.org/files/ENCFF636YSC/@@download/ENCFF636YSC.bigWig
-  #   NHEK: https://www.encodeproject.org/files/ENCFF582ZRH/@@download/ENCFF582ZRH.bigWig
-  # CTCF_ChIP_seq_peaks:
-  #   GM12878: https://www.encodeproject.org/files/ENCFF833FTF/@@download/ENCFF833FTF.bed.gz
-  #   HMEC: https://www.encodeproject.org/files/ENCFF288RFS/@@download/ENCFF288RFS.bed.gz
-  #   HUVEC: https://www.encodeproject.org/files/ENCFF655XWN/@@download/ENCFF655XWN.bed.gz
-  #   HeLa: https://www.encodeproject.org/files/ENCFF768OPK/@@download/ENCFF768OPK.bed.gz
-  #   IMR90: https://www.encodeproject.org/files/ENCFF453XKM/@@download/ENCFF453XKM.bed.gz
-  #   K562: https://www.encodeproject.org/files/ENCFF738TKN/@@download/ENCFF738TKN.bed.gz
-  #   NHEK: https://www.encodeproject.org/files/ENCFF226MQR/@@download/ENCFF226MQR.bed.gz
-  # CTCF_ChIP_seq_bigWig:
-  #   GM12878: https://www.encodeproject.org/files/ENCFF797LSC/@@download/ENCFF797LSC.bigWig
-  #   HMEC: https://www.encodeproject.org/files/ENCFF427PIM/@@download/ENCFF427PIM.bigWig
-  #   HUVEC: https://www.encodeproject.org/files/ENCFF626RQP/@@download/ENCFF626RQP.bigWig
-  #   HeLa: https://www.encodeproject.org/files/ENCFF201EIR/@@download/ENCFF201EIR.bigWig
-  #   IMR90: https://www.encodeproject.org/files/ENCFF583IZF/@@download/ENCFF583IZF.bigWig
-  #   K562: https://www.encodeproject.org/files/ENCFF468HJA/@@download/ENCFF468HJA.bigWig
-  #   NHEK: https://www.encodeproject.org/files/ENCFF636MGS/@@download/ENCFF636MGS.bigWig
+  HiC_loops_annotations:
+    GM12878: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_GM12878_primary%2Breplicate_HiCCUPS_looplist.txt.gz
+    HMEC: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HMEC_HiCCUPS_looplist.txt.gz
+    HUVEC: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HUVEC_HiCCUPS_looplist.txt.gz
+    HeLa: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_HeLa_HiCCUPS_looplist.txt.gz
+    IMR90: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_IMR90_HiCCUPS_looplist.txt.gz
+    K562: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_K562_HiCCUPS_looplist.txt.gz
+    KBM7: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_KBM7_HiCCUPS_looplist.txt.gz
+    NHEK: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE63nnn/GSE63525/suppl/GSE63525_NHEK_HiCCUPS_looplist.txt.gz
+  DNase_seq_peaks:
+    GM12878: https://www.encodeproject.org/files/ENCFF273MVV/@@download/ENCFF273MVV.bed.gz
+    HMEC: https://www.encodeproject.org/files/ENCFF672BMB/@@download/ENCFF672BMB.bed.gz
+    HUVEC: https://www.encodeproject.org/files/ENCFF097KBE/@@download/ENCFF097KBE.bed.gz
+    HeLa: https://www.encodeproject.org/files/ENCFF775GBM/@@download/ENCFF775GBM.bed.gz
+    IMR90: https://www.encodeproject.org/files/ENCFF895BJS/@@download/ENCFF895BJS.bed.gz
+    K562: https://www.encodeproject.org/files/ENCFF621ZJY/@@download/ENCFF621ZJY.bed.gz
+    KBM7: https://www.encodeproject.org/files/ENCFF384AQH/@@download/ENCFF384AQH.bed.gz
+    NHEK: https://www.encodeproject.org/files/ENCFF894LMB/@@download/ENCFF894LMB.bed.gz
+  DNase_seq_bigWig:
+    GM12878: https://www.encodeproject.org/files/ENCFF901GZH/@@download/ENCFF901GZH.bigWig
+    HMEC: https://www.encodeproject.org/files/ENCFF061JPV/@@download/ENCFF061JPV.bigWig
+    HUVEC: https://www.encodeproject.org/files/ENCFF558DRT/@@download/ENCFF558DRT.bigWig
+    HeLa: https://www.encodeproject.org/files/ENCFF830TNF/@@download/ENCFF830TNF.bigWig
+    IMR90: https://www.encodeproject.org/files/ENCFF291DOH/@@download/ENCFF291DOH.bigWig
+    K562: https://www.encodeproject.org/files/ENCFF352SET/@@download/ENCFF352SET.bigWig
+    KBM7: https://www.encodeproject.org/files/ENCFF636YSC/@@download/ENCFF636YSC.bigWig
+    NHEK: https://www.encodeproject.org/files/ENCFF582ZRH/@@download/ENCFF582ZRH.bigWig
+  CTCF_ChIP_seq_peaks:
+    GM12878: https://www.encodeproject.org/files/ENCFF833FTF/@@download/ENCFF833FTF.bed.gz
+    HMEC: https://www.encodeproject.org/files/ENCFF288RFS/@@download/ENCFF288RFS.bed.gz
+    HUVEC: https://www.encodeproject.org/files/ENCFF655XWN/@@download/ENCFF655XWN.bed.gz
+    HeLa: https://www.encodeproject.org/files/ENCFF768OPK/@@download/ENCFF768OPK.bed.gz
+    IMR90: https://www.encodeproject.org/files/ENCFF453XKM/@@download/ENCFF453XKM.bed.gz
+    K562: https://www.encodeproject.org/files/ENCFF738TKN/@@download/ENCFF738TKN.bed.gz
+    NHEK: https://www.encodeproject.org/files/ENCFF226MQR/@@download/ENCFF226MQR.bed.gz
+  CTCF_ChIP_seq_bigWig:
+    GM12878: https://www.encodeproject.org/files/ENCFF797LSC/@@download/ENCFF797LSC.bigWig
+    HMEC: https://www.encodeproject.org/files/ENCFF427PIM/@@download/ENCFF427PIM.bigWig
+    HUVEC: https://www.encodeproject.org/files/ENCFF626RQP/@@download/ENCFF626RQP.bigWig
+    HeLa: https://www.encodeproject.org/files/ENCFF201EIR/@@download/ENCFF201EIR.bigWig
+    IMR90: https://www.encodeproject.org/files/ENCFF583IZF/@@download/ENCFF583IZF.bigWig
+    K562: https://www.encodeproject.org/files/ENCFF468HJA/@@download/ENCFF468HJA.bigWig
+    NHEK: https://www.encodeproject.org/files/ENCFF636MGS/@@download/ENCFF636MGS.bigWig
   reference_genomes:
     hg19: https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh37_latest/refseq_identifiers/GRCh37_latest_genomic.fna.gz
   motifs_JASPAR:
