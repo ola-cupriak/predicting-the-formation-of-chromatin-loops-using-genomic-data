@@ -8,22 +8,43 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import motifs
+import pybedtools
 import subprocess
 import warnings
 
 warnings.simplefilter(action="ignore")
 
 
+def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
+    """
+    Sort the dataframe by chromosome and position.
+    Args:
+        df: pandas DataFrame.
+        region_name: name of the column with regions.
+    Returns:
+        sorted pandas DataFrame.
+    """
+    df.loc[df['chr'] == 'X', 'chr'] = 100
+    df.loc[df['chr'] == 'Y', 'chr'] = 200
+    df['chr'] = df['chr'].astype(int)
+    df = df.sort_values(by=['chr', region_name])
+    df.loc[df['chr'] == 100, 'chr'] = 'X'
+    df.loc[df['chr'] == 200, 'chr'] = 'Y'
+    df['chr'] = df['chr'].astype(str)
+
+    return df
+
     
 def read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
+                dataset_name: str, r: int) -> Dict[str, pd.DataFrame]:
     """
     Load and modify the dataframes with chromatin loops anotations.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
+        r: radius of the region.
     Returns:
         dictionary with cell types as keys and pandas DataFrames as values.
     """
@@ -39,13 +60,17 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         df["chr2"] = df.apply(f2, axis=1)
         assert len(df[df['chr1']!=df['chr2']]) == 0
         df.rename(columns={'chr1': 'chr'}, inplace=True)
-        df['x'] = round((df['x1'] + df['x2'])/2)
-        df['y'] = round((df['y1'] + df['y2'])/2)
+        for region in ['x', 'y']:
+            df[f'{region}'] = (round((df[f'{region}1'] + df[f'{region}2'])/2)).astype(int)
+            df[f'{region}_start'] = (df[f'{region}'] - r).astype(int)
+            df[f'{region}_end'] = (df[f'{region}'] + r).astype(int)
         df['len_anchors'] = (df['x2']-df['x1'])+(df['y2']-df['y1']) # add length of both anchors
         df['len_loop'] = (df['y2']-df['x1']) # add length of loop
         df['cell_type'] = cell_type
-        df = df[df.columns.intersection(['x', 'y', 'chr', 'cell_type'])]
-        df = df.sort_values(by=['x'])
+        df = df[df.columns.intersection(['x', 'y', 'x_start', 'x_end', 'y_start', 'y_end', 'chr', 'cell_type'])]
+        # sort by chr and x
+        df = _sort_df(df, 'x')
+
         new_dfs_dict[cell_type] = df
 
     return new_dfs_dict
@@ -70,8 +95,7 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
     for name, df in dfs_dict.items():
         f = lambda x: x['chr'].split("chr")[-1]
         df["chr"] = df.apply(f, axis=1)
-        df = df.sort_values(by=['chr', 'start'])
-        #if cells2names_dataset_dict[keys_dict[name]] == 'HMEC':
+        df = _sort_df(df, 'start')
         new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
 
     return new_dfs_dict
@@ -100,24 +124,17 @@ def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.DataFram
         pandas DataFrame with one column with regions.
     """
     df_with_2_regions = _concat_dfs(dfs_dict)
-    df_part1 = df_with_2_regions[['chr', 'x']]
-    df_part2 = df_with_2_regions[['chr', 'y']]
+    df_part1 = df_with_2_regions[['chr', 'x_start', 'x_end']]
+    df_part2 = df_with_2_regions[['chr', 'y_start', 'y_end']]
     # rename columns
-    df_part1.columns = ['chr', 'anchor']
-    df_part2.columns = ['chr', 'anchor']
+    df_part1.columns = ['chr', 'start', 'end']
+    df_part2.columns = ['chr', 'start', 'end']
     # combine two columns into one
     anchors_df = pd.concat([df_part1, df_part2], axis=0)
     # remove duplicate rows
     anchors_df = anchors_df.drop_duplicates()
-    # add start and end columns
-    anchors_df['start'] = (anchors_df['anchor'] - r).astype(int)
-    anchors_df['end'] = (anchors_df['anchor'] + r).astype(int)
     # sort by chr and region
-    anchors_df.loc[anchors_df['chr'] == 'X', 'chr'] = 100
-    anchors_df['chr'] = anchors_df['chr'].astype(int)
-    anchors_df = anchors_df.sort_values(by=['chr', 'start'])
-    anchors_df.loc[anchors_df['chr'] == 100, 'chr'] = 'X'
-    anchors_df['chr'] = 'chr' + anchors_df['chr'].astype(str)
+    anchors_df = _sort_df(anchors_df, 'start')
     # reset index
     anchors_df = anchors_df.reset_index(drop=True)
     anchors_df = anchors_df[['chr', 'start', 'end']]
@@ -128,11 +145,7 @@ def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.DataFram
 def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     df = _concat_dfs(peaks_dict)
     # sort by chr and region
-    df.loc[df['chr'] == 'X', 'chr'] = 100
-    df['chr'] = df['chr'].astype(int)
-    df = df.sort_values(by=['chr', 'start'])
-    df.loc[df['chr'] == 100, 'chr'] = 'X'
-    df['chr'] = 'chr' + df['chr'].astype(str)
+    df = _sort_df(df, 'start')
     # remove duplicate rows
     df = df.drop_duplicates()
     # reset index
@@ -142,42 +155,48 @@ def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     return df
 
 
-def get_overlapping_regions_bed_files(path_bedfile1: str, path_bedfile2: str, path_output: str, count: bool = False):
+def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = False) -> pd.DataFrame:
     """
     Get overlapping regions from two bed files.
     Args:
-        path_bedfile1: path to bed file 1.
-        path_bedfile2: path to bed file 2.
-        path_output: path to output file.
+        df1: path to bed file 1
+        df2: path to bed file 2
+        count: if True, count the number of overlapping regions.
     Returns:
-        path_output
+        pd.DataFrame with overlapping regions or number of overlapping regions.
     """
+    bed1 = pybedtools.BedTool.from_dataframe(df1)
+    bed2 = pybedtools.BedTool.from_dataframe(df2)
     if count:
-        subprocess.run(f'bedtools intersect -a {path_bedfile1} -b {path_bedfile2} -c > {path_output}', shell=True)
+        intersection = bed1.intersect(bed2, c=count)
+        intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'])
     else:
-        subprocess.run(f'bedtools intersect -a {path_bedfile1} -b {path_bedfile2} > {path_output}', shell=True)
+        intersection = bed1.intersect(bed2)
+        intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end'])
     
-    return path_output
+    
 
+    return intersection
+        
 
-def getfasta_bedfile(path_bedfile: str, path_simp_genome: str) -> str:
+def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
     """
     Cut sequences from chromosomes using bedtools for coordinates from bed file.
     Args:
-        path_bedfile: path to bed file with coordinates
+        df: pandas DataFrame with coordinates.
         path_simp_genome: path to fasta file with chromosomes.
     Returns:
         string with fasta sequences.
     """
-    proc = subprocess.Popen(f'bedtools getfasta -fi {path_simp_genome} -bed {path_bedfile}', shell=True, stdout=subprocess.PIPE)
-    output = proc.stdout.read().decode("utf-8").split('>')[1:]
+    fasta = pybedtools.BedTool(path_simp_genome)
+    df_to_search = df
+    df_to_search['chr'] = 'chr' + df_to_search['chr']
+    bed = pybedtools.BedTool.from_dataframe(df_to_search)
+    fasta_bed = bed.sequence(fi=fasta)
 
     records = []
-
-    for record in output:
-        record_id = record.split('\n')[0]
-        record_seq = ''.join(record.split('\n')[1:])
-        records.append(SeqRecord(Seq(record_seq), id=record_id, description=''))
+    for record in SeqIO.parse(fasta_bed.seqfn, 'fasta'):
+        records.append(record)
 
     return records
 
@@ -211,6 +230,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
         dictionary with cell types as keys and changed pandas DataFrames as values.
     """
     df = _concat_dfs(dfs_dict)
+    df = _sort_df(df, 'x')
     for name, cell_df in dfs_dict.items():
         cell_type = cell_df['cell_type'].unique()[0]
         f = lambda x: 1 if x['cell_type'] == cell_type else 0
@@ -221,9 +241,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
 
 
 
-def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, 
-                           anchors_df: pd.DataFrame, experiment: str, r: int, 
-                           motifs_path: str=None,) -> pd.DataFrame:
+def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str, r: int) -> pd.DataFrame:
     """
     Count the number of experiment peaks in both regions of each chromatin loop.
     Args:
@@ -237,84 +255,28 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame,
         pandas DataFrame with chromatin loops and the numbers of experiment peaks in both regions of each loop
         and columns with counts of each motif in each region if motifs_path is not None.
     """
-    # add columns for peak counts
-    main_df['x_'+experiment+'_count'] = 0
-    main_df['y_'+experiment+'_count'] = 0
-    
-    if motifs_path:
-        motifs_dict = {}
-        motifs_list = []
-        for m in motifs.parse(open(motifs_path), "jaspar"):
-            # create unique names for each motif
-            motif_name = m.name.upper()
-            if motif_name not in motifs_dict.keys():
-                motifs_dict[motif_name] = 0
-            else:
-                motifs_dict[motif_name] += 1
-                motif_name = f'{motif_name}_{motifs_dict[motif_name]}'
-            motifs_list.append((motif_name, m.pssm))
-            assert f'x_{motif_name}_f' not in main_df.columns, f'column {motif_name} already exists in main_df'
+    for region in ['x', 'y']:
+        second_reg = 'y' if region == 'x' else 'x'
+        peak_counts = main_df[['chr', f'{region}_start', f'{region}_end', f'{second_reg}', 'cell_type']]
+        peak_counts = get_overlapping_regions(peak_counts, peaks_df, count=True)
+        peak_counts.rename(columns={'count': f'{region}_{experiment}_counts',
+                                    'start': f'{region}_start',
+                                    'end': f'{region}_end',
+                                    'second_reg': f'{second_reg}'}, inplace=True)
 
-            # add columns for each motif counts
-            main_df[f'x_motif_{motif_name}_f'] = 0
-            main_df[f'x_motif_{motif_name}_b'] = 0
-            main_df[f'y_motif_{motif_name}_f'] = 0
-            main_df[f'y_motif_{motif_name}_b'] = 0
+        assert len(peak_counts) == len(main_df), 'Length of the main_df and peak_counts are not equal'
 
-    # group by chromosome
-    main_df_grouped = main_df.groupby('chr')
-    peaks_df_grouped = peaks_df.groupby('chr')
+        main_len_before = len(main_df)
+        main_df = main_df.merge(peak_counts)
 
-    for main_chr, main_df_chr in tqdm(main_df_grouped):
-        for peaks_chr, peaks_df_chr in peaks_df_grouped:
-            # if chromosome is the same
-            if main_chr == peaks_chr:
-                    for idx, row in tqdm(main_df_chr.iterrows()):
-                        for region in ['x', 'y']:
-                            anchor_start = row[region] - r
-                            anchor_end = row[region] + r
-                            # find all peaks overlapping with anchor and count them
-                            overlapping_peaks = peaks_df_chr[~(peaks_df_chr['start'] > anchor_end)&
-                                                             ~(peaks_df_chr['end'] < anchor_start)]
-                            main_df.loc[idx, f'{region}_{experiment}_count'] = len(overlapping_peaks)
-                            
-                            # find motif counts in anchor
-                            if motifs_path:
-                                # find anchor sequence
-                                anchor_record = anchors_df[(anchors_df['start'] == anchor_start)&(anchors_df['chr'] == main_chr)]
-                                assert len(anchor_record) == 1, f'not found or more than 1 anchor with coordinates found: {main_chr}:{anchor_start}-{anchor_end}'
-                                anchor_seq = anchor_record.iloc[0]['seq']
-                                # iterate over motifs
-                                for motif_name, motif_pssm in motifs_list:
-                                    count_peak_f = 0
-                                    count_peak_b = 0
-                                    # iterate over peaks of open chromatin
-                                    for _, peak in overlapping_peaks.iterrows():
-                                        peak_start = max(peak['start'], anchor_start)
-                                        peak_end = min(peak['end'], anchor_end)
-                                        seq_to_search = anchor_seq[int(peak_start-anchor_start):int(peak_end-anchor_start+1)]
-                                        # check if motif is not longer than region of open chromatin to search
-                                        if not len(motif_pssm[0]) > len(seq_to_search):
-                                            for position, _ in motif_pssm.search(seq_to_search):
-                                                if position >= 0:
-                                                    if region == 'x':
-                                                        count_peak_f += 1
-                                                    else:
-                                                        count_peak_b += 1
-                                                else:
-                                                    if region == 'x':
-                                                        count_peak_b += 1
-                                                    else:
-                                                        count_peak_f += 1
-
-                                    main_df.loc[idx, f'{region}_motif_{motif_name}_f'] = count_peak_f
-                                    main_df.loc[idx, f'{region}_motif_{motif_name}_b'] = count_peak_b
+        assert len(main_df) == main_len_before, 'Length of the main_df changed after merging'
 
     return main_df
 
 
+
 def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dict[str, pd.DataFrame], 
-                anchors_df: pd.DataFrame, experiment: str, r: int, motifs_path: str=None) -> pd.DataFrame:
+                experiment: str, r: int) -> pd.DataFrame:
     """
     Count the number of peaks in both regions of each chromatin loop,
     for each dataframe from the main_dfs_dict dictionary.
@@ -329,10 +291,7 @@ def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dic
         dictionary with cell types as keys and pandas DataFrames with chromatin loops and the numbers of peaks 
         (and motifs counts if motifs_path is not None) in both regions of each loop as values.
     """
-    if motifs_path:
-        print(f'Adding peaks counts for {experiment} and motifs counts...')
-    else:
-        print(f'Adding peaks counts for {experiment}...')
+    print(f'Adding peaks counts for {experiment}...')
     # if main_dfs_dict values are not DataFrames, load them
     if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
         main_dfs_dict = _dict_partitions(main_dfs_dict)
@@ -340,7 +299,7 @@ def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dic
         print(f'...for {peaks_name} cell...')
         for main_name, main_df in main_dfs_dict.items():
             if main_name == peaks_name:
-                main_df = _count_peaks_single_df(main_df, peaks_df, anchors_df, experiment, r, motifs_path)
+                main_df = _count_peaks_single_df(main_df, peaks_df, experiment, r)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 

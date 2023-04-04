@@ -93,25 +93,25 @@ fasta_anchors_with_open_chromtin:
     format: "fasta"
 
 
-df_anchors_with_open_chromtin:
-  type: pandas.CSVDataSet
-  filepath: data/02_intermediate/anchors_with_open_chromtin.csv
-  load_args:
-    delimiter: "\t"
-  save_args:
-    sep: "\t"
+# df_anchors_with_open_chromtin:
+#   type: pandas.CSVDataSet
+#   filepath: data/02_intermediate/anchors_with_open_chromtin.csv
+#   load_args:
+#     delimiter: "\t"
+#   save_args:
+#     sep: "\t"
 
 
 combined_functional_genomics_data:
   type: PartitionedDataSet
-  path: data/03_primary
+  path: data/03_primary/OLD_pipeline
   dataset: 
     type: pandas.CSVDataSet
     load_args:
       delimiter: "\t"
     save_args:
       sep: "\t"
-  filename_suffix: ".txt"
+  filename_suffix: ".csv"
 
 
 motifs_found:
