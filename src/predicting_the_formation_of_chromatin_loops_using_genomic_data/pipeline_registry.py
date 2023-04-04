@@ -18,6 +18,5 @@ def register_pipelines() -> Dict[str, Pipeline]:
     return {
         "__default__": data_downloading_pipeline + data_preprocessing_pipeline,
         "data_downloading": data_downloading_pipeline,
-        #"data_preprocessing": data_preprocessing_pipeline,
-        "data_preprocessing_old": data_preprocessing_pipeline
+        "data_preprocessing": data_preprocessing_pipeline
     }

@@ -63,17 +63,17 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="readed_CTCF_ChIP_seq_peaks",
                 name="read_CTCF_ChIP_seq_peaks_node",
             ),
-            # node(
-            #     func=read_bigWig,
-            #     inputs=["DNAse_seq_bigWig", "cells2names", "params:DNase-seq_bigWig"],
-            #     outputs="readed_DNase_seq_bigWig",
-            #     name="read_DNase_seq_bigWig_data_node",
-            # ),node(
-            #     func=read_bigWig,
-            #     inputs=["CTCF_ChIP_seq_bigWig", "cells2names", "params:CTCF_ChIP-seq_bigWig"],
-            #     outputs="readed_CTCF_ChIP_seq_bigWig",
-            #     name="read_CTCF_ChIP_seq_bigWig_data_node",
-            # ),
+            node(
+                func=read_bigWig,
+                inputs=["DNAse_seq_bigWig", "cells2names", "params:DNase-seq_bigWig"],
+                outputs="readed_DNase_seq_bigWig",
+                name="read_DNase_seq_bigWig_data_node",
+            ),node(
+                func=read_bigWig,
+                inputs=["CTCF_ChIP_seq_bigWig", "cells2names", "params:CTCF_ChIP-seq_bigWig"],
+                outputs="readed_CTCF_ChIP_seq_bigWig",
+                name="read_CTCF_ChIP_seq_bigWig_data_node",
+            ),
             node(
                 func=count_peaks,
                 inputs=["concat_label_HiC_loops_anotations", "readed_CTCF_ChIP_seq_peaks", "params:CTCF_ChIP-seq_peaks", "params:radius"],
@@ -83,20 +83,20 @@ def create_pipeline(**kwargs) -> Pipeline:
             node(
                 func=count_peaks,
                 inputs=["HiC_loops_anotations_with_CTCF_ChIP_seq_peaks", "readed_DNase_seq_peaks", "params:DNase-seq_peaks", "params:radius"],
-                outputs="combined_functional_genomics_data",
+                outputs="HiC_loops_anotations_with_DNase_seq_peaks",
                 name="add_DNase_seq_peaks_node",
             ),
-            # node(
-            #     func=add_bigWig_data,
-            #     inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "readed_DNase_seq_bigWig", "params:DNase-seq_bigWig", "params:radius"],
-            #     outputs="HiC_loops_anotations_with_DNase_seq_bigWig_data",
-            #     name="add_DNase_seq_bigWig_data_node",
-            # ),
-            # node(
-            #     func=add_bigWig_data,
-            #     inputs=["HiC_loops_anotations_with_DNase_seq_bigWig_data", "readed_CTCF_ChIP_seq_bigWig", "params:CTCF_ChIP-seq_bigWig", "params:radius"],
-            #     outputs="combined_functional_genomics_data",
-            #     name="add_CTCF_ChIP_seq_bigWig_data_node",
-            # ),
+            node(
+                func=add_bigWig_data,
+                inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "readed_DNase_seq_bigWig", "params:DNase-seq_bigWig", "params:radius"],
+                outputs="HiC_loops_anotations_with_DNase_seq_bigWig_data",
+                name="add_DNase_seq_bigWig_data_node",
+            ),
+            node(
+                func=add_bigWig_data,
+                inputs=["HiC_loops_anotations_with_DNase_seq_bigWig_data", "readed_CTCF_ChIP_seq_bigWig", "params:CTCF_ChIP-seq_bigWig", "params:radius"],
+                outputs="combined_functional_genomics_data",
+                name="add_CTCF_ChIP_seq_bigWig_data_node",
+            ),
         ]
     )
