@@ -13,35 +13,36 @@ import warnings
 
 warnings.simplefilter(action="ignore")
 
-
-def simplify_genome_file(path: str) -> list:
-    """Get chromosomes dict from fasta file.
-    Args:
-        path (str): path to fasta file with genome.
-    Returns:
-        list of SeqRecord objects.
+def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
     """
-    genome = SeqIO.parse(open(path), 'fasta')
-    chromosomes = []
-    for sequence in genome:
-        desc = sequence.description
-        seq_id = sequence.id
-        if seq_id.startswith('NC') and 'chromosome' in desc:
-            chrom = 'chr' + desc.split('chromosome ')[1].split(',')[0]
-            chromosomes.append(SeqRecord(sequence.seq, id=chrom, description=''))
-    
-    return chromosomes
+    Sort the dataframe by chromosome and position.
+    Args:
+        df: pandas DataFrame.
+        region_name: name of the column with regions.
+    Returns:
+        sorted pandas DataFrame.
+    """
+    df.loc[df['chr'] == 'X', 'chr'] = 100
+    df.loc[df['chr'] == 'Y', 'chr'] = 200
+    df['chr'] = df['chr'].astype(int)
+    df = df.sort_values(by=['chr', region_name])
+    df.loc[df['chr'] == 100, 'chr'] = 'X'
+    df.loc[df['chr'] == 200, 'chr'] = 'Y'
+    df['chr'] = df['chr'].astype(str)
+
+    return df
 
     
 def read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
+                dataset_name: str, r: int) -> Dict[str, pd.DataFrame]:
     """
     Load and modify the dataframes with chromatin loops anotations.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
+        r: radius of the region.
     Returns:
         dictionary with cell types as keys and pandas DataFrames as values.
     """
@@ -57,13 +58,17 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         df["chr2"] = df.apply(f2, axis=1)
         assert len(df[df['chr1']!=df['chr2']]) == 0
         df.rename(columns={'chr1': 'chr'}, inplace=True)
-        df['x'] = round((df['x1'] + df['x2'])/2)
-        df['y'] = round((df['y1'] + df['y2'])/2)
+        for region in ['x', 'y']:
+            df[f'{region}'] = (round((df[f'{region}1'] + df[f'{region}2'])/2)).astype(int)
+            df[f'{region}_start'] = (df[f'{region}'] - r).astype(int)
+            df[f'{region}_end'] = (df[f'{region}'] + r).astype(int)
         df['len_anchors'] = (df['x2']-df['x1'])+(df['y2']-df['y1']) # add length of both anchors
         df['len_loop'] = (df['y2']-df['x1']) # add length of loop
         df['cell_type'] = cell_type
-        df = df[df.columns.intersection(['x', 'y', 'chr', 'cell_type'])]
-        df = df.sort_values(by=['x'])
+        df = df[df.columns.intersection(['x', 'y', 'x_start', 'x_end', 'y_start', 'y_end', 'chr', 'cell_type'])]
+        # sort by chr and x
+        df = _sort_df(df, 'x')
+
         new_dfs_dict[cell_type] = df
 
     return new_dfs_dict
@@ -168,6 +173,8 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
         dictionary with cell types as keys and changed pandas DataFrames as values.
     """
     df = _concat_dfs(dfs_dict)
+    df = _sort_df(df, 'x')
+    df = df.reset_index(drop=True)
     for name, cell_df in dfs_dict.items():
         cell_type = cell_df['cell_type'].unique()[0]
         f = lambda x: 1 if x['cell_type'] == cell_type else 0
