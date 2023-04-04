@@ -13,6 +13,7 @@ conf/**/*credentials*
 data/**
 logs/**
 notebooks/**
+plots/**
 
 # except their sub-folders
 !data/**/
