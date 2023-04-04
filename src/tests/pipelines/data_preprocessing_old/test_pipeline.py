@@ -1,5 +1,5 @@
 """
-This is a boilerplate test file for pipeline 'hiccups_preprocessing'
+This is a boilerplate test file for pipeline 'data_preprocessing_old'
 generated using Kedro 0.18.6.
 Please add your pipeline tests here.
 
