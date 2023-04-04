@@ -1,4 +1,4 @@
-name: mgr
+name: predicting_the_formation_of_chromatin_loops_using_genomic_data
 channels:
   - conda-forge
   - bioconda
