@@ -1,3 +1,4 @@
+# parameters for old data_preprocessing pipeline
 # radius: 2500
 # # datasets names 
 # HiC_data: HiC_loops_annotations
