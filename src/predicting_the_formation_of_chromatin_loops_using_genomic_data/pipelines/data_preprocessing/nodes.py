@@ -325,7 +325,7 @@ def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     # sort by chr and region
     df = _sort_df(df, 'start')
     # remove duplicate rows
-    df = df.drop_duplicates()
+    #df = df.drop_duplicates()
     # reset index
     df = df.reset_index(drop=True)
     df = df[['chr', 'start', 'end']]
@@ -344,7 +344,7 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
     """
     fasta = pybedtools.BedTool(path_simp_genome)
     df_to_search = df
-    df_to_search['chr'] = 'chr' + df_to_search['chr']
+    df_to_search['chr'] = 'chr' + df_to_search['chr'].astype(str)
     bed = pybedtools.BedTool.from_dataframe(df_to_search)
     fasta_bed = bed.sequence(fi=fasta)
 
