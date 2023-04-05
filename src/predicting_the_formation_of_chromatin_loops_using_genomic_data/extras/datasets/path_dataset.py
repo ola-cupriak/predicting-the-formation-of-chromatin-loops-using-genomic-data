@@ -21,7 +21,7 @@ class PathDataSet(AbstractDataSet):
         return self._filepath
 
     def _save(self) -> None:
-        return self._filepath
+        return None
 
     def _describe(self) -> None:
         """Returns a dict that describes the attributes of the dataset."""
