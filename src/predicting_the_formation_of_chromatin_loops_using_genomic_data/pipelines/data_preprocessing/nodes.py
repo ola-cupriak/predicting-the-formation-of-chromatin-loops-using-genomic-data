@@ -156,7 +156,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     return dfs_dict
 
 
-def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = False) -> pd.DataFrame:
+def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = False, wa: bool = False, wb: bool = False) -> pd.DataFrame:
     """
     Get overlapping regions from two bed files.
     Args:
@@ -172,11 +172,13 @@ def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = 
         intersection = bed1.intersect(bed2, c=count)
         intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'])
     else:
-        intersection = bed1.intersect(bed2)
-        intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end'])
+        if wa and wb:
+            intersection = bed1.intersect(bed2, wa=wa, wb=wb)
+            intersection = pd.read_table(intersection.fn, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 'peak_start', 'peak_end'])
+        else:
+            intersection = bed1.intersect(bed2)
+            intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end'])
     
-    
-
     return intersection
 
 
@@ -325,13 +327,25 @@ def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     # sort by chr and region
     df = _sort_df(df, 'start')
     # remove duplicate rows
-    #df = df.drop_duplicates()
+    df = df.drop_duplicates()
     # reset index
     df = df.reset_index(drop=True)
     df = df[['chr', 'start', 'end']]
 
     return df
-        
+
+
+def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    """
+    intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, wa=True, wb=True)
+    intersection = get_overlapping_regions(anchors_df, peaks_df)
+
+    joined_intersection = pd.merge(intersection_wa_wb, intersection, left_index=True, right_index=True)
+    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}-{x['anchor_end']}:{x['peak_start']}-{x['peak_end']}:{x['start']}-{x['end']}", axis=1)
+
+    return joined_intersection[['chr', 'start', 'end', 'name']]
+
 
 def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
     """
@@ -346,7 +360,7 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
     df_to_search = df
     df_to_search['chr'] = 'chr' + df_to_search['chr'].astype(str)
     bed = pybedtools.BedTool.from_dataframe(df_to_search)
-    fasta_bed = bed.sequence(fi=fasta)
+    fasta_bed = bed.sequence(fi=fasta, nameOnly=True)
 
     records = []
     for record in SeqIO.parse(fasta_bed.seqfn, 'fasta'):
