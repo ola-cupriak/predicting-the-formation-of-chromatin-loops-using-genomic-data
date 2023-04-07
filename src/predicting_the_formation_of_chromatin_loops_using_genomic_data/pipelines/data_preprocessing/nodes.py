@@ -11,6 +11,8 @@ from Bio import motifs
 import pybedtools
 import subprocess
 import warnings
+from io import StringIO
+
 
 warnings.simplefilter(action="ignore")
 
@@ -347,7 +349,7 @@ def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) ->
     return joined_intersection[['chr', 'start', 'end', 'name']]
 
 
-def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
+def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str) -> str:
     """
     Cut sequences from chromosomes using bedtools for coordinates from bed file.
     Args:
@@ -365,42 +367,10 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
     records = []
     for record in SeqIO.parse(fasta_bed.seqfn, 'fasta'):
         records.append(record)
-
-    return records
-
-
-
-def _motifs2dict(path_motifs: str) -> dict:
-    motifs_names_count = {}
-    motifs_dict = {}
-    for motif in tqdm(motifs.parse(open(path_motifs), "jaspar")):
-        motif_pssm = motif.pssm
-        motif_name = motif.name.upper()
-        # create unique names for each motif
-        if motif_name not in motifs_names_count.keys():
-            motifs_names_count[motif_name] = 0
-        else:
-            motifs_names_count[motif_name] += 1
-            motif_name = f'{motif_name}_{motifs_names_count[motif_name]}'
-        motifs_dict[motif_name] = motif_pssm
-        
-    assert len(set(motifs_dict.keys())) == len(motifs_dict), 'Motif names are not unique!'
     
-    return motifs_dict
+    SeqIO.write(records, path_to_save, "fasta")
 
-
-def _get_motifs_thresholds(motifs_dict: dict, background) -> dict:
-
-    thresholds_dict = {}
-    for motif_name, pssm in motifs_dict.items():
-        distribution = pssm.distribution(background=background, precision=10**4)
-        threshold = distribution.threshold_balanced(1000)
-        thresholds_dict[motif_name] = threshold
-
-    return thresholds_dict
-    
-
-def find_motifs(path_motifs: str, fasta_to_search: list) -> pd.DataFrame:
+    return path_to_save
     """
     """
     motifs_dict = _motifs2dict(path_motifs)
@@ -434,3 +404,17 @@ def find_motifs(path_motifs: str, fasta_to_search: list) -> pd.DataFrame:
     motifs_df = pd.DataFrame(motifs_count)
 
     return motifs_df
+
+
+def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
+
+    path_for_meme = path_motifs.replace('.txt', '.meme')
+    # change jaspar format to meme format
+    subprocess.run(f'jaspar2meme -bundle {path_motifs} > {path_for_meme}', shell=True)
+
+    proc = subprocess.Popen(f'fimo --text {path_for_meme} {path_fasta}', stdout=subprocess.PIPE, shell=True)
+    output = proc.stdout.read().decode("utf-8") 
+    csvStringIO = StringIO(output)
+    df = pd.read_csv(csvStringIO, sep="\t")
+
+    return df

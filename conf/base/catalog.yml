@@ -84,24 +84,6 @@ overlaps_HiC_loops_DNase_seq_named:
     sep: "\t"
 
 
-fasta_anchors_with_open_chromtin:
-  type: kedro_datasets.biosequence.BioSequenceDataSet
-  filepath: data/02_intermediate/anchors_with_open_chromtin.fasta
-  load_args:
-    format: "fasta"
-  save_args:
-    format: "fasta"
-
-
-# df_anchors_with_open_chromtin:
-#   type: pandas.CSVDataSet
-#   filepath: data/02_intermediate/anchors_with_open_chromtin.csv
-#   load_args:
-#     delimiter: "\t"
-#   save_args:
-#     sep: "\t"
-
-
 combined_functional_genomics_data:
   type: PartitionedDataSet
   path: data/03_primary
@@ -114,9 +96,9 @@ combined_functional_genomics_data:
   filename_suffix: ".csv"
 
 
-motif_counts_in_anchors_with_open_chromtin:
+motifs_found_anchors_with_open_chromatin:
   type: pandas.CSVDataSet
-  filepath: data/02_intermediate/motif_counts.csv
+  filepath: data/02_intermediate/motifs_found_anchors_with_open_chromatin.tsv
   load_args:
     delimiter: "\t"
   save_args:

@@ -47,18 +47,18 @@ def create_pipeline(**kwargs) -> Pipeline:
             #     outputs="overlaps_HiC_loops_DNase_seq_named",
             #     name="find_overlaps_HiC_loops_DNase_seq_node",
             # ),
-            # node(
-            #     func=getfasta_bedfile,
-            #     inputs=["overlaps_HiC_loops_DNase_seq_named", "params:path_hg19_simplified"],
-            #     outputs="fasta_anchors_with_open_chromtin",
-            #     name="getfasta_anchors_with_open_chromtin_node",
-            # ),
+            node(
+                func=getfasta_bedfile,
+                inputs=["overlaps_HiC_loops_DNase_seq_named", "params:path_hg19_simplified", "params:path_fasta_anchors_with_open_chromtin"],
+                outputs="path_fasta_anchors_with_open_chromtin",
+                name="getfasta_anchors_with_open_chromtin_node",
+            ),
             node(
                 func=find_motifs,
-                inputs=["params:path_motifs_JASPAR_vertebrates", "fasta_anchors_with_open_chromtin"],
-                outputs="motif_counts_in_anchors_with_open_chromtin",
+                inputs=["params:path_motifs_JASPAR_vertebrates", "path_fasta_anchors_with_open_chromtin"],
+                outputs="motifs_found_anchors_with_open_chromatin",
                 name="find_motifs_in_anchors_with_open_chromtin_node",
-            )
+            ),
             # node(
             #     func=anchors2df,
             #     inputs="getfasta_anchors_with_open_chromtin_node",
