@@ -1,4 +1,4 @@
-name: predicting_the_formation_of_chromatin_loops_using_genomic_data
+name: mgr
 channels:
   - conda-forge
   - bioconda
@@ -6,6 +6,7 @@ dependencies:
   - bioconda::pybedtools~=0.8.2
   - conda-forge::matplotlib~=3.7.0
   - conda-forge::matplotlib-venn~=0.11.9
+  - bioconda::meme~=5.4.1
   - numpy~=1.23.5
   - pandas~=1.5.3
   - prettytable~=3.5.0
