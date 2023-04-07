@@ -355,8 +355,9 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     Args:
         df: pandas DataFrame with coordinates.
         path_simp_genome: path to fasta file with chromosomes.
+        path_to_save: path to save fasta file.
     Returns:
-        string with fasta sequences.
+        path_to_save: path to fasta file.
     """
     fasta = pybedtools.BedTool(path_simp_genome)
     df_to_search = df
@@ -371,50 +372,28 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     SeqIO.write(records, path_to_save, "fasta")
 
     return path_to_save
-    """
-    """
-    motifs_dict = _motifs2dict(path_motifs)
-    #threshold_dict = _get_motifs_thresholds(motifs_dict, background={'A':0.3,'C':0.2,'G':0.2,'T':0.3})
-    seq_no = len(fasta_to_search)
-    motifs_count = {motif+'_f': [0]*seq_no for motif in motifs_dict.keys()}
-    motifs_count.update({motif+'_r': [0]*seq_no for motif in motifs_dict.keys()})
-    motifs_count.update({'chr': [0]*seq_no, 'start': [0]*seq_no, 'end': [0]*seq_no})
-
-    # interate through sequences
-    for i in tqdm(range(len(fasta_to_search))):
-        record = fasta_to_search[i]
-        seq = record.seq
-        motifs_count['chr'][i] = record.id.split(':')[0]
-        motifs_count['start'][i] = int(record.id.split(':')[1].split('-')[0])
-        motifs_count['end'][i] = int(record.id.split(':')[1].split('-')[1])
-        # iterate through motifs
-        for motif, pssm in motifs_dict.items():
-            # find forward matches
-            forward = 0
-            backward = 0
-            if len(seq) >= pssm.length:
-                for position, _ in pssm.search(seq, threshold=0.0):
-                    if position < 0:
-                        backward += 1
-                    else:
-                        forward += 1
-            motifs_count[motif+'_f'][i] = forward
-            motifs_count[motif+'_r'][i] = backward
-    
-    motifs_df = pd.DataFrame(motifs_count)
-
-    return motifs_df
 
 
 def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
-
-    path_for_meme = path_motifs.replace('.txt', '.meme')
+    """
+    Find motifs in fasta sequences.
+    Args:
+        path_motifs: path to file with motifs in jaspar format.
+        path_fasta: path to fasta file with sequences.
+    Returns:
+        pandas DataFrame with motifs found.
+    """
     # change jaspar format to meme format
+    path_for_meme = path_motifs.replace('.txt', '.meme')
     subprocess.run(f'jaspar2meme -bundle {path_motifs} > {path_for_meme}', shell=True)
-
+    # find motifs
     proc = subprocess.Popen(f'fimo --text {path_for_meme} {path_fasta}', stdout=subprocess.PIPE, shell=True)
     output = proc.stdout.read().decode("utf-8") 
     csvStringIO = StringIO(output)
     df = pd.read_csv(csvStringIO, sep="\t")
 
     return df
+
+
+def count_motifs(df: pd.DataFrame):
+    pass
