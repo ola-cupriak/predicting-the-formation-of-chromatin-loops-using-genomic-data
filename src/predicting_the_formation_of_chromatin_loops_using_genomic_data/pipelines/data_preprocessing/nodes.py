@@ -369,21 +369,68 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str) -> str:
     return records
 
 
-def anchors2df(anchors_fasta: list) -> pd.DataFrame:
-    """Convert anchors fasta file to pandas DataFrame.
-    Args:
-        anchors_fasta (str): string with fasta sequences for anchors.
-    Returns:
-        pandas DataFrame with anchors coordinates and sequences.
+
+def _motifs2dict(path_motifs: str) -> dict:
+    motifs_names_count = {}
+    motifs_dict = {}
+    for motif in tqdm(motifs.parse(open(path_motifs), "jaspar")):
+        motif_pssm = motif.pssm
+        motif_name = motif.name.upper()
+        # create unique names for each motif
+        if motif_name not in motifs_names_count.keys():
+            motifs_names_count[motif_name] = 0
+        else:
+            motifs_names_count[motif_name] += 1
+            motif_name = f'{motif_name}_{motifs_names_count[motif_name]}'
+        motifs_dict[motif_name] = motif_pssm
+        
+    assert len(set(motifs_dict.keys())) == len(motifs_dict), 'Motif names are not unique!'
+    
+    return motifs_dict
+
+
+def _get_motifs_thresholds(motifs_dict: dict, background) -> dict:
+
+    thresholds_dict = {}
+    for motif_name, pssm in motifs_dict.items():
+        distribution = pssm.distribution(background=background, precision=10**4)
+        threshold = distribution.threshold_balanced(1000)
+        thresholds_dict[motif_name] = threshold
+
+    return thresholds_dict
+    
+
+def find_motifs(path_motifs: str, fasta_to_search: list) -> pd.DataFrame:
     """
-    dict2df = {'chr': [], 'start': [], 'end': [], 'seq': []}
-    for record in anchors_fasta:
-        dict2df['chr'].append(record.id.split(':')[0].split('chr')[-1])
-        dict2df['start'].append(int(record.id.split(':')[1].split('-')[0]))
-        dict2df['end'].append(int(record.id.split(':')[1].split('-')[1]))
-        dict2df['seq'].append(str(record.seq))
+    """
+    motifs_dict = _motifs2dict(path_motifs)
+    #threshold_dict = _get_motifs_thresholds(motifs_dict, background={'A':0.3,'C':0.2,'G':0.2,'T':0.3})
+    seq_no = len(fasta_to_search)
+    motifs_count = {motif+'_f': [0]*seq_no for motif in motifs_dict.keys()}
+    motifs_count.update({motif+'_r': [0]*seq_no for motif in motifs_dict.keys()})
+    motifs_count.update({'chr': [0]*seq_no, 'start': [0]*seq_no, 'end': [0]*seq_no})
 
-    anchors_df = pd.DataFrame(dict2df)
-    anchors_df = anchors_df.sort_values(by=['chr', 'start'])
+    # interate through sequences
+    for i in tqdm(range(len(fasta_to_search))):
+        record = fasta_to_search[i]
+        seq = record.seq
+        motifs_count['chr'][i] = record.id.split(':')[0]
+        motifs_count['start'][i] = int(record.id.split(':')[1].split('-')[0])
+        motifs_count['end'][i] = int(record.id.split(':')[1].split('-')[1])
+        # iterate through motifs
+        for motif, pssm in motifs_dict.items():
+            # find forward matches
+            forward = 0
+            backward = 0
+            if len(seq) >= pssm.length:
+                for position, _ in pssm.search(seq, threshold=0.0):
+                    if position < 0:
+                        backward += 1
+                    else:
+                        forward += 1
+            motifs_count[motif+'_f'][i] = forward
+            motifs_count[motif+'_r'][i] = backward
+    
+    motifs_df = pd.DataFrame(motifs_count)
 
-    return anchors_df
+    return motifs_df

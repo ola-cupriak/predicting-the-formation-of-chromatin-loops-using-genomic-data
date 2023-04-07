@@ -4,7 +4,15 @@ generated using Kedro 0.18.6
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import read_hic, add_labels, read_peaks, count_peaks, read_bigWig, add_bigWig_data, all_anchors2one_df, getfasta_bedfile, anchors2df, all_peaks2one_df, get_overlapping_regions, get_overlaps_with_names
+from .nodes import read_hic, read_peaks, read_bigWig
+from .nodes import add_labels
+from .nodes import count_peaks
+from .nodes import add_bigWig_data
+from .nodes import all_anchors2one_df, all_peaks2one_df
+from .nodes import get_overlapping_regions, get_overlaps_with_names
+from .nodes import getfasta_bedfile
+from .nodes import find_motifs
+
 
 def create_pipeline(**kwargs) -> Pipeline:
     return pipeline(
@@ -33,18 +41,24 @@ def create_pipeline(**kwargs) -> Pipeline:
             #     outputs="merged_DNase_seq_peaks",
             #     name="merge_DNase_seq_peaks_to_one_df_node",
             # ),
+            # node(
+            #     func=get_overlaps_with_names,
+            #     inputs=["merged_HiC_loops_anotations", "merged_DNase_seq_peaks"],
+            #     outputs="overlaps_HiC_loops_DNase_seq_named",
+            #     name="find_overlaps_HiC_loops_DNase_seq_node",
+            # ),
+            # node(
+            #     func=getfasta_bedfile,
+            #     inputs=["overlaps_HiC_loops_DNase_seq_named", "params:path_hg19_simplified"],
+            #     outputs="fasta_anchors_with_open_chromtin",
+            #     name="getfasta_anchors_with_open_chromtin_node",
+            # ),
             node(
-                func=get_overlaps_with_names,
-                inputs=["merged_HiC_loops_anotations", "merged_DNase_seq_peaks"],
-                outputs="overlaps_HiC_loops_DNase_seq_named",
-                name="find_overlaps_HiC_loops_DNase_seq_node",
-            ),
-            node(
-                func=getfasta_bedfile,
-                inputs=["overlaps_HiC_loops_DNase_seq_named", "params:path_hg19_simplified"],
-                outputs="fasta_anchors_with_open_chromtin",
-                name="getfasta_anchors_with_open_chromtin_node",
-            ),
+                func=find_motifs,
+                inputs=["params:path_motifs_JASPAR_vertebrates", "fasta_anchors_with_open_chromtin"],
+                outputs="motif_counts_in_anchors_with_open_chromtin",
+                name="find_motifs_in_anchors_with_open_chromtin_node",
+            )
             # node(
             #     func=anchors2df,
             #     inputs="getfasta_anchors_with_open_chromtin_node",

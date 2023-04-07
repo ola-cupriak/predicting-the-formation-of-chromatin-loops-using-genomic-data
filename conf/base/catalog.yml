@@ -75,7 +75,7 @@ merged_DNase_seq_peaks:
     sep: "\t"
 
 
-overlaps_HiC_loops_DNase_seq:
+overlaps_HiC_loops_DNase_seq_named:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/overlaps_HiC_loops_DNase_seq.csv
   load_args:
@@ -114,13 +114,10 @@ combined_functional_genomics_data:
   filename_suffix: ".csv"
 
 
-motifs_found:
-  type: PartitionedDataSet
-  path: data/02_intermediate/motifs_found
-  dataset: 
-    type: pandas.CSVDataSet
-    load_args:
-      delimiter: "\t"
-    save_args:
-      sep: "\t"
-  filename_suffix: ".txt"
+motif_counts_in_anchors_with_open_chromtin:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/motif_counts.csv
+  load_args:
+    delimiter: "\t"
+  save_args:
+    sep: "\t"
