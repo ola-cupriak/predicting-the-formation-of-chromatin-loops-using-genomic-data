@@ -12,7 +12,7 @@ import pybedtools
 import subprocess
 import warnings
 from io import StringIO
-
+import time
 
 warnings.simplefilter(action="ignore")
 
@@ -96,10 +96,12 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
+        cell_type = cells2names_dataset_dict[keys_dict[name]]
         f = lambda x: x['chr'].split("chr")[-1]
         df["chr"] = df.apply(f, axis=1)
         df = _sort_df(df, 'start')
-        new_dfs_dict[cells2names_dataset_dict[keys_dict[name]]] = df
+        df['cell_type'] = cell_type
+        new_dfs_dict[cell_type] = df
 
     return new_dfs_dict
 
@@ -328,23 +330,31 @@ def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     df = _concat_dfs(peaks_dict)
     # sort by chr and region
     df = _sort_df(df, 'start')
-    # remove duplicate rows
-    df = df.drop_duplicates()
-    # reset index
-    df = df.reset_index(drop=True)
-    df = df[['chr', 'start', 'end']]
 
     return df
+
+
+def _prepare_peaks_df(peaks_df: pd.DataFrame):
+    
+    peaks_df = peaks_df[['chr', 'start', 'end']]
+    # remove duplicate rows
+    peaks_df = peaks_df.drop_duplicates()
+    # reset index
+    peaks_df = peaks_df.reset_index(drop=True)
+
+    return peaks_df
 
 
 def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:
     """
     """
+    peaks_df = _prepare_peaks_df(peaks_df)
+
     intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, wa=True, wb=True)
     intersection = get_overlapping_regions(anchors_df, peaks_df)
 
     joined_intersection = pd.merge(intersection_wa_wb, intersection, left_index=True, right_index=True)
-    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}-{x['anchor_end']}:{x['peak_start']}-{x['peak_end']}:{x['start']}-{x['end']}", axis=1)
+    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}-{x['anchor_end']}:{x['peak_start']}-{x['peak_end']}", axis=1)
 
     return joined_intersection[['chr', 'start', 'end', 'name']]
 
@@ -386,14 +396,20 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     # change jaspar format to meme format
     path_for_meme = path_motifs.replace('.txt', '.meme')
     subprocess.run(f'jaspar2meme -bundle {path_motifs} > {path_for_meme}', shell=True)
+
     # find motifs
+    start = time.time()
+    print('Finding motifs...')
     proc = subprocess.Popen(f'fimo --text {path_for_meme} {path_fasta}', stdout=subprocess.PIPE, shell=True)
     output = proc.stdout.read().decode("utf-8") 
     csvStringIO = StringIO(output)
+    print(f'Done! Time: {time.time() - start} sec')
+
     df = pd.read_csv(csvStringIO, sep="\t")
 
     return df
 
 
 def count_motifs(df: pd.DataFrame):
-    pass
+    
+    return df
