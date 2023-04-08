@@ -219,7 +219,6 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
     return main_df
 
 
-
 def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dict[str, pd.DataFrame], 
                 experiment: str, r: int) -> pd.DataFrame:
     """
@@ -406,6 +405,7 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     print(f'Done! Time: {time.time() - start} sec')
 
     df = pd.read_csv(csvStringIO, sep="\t")
+    df = df['motif_id', 'motif_alt_id',	'sequence_name', 'strand']
 
     return df
 
