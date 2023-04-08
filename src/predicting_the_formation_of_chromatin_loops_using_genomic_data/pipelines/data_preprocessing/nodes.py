@@ -353,7 +353,7 @@ def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) ->
     intersection = get_overlapping_regions(anchors_df, peaks_df)
 
     joined_intersection = pd.merge(intersection_wa_wb, intersection, left_index=True, right_index=True)
-    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}-{x['anchor_end']}:{x['peak_start']}-{x['peak_end']}", axis=1)
+    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}:{x['anchor_end']}:{x['peak_start']}:{x['peak_end']}", axis=1)
 
     return joined_intersection[['chr', 'start', 'end', 'name']]
 
@@ -401,11 +401,13 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     print('Finding motifs...')
     proc = subprocess.Popen(f'fimo --text {path_for_meme} {path_fasta}', stdout=subprocess.PIPE, shell=True)
     output = proc.stdout.read().decode("utf-8") 
+    output = output.replace(':', '\t')
+    output = output.replace('sequence_name', 'chr\tanchor_start\tanchor_end\tpeak_start\tpeak_end')
     csvStringIO = StringIO(output)
     print(f'Done! Time: {time.time() - start} sec')
 
     df = pd.read_csv(csvStringIO, sep="\t")
-    df = df['motif_id', 'motif_alt_id',	'sequence_name', 'strand']
+    df = df[['motif_id', 'motif_alt_id', 'strand', 'chr', 'anchor_start', 'anchor_end', 'peak_start', 'peak_end']]
 
     return df
 
