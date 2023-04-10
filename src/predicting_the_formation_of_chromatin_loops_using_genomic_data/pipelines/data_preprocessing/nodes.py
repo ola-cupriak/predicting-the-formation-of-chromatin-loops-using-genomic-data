@@ -27,13 +27,13 @@ def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
     Returns:
         sorted pandas DataFrame.
     """
-    df.loc[df['chr'] == 'X', 'chr'] = 100
-    df.loc[df['chr'] == 'Y', 'chr'] = 200
+    df.loc[df['chr'] == 'X', 'chr'] = '100'
+    df.loc[df['chr'] == 'Y', 'chr'] = '200'
     df['chr'] = df['chr'].astype(int)
     df = df.sort_values(by=['chr', region_name])
     df.loc[df['chr'] == 100, 'chr'] = 'X'
     df.loc[df['chr'] == 200, 'chr'] = 'Y'
-    df['chr'] = df['chr'].astype(str)
+    df['chr'] = df['chr'].astype('string')
 
     return df
 
@@ -73,6 +73,9 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         df = df[df.columns.intersection(['x', 'y', 'x_start', 'x_end', 'y_start', 'y_end', 'chr', 'cell_type'])]
         # sort by chr and x
         df = _sort_df(df, 'x')
+        # set dtypes
+        df = df.astype({'x': 'int32', 'y': 'int32', 'x_start': 'int32', 'x_end': 'int32', 
+                        'y_start': 'int32', 'y_end': 'int32', 'chr': 'string', 'cell_type': 'string'})
 
         new_dfs_dict[cell_type] = df
 
@@ -101,6 +104,7 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
         df["chr"] = df.apply(f, axis=1)
         df = _sort_df(df, 'start')
         df['cell_type'] = cell_type
+        df['cell_type'] = df['cell_type'].astype('string')
         new_dfs_dict[cell_type] = df
 
     return new_dfs_dict
@@ -155,6 +159,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
         cell_type = cell_df['cell_type'].unique()[0]
         f = lambda x: 1 if x['cell_type'] == cell_type else 0
         df['label'] = df.apply(f, axis=1)
+        df['label'] = df['label'].astype('int16')
         dfs_dict[name] = copy.deepcopy(df)
     
     return dfs_dict
@@ -216,6 +221,9 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
 
         assert len(main_df) == main_len_before, 'Length of the main_df changed after merging'
 
+    to_change_dtype = ['x_DNase_seq_peaks_counts', 'y_DNase_seq_peaks_counts']
+    main_df[to_change_dtype] = main_df[to_change_dtype].astype('int16')
+
     return main_df
 
 
@@ -266,6 +274,9 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
         main_df[f'{region}_{experiment}_mean'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='mean')[0], axis=1)
         main_df[f'{region}_{experiment}_max'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='max')[0], axis=1)
         main_df[f'{region}_{experiment}_min'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='min')[0], axis=1)
+        # change dtype to save memory
+        to_change_dtype = [f'{region}_{experiment}_mean', f'{region}_{experiment}_max', f'{region}_{experiment}_min']
+        main_df[to_change_dtype] = main_df[to_change_dtype].astype('float32')
     return main_df
 
 
@@ -421,78 +432,96 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
         path_motifs: path to file with motifs in jaspar format.
         path_fasta: path to fasta file with sequences.
     Returns:
-        pandas DataFrame with motifs found.
+        pandas DataFrame with counts of motifs found in anchors.
     """
     # change jaspar format to meme format
     path_for_meme = path_motifs.replace('.txt', '.meme')
     subprocess.run(f'jaspar2meme -bundle {path_motifs} > {path_for_meme}', shell=True)
-
     # find motifs
     start = time.time()
     print('Finding motifs...')
     subprocess.run(f'fimo --text {path_for_meme} {path_fasta} > data/temp/temp.csv', shell=True)
     print(f'Finding motifs took {time.time() - start} seconds')
-
+    # read output
     with open('data/temp/temp.csv', 'r') as f:
         output = f.readlines()
-    print('Done1')
+    # save modified output to temp file
     output = _motify_output(output)
-    print('Done2')
     with open('data/temp/temp.csv', 'w') as f:
         f.writelines(output)
     output = None
-    print('Done3')
-    dtypes = {'chr': "category", 'start': "int32", 'end': "int32", 'motif_id': "category", 'cell_type': "category"}
+    # read temp file as pandas DataFrame
+    dtypes = {'chr': "string", 'start': "int32", 'end': "int32", 'motif_id': "string", 'cell_type': "string"}
     df = pd.read_csv('data/temp/temp.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
     subprocess.run('rm data/temp/temp.csv', shell=True)
-    print('Done4')
     df = df[['chr', 'start', 'end', 'motif_id', 'cell_type']]
-    print('Done5')
     len_before = len(df)
+    # count motif occurences
     df = pd.DataFrame(df.groupby(['chr', 'start', 'end', 'cell_type', 'motif_id'], observed=True).size(), columns=['count'])
     df['count'] = df['count'].astype('int16')
     df = df.unstack('motif_id', fill_value=0)
-    print(df.info())
-    print('Done6')
     df.columns = ['_'.join(x) for x in df.columns if x[0]=='count']
     df.reset_index(inplace=True)
     df.rename(columns={name: name.replace('count_', '') for name in df.columns}, inplace=True)
-
+    
     assert sum(df.iloc[:, 4:].sum(axis=1)) == len_before, 'Something went wrong with counting motifs'
     
     return df
 
 
-def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> pd.DataFrame:
+def _reverse_names(colnames: list):
     
-    motifs_colnames = list(motifs_df.columns)
-    motifs_colnames.remove('chr')
-    to_reverse_f = [name for name in motifs_colnames if '_f' in name]
-    to_reverse_r = [name for name in motifs_colnames if '_r' in name]
+    to_reverse_f = [name for name in colnames if '_f' in name]
+    to_reverse_r = [name for name in colnames if '_r' in name]
     to_reverse_f = {name: name.replace('_f', '_r') for name in to_reverse_f}
     to_reverse_r = {name: name.replace('_r', '_f') for name in to_reverse_r}
 
     to_reverse = {**to_reverse_f, **to_reverse_r}
 
+    return to_reverse
+
+
+def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> pd.DataFrame:
+    
+    # change dtypes in main_df
+    main_df[['chr', 'cell_type']] = main_df[['chr', 'cell_type']].astype('string')
+
+    # add id column
+    main_df['id'] = [i for i in range(len(main_df))]
+    assert len(main_df) == len(main_df['id'].unique()), 'Something went wrong with adding id column'
+    main_df_new = copy.deepcopy(main_df)
+    columns_no = len(main_df_new.columns)
+
+    # reverse _f/_r suffix in names of columns with motifs
+    motifs_colnames = list(motifs_df.columns)
+    motifs_colnames.remove('chr')
+    to_reverse = _reverse_names(motifs_colnames)
+
     for region in ['x', 'y']:
         if region == 'y':
             motifs_df = motifs_df.rename(columns=to_reverse)
         motifs_df_renamed = motifs_df.rename(columns={name: f'{region}_{name}' for name in motifs_colnames})
-        main_df = main_df.merge(motifs_df_renamed, on=['chr', f'{region}_start', f'{region}_end'], how='left').fillna("0")
+        main_df_new = main_df_new.merge(motifs_df_renamed, on=['chr', f'{region}_start', f'{region}_end'], how='inner')
+    # add rows with missing ids 
+    motifs_list = list(main_df_new.columns)[columns_no:]
+    to_add = main_df[~main_df['id'].isin(main_df_new['id'])]
+    for m in motifs_list:
+        to_add.loc[:, m] = pd.Series([0]*len(main_df), dtype='int16')
+    main_df_new = pd.concat([main_df_new, to_add], ignore_index=True)
+    main_df_new = _sort_df(main_df_new, 'x_start')
+    main_df_new = main_df_new.loc[:, main_df_new.columns != 'id']
 
-    return main_df
+    return main_df_new
 
 
 
 def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
 
-
     print('Adding motifs counts...')
+    motifs_df[['chr', 'cell_type']] = motifs_df[['chr', 'cell_type']].astype('string')
     # if main_dfs_dict values are not DataFrames, load them
     if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
         main_dfs_dict = _dict_partitions(main_dfs_dict)
-
-    motifs_df[['start', 'end']] = motifs_df[['start', 'end']].astype('int32')
 
     motifs_groups = motifs_df.groupby('cell_type')
 
