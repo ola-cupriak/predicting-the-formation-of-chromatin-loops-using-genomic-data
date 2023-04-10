@@ -28,6 +28,7 @@ DNAse_seq_peaks:
       delimiter: "\t"
       usecols: [0, 1, 2]
       names: ['chr', 'start', 'end']
+      dtype: {'chr': 'string', 'start': 'int32', 'end': 'int32'}
   filename_suffix: ".bed"
 
 
@@ -84,23 +85,22 @@ overlaps_HiC_loops_DNase_seq_named:
     sep: "\t"
 
 
+motifs_found_anchors_with_open_chromatin:
+  type: pandas.ParquetDataSet
+  filepath: data/02_intermediate/motifs_found_anchors_with_open_chromatin.parquet
+  load_args:
+    engine: "pyarrow"
+  save_args:
+    engine: "pyarrow"
+
+  
 combined_functional_genomics_data:
   type: PartitionedDataSet
-  path: data/03_primary/tests
+  path: data/03_primary
   dataset: 
-    type: pandas.CSVDataSet
+    type: pandas.ParquetDataSet
     load_args:
-      delimiter: "\t"
+      engine: "pyarrow"
     save_args:
-      sep: "\t"
-  filename_suffix: ".csv"
-
-
-motifs_found_anchors_with_open_chromatin:
-  type: pandas.CSVDataSet
-  filepath: data/02_intermediate/motifs_found_anchors_with_open_chromatin.tsv
-  load_args:
-    delimiter: "\t"
-    dtype: "category"
-  save_args:
-    sep: "\t"
+      engine: "pyarrow"
+  filename_suffix: ".parquet"
