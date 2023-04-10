@@ -86,7 +86,7 @@ overlaps_HiC_loops_DNase_seq_named:
 
 combined_functional_genomics_data:
   type: PartitionedDataSet
-  path: data/03_primary
+  path: data/03_primary/tests
   dataset: 
     type: pandas.CSVDataSet
     load_args:
@@ -101,5 +101,6 @@ motifs_found_anchors_with_open_chromatin:
   filepath: data/02_intermediate/motifs_found_anchors_with_open_chromatin.tsv
   load_args:
     delimiter: "\t"
+    dtype: "category"
   save_args:
     sep: "\t"

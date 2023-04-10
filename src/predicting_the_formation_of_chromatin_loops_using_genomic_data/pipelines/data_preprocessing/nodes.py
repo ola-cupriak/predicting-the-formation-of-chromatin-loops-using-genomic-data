@@ -178,7 +178,7 @@ def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = 
     else:
         if wa and wb:
             intersection = bed1.intersect(bed2, wa=wa, wb=wb)
-            intersection = pd.read_table(intersection.fn, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 'peak_start', 'peak_end'])
+            intersection = pd.read_table(intersection.fn, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 'peak_start', 'peak_end', 'cell_type'])
         else:
             intersection = bed1.intersect(bed2)
             intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end'])
@@ -329,6 +329,7 @@ def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     df = _concat_dfs(peaks_dict)
     # sort by chr and region
     df = _sort_df(df, 'start')
+    df = df.reset_index(drop=True)
 
     return df
 
@@ -347,13 +348,13 @@ def _prepare_peaks_df(peaks_df: pd.DataFrame):
 def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:
     """
     """
-    peaks_df = _prepare_peaks_df(peaks_df)
+    #peaks_df = _prepare_peaks_df(peaks_df)
 
     intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, wa=True, wb=True)
     intersection = get_overlapping_regions(anchors_df, peaks_df)
 
     joined_intersection = pd.merge(intersection_wa_wb, intersection, left_index=True, right_index=True)
-    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}:{x['anchor_end']}:{x['peak_start']}:{x['peak_end']}", axis=1)
+    joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}:{x['anchor_end']}:{x['cell_type']}", axis=1)
 
     return joined_intersection[['chr', 'start', 'end', 'name']]
 
@@ -383,6 +384,36 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     return path_to_save
 
 
+def _motify_output(lines: list):
+    motif_id2name = {}
+    for i in tqdm(range(len(lines))):
+        if i == 0:
+            lines[i] = lines[i].replace('sequence_name', 'chr\tstart\tend\tcell_type')
+        else:
+            elements = lines[i].split('\t')
+            motif_id, motif_alt_id, name, _, _, strand, _, _, _, _ = elements
+
+            motif_id2name[motif_id] = motif_alt_id
+
+            name = name.replace(':', '\t')
+            if strand == '+':
+                motif_id += '_f'
+            else:
+                motif_id += '_r'
+            
+            elements[0] = motif_id
+            elements[2] = name
+
+            lines[i] = '\t'.join(elements)
+    
+    with open('data/02_intermediate/motif_id2name.txt', 'w') as file:
+        for key, value in motif_id2name.items():
+            file.write(f'{key}\t{value}\n')
+    
+    return lines
+
+
+
 def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     """
     Find motifs in fasta sequences.
@@ -399,19 +430,79 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     # find motifs
     start = time.time()
     print('Finding motifs...')
-    proc = subprocess.Popen(f'fimo --text {path_for_meme} {path_fasta}', stdout=subprocess.PIPE, shell=True)
-    output = proc.stdout.read().decode("utf-8") 
-    output = output.replace(':', '\t')
-    output = output.replace('sequence_name', 'chr\tanchor_start\tanchor_end\tpeak_start\tpeak_end')
-    csvStringIO = StringIO(output)
-    print(f'Done! Time: {time.time() - start} sec')
+    subprocess.run(f'fimo --text {path_for_meme} {path_fasta} > data/temp/temp.csv', shell=True)
+    print(f'Finding motifs took {time.time() - start} seconds')
 
-    df = pd.read_csv(csvStringIO, sep="\t")
-    df = df[['motif_id', 'motif_alt_id', 'strand', 'chr', 'anchor_start', 'anchor_end', 'peak_start', 'peak_end']]
+    with open('data/temp/temp.csv', 'r') as f:
+        output = f.readlines()
+    print('Done1')
+    output = _motify_output(output)
+    print('Done2')
+    with open('data/temp/temp.csv', 'w') as f:
+        f.writelines(output)
+    output = None
+    print('Done3')
+    dtypes = {'chr': "category", 'start': "int32", 'end': "int32", 'motif_id': "category", 'cell_type': "category"}
+    df = pd.read_csv('data/temp/temp.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
+    subprocess.run('rm data/temp/temp.csv', shell=True)
+    print('Done4')
+    df = df[['chr', 'start', 'end', 'motif_id', 'cell_type']]
+    print('Done5')
+    len_before = len(df)
+    df = pd.DataFrame(df.groupby(['chr', 'start', 'end', 'cell_type', 'motif_id'], observed=True).size(), columns=['count'])
+    df['count'] = df['count'].astype('int16')
+    df = df.unstack('motif_id', fill_value=0)
+    print(df.info())
+    print('Done6')
+    df.columns = ['_'.join(x) for x in df.columns if x[0]=='count']
+    df.reset_index(inplace=True)
+    df.rename(columns={name: name.replace('count_', '') for name in df.columns}, inplace=True)
 
-    return df
-
-
-def count_motifs(df: pd.DataFrame):
+    assert sum(df.iloc[:, 4:].sum(axis=1)) == len_before, 'Something went wrong with counting motifs'
     
     return df
+
+
+def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> pd.DataFrame:
+    
+    motifs_colnames = list(motifs_df.columns)
+    motifs_colnames.remove('chr')
+    to_reverse_f = [name for name in motifs_colnames if '_f' in name]
+    to_reverse_r = [name for name in motifs_colnames if '_r' in name]
+    to_reverse_f = {name: name.replace('_f', '_r') for name in to_reverse_f}
+    to_reverse_r = {name: name.replace('_r', '_f') for name in to_reverse_r}
+
+    to_reverse = {**to_reverse_f, **to_reverse_r}
+
+    for region in ['x', 'y']:
+        if region == 'y':
+            motifs_df = motifs_df.rename(columns=to_reverse)
+        motifs_df_renamed = motifs_df.rename(columns={name: f'{region}_{name}' for name in motifs_colnames})
+        main_df = main_df.merge(motifs_df_renamed, on=['chr', f'{region}_start', f'{region}_end'], how='left').fillna("0")
+
+    return main_df
+
+
+
+def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
+
+
+    print('Adding motifs counts...')
+    # if main_dfs_dict values are not DataFrames, load them
+    if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
+        main_dfs_dict = _dict_partitions(main_dfs_dict)
+
+    motifs_df[['start', 'end']] = motifs_df[['start', 'end']].astype('int32')
+
+    motifs_groups = motifs_df.groupby('cell_type')
+
+    for cell_type, motifs_df_group in motifs_groups:
+        print(f'...for {cell_type} cell...')
+        for main_name, main_df in main_dfs_dict.items():
+            if main_name == cell_type:
+                motifs_df_group = motifs_df_group.loc[:, motifs_df_group.columns != 'cell_type']
+                main_df = _count_motifs_single_df(main_df, motifs_df_group)
+                main_dfs_dict[main_name] = main_df
+    print('Done!')
+
+    return main_dfs_dict
