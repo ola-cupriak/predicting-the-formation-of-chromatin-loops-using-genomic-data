@@ -165,7 +165,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     return dfs_dict
 
 
-def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = False, wa: bool = False, wb: bool = False) -> pd.DataFrame:
+def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, count: bool = False, wa: bool = False, wb: bool = False) -> pd.DataFrame:
     """
     Get overlapping regions from two bed files.
     Args:
@@ -179,14 +179,14 @@ def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, count: bool = 
     bed2 = pybedtools.BedTool.from_dataframe(df2)
     if count:
         intersection = bed1.intersect(bed2, c=count)
-        intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'])
+        intersection = pd.read_table(intersection.fn, names=names)
     else:
         if wa and wb:
             intersection = bed1.intersect(bed2, wa=wa, wb=wb)
-            intersection = pd.read_table(intersection.fn, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 'peak_start', 'peak_end', 'cell_type'])
+            intersection = pd.read_table(intersection.fn, names=names)
         else:
             intersection = bed1.intersect(bed2)
-            intersection = pd.read_table(intersection.fn, names=['chr', 'start', 'end'])
+            intersection = pd.read_table(intersection.fn, names=names)
     
     return intersection
 
@@ -208,7 +208,7 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
     for region in ['x', 'y']:
         second_reg = 'y' if region == 'x' else 'x'
         peak_counts = main_df[['chr', f'{region}_start', f'{region}_end', f'{second_reg}', 'cell_type']]
-        peak_counts = get_overlapping_regions(peak_counts, peaks_df, count=True)
+        peak_counts = get_overlapping_regions(peak_counts, peaks_df, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'], count=True)
         peak_counts.rename(columns={'count': f'{region}_{experiment}_counts',
                                     'start': f'{region}_start',
                                     'end': f'{region}_end',
@@ -221,7 +221,7 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
 
         assert len(main_df) == main_len_before, 'Length of the main_df changed after merging'
 
-    to_change_dtype = ['x_DNase_seq_peaks_counts', 'y_DNase_seq_peaks_counts']
+    to_change_dtype = [f'x_{experiment}_counts', f'y_{experiment}_counts']
     main_df[to_change_dtype] = main_df[to_change_dtype].astype('int16')
 
     return main_df
@@ -361,8 +361,9 @@ def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) ->
     """
     #peaks_df = _prepare_peaks_df(peaks_df)
 
-    intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, wa=True, wb=True)
-    intersection = get_overlapping_regions(anchors_df, peaks_df)
+    intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 
+                                                                              'peak_start', 'peak_end', 'cell_type'], wa=True, wb=True)
+    intersection = get_overlapping_regions(anchors_df, peaks_df, names=['chr', 'start', 'end'])
 
     joined_intersection = pd.merge(intersection_wa_wb, intersection, left_index=True, right_index=True)
     joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}:{x['anchor_end']}:{x['cell_type']}", axis=1)
@@ -535,3 +536,74 @@ def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
     print('Done!')
 
     return main_dfs_dict
+
+
+
+
+def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
+    
+    df['id'] = [i for i in range(len(df))]
+    df_1x = df.loc[df.loc[:,'label']==1,['chr', 'x_start', 'x_end', 'id']]
+    df_0x = df.loc[df.loc[:,'label']==0,['chr', 'x_start', 'x_end', 'id']]
+    df_1y = df.loc[df.loc[:,'label']==1,['chr', 'y_start', 'y_end', 'id']]
+    df_0y = df.loc[df.loc[:,'label']==0,['chr', 'y_start', 'y_end', 'id']]
+
+    x_overlap = get_overlapping_regions(df_1x, df_0x, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
+    y_overlap = get_overlapping_regions(df_1y, df_0y, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
+
+    x_and_y = (set(x_overlap['id']) & set(y_overlap['id']))
+
+    df = df.loc[~df['id'].isin(x_and_y),:]
+    df = df.loc[:, df.columns != 'id']
+
+    assert len(df_1x) == len(df.loc[df.loc[:,'label']==1,:]), 'Something went wrong with removing overlapping negative examples'
+    assert len(df_1y) == len(df.loc[df.loc[:,'label']==1,:]), 'Something went wrong with removing overlapping negative examples'
+    
+    return df
+
+
+def remove_overlapping(main_dfs_dict: dict):
+
+    print('Removing overlapping negative examples...')
+    # if main_dfs_dict values are not DataFrames, load them
+    if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
+        main_dfs_dict = _dict_partitions(main_dfs_dict)
+
+    for main_name, main_df in main_dfs_dict.items():
+        print(f'...for {main_name} cell...')
+        len_before = len(main_df)
+        main_df = _remove_overlapping_single_df(main_df)
+        print(f'...removed {len_before - len(main_df)} examples...')
+        main_dfs_dict[main_name] = main_df
+    print('Done!')
+
+    return main_dfs_dict
+
+
+def concat_dfs_from_dict(main_dfs_dict: dict, keys_to_concat: list=None) -> pd.DataFrame:
+
+    print('Concatenating dataframes from dictionary...')
+    # check if all keys_to_concat are in main_dfs_dict
+    if keys_to_concat:
+        assert set(keys_to_concat).issubset(set(main_dfs_dict.keys())), 'Some keys are not in main_dfs_dict. Check data_preprocessing.yml file.'
+    else:
+        keys_to_concat = list(main_dfs_dict.keys())
+
+    expected_len = sum([len(main_dfs_dict[key]) for key in keys_to_concat])
+
+    for i in range(len(keys_to_concat)):
+        if i == 0:
+            main_df = main_dfs_dict[keys_to_concat[i]]
+        else:
+            main_df = pd.concat([main_df, main_dfs_dict[keys_to_concat[i]]], ignore_index=True)
+        main_dfs_dict.pop(keys_to_concat[i])
+            
+    
+    assert len(main_df) == expected_len, 'Something went wrong with concatenating dataframes from dictionary - expected length is not equal to actual length.'
+
+    #main_df.reset_index()
+    main_df = _sort_df(main_df, 'x_start')
+
+    print(f'Done!\n{main_df.info()}')
+
+    return main_df

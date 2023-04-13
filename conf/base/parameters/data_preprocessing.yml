@@ -9,3 +9,12 @@ DNase-seq_bigWig: DNase_seq_bigWig
 path_hg19_simplified: data/02_intermediate/reference_genomes_simp/hg19.fasta
 path_motifs_JASPAR_vertebrates: data/01_raw/motifs_JASPAR/to_check.txt
 path_fasta_anchors_with_open_chromtin: data/02_intermediate/anchors_with_open_chromtin.fasta
+# list of cell types to use
+cell_types_to_use:
+  - GM12878
+  - HeLa
+  - HMEC
+  - HUVEC
+  - IMR90
+  - K562
+  - NHEK

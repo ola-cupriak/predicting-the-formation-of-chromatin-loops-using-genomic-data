@@ -104,3 +104,12 @@ combined_functional_genomics_data:
     save_args:
       engine: "pyarrow"
   filename_suffix: ".parquet"
+
+
+concatenated_combined_functional_genomics_data:
+  type: pandas.ParquetDataSet
+  filepath: data/04_feature/concatenated_combined_functional_genomics_data.parquet
+  load_args:
+    engine: "pyarrow"
+  save_args:
+    engine: "pyarrow"
