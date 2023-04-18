@@ -11,6 +11,7 @@ conf/local/**
 conf/**/*credentials*
 
 # ignore everything in the following folders
+.vscode/**
 data/**
 logs/**
 notebooks/**
