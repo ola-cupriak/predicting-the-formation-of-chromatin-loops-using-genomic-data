@@ -4,6 +4,7 @@
 # ignore all local configuration
 conf/local/**
 !conf/local/.gitkeep
+!conf/local/mlflow.yml
 .telemetry
 
 # ignore potentially sensitive credentials files
@@ -14,6 +15,7 @@ data/**
 logs/**
 notebooks/**
 plots/**
+mlruns/**
 
 !notebooks/model.ipynb
 
