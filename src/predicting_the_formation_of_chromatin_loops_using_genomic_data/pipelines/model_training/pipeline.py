@@ -6,8 +6,7 @@ generated using Kedro 0.18.7
 from kedro.pipeline import Pipeline, node, pipeline
 from .nodes import read_data
 from .nodes import split_data, save_split_idxes
-from .nodes import train_model
-from .nodes import evaluate_model
+from .nodes import train_and_eval
 
 
 
@@ -33,52 +32,28 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
             name="split_data_idx_node",
         ),
         node(
-            func=train_model,
+            func=train_and_eval,
             inputs=["split_data", "params:log_reg.type", "params:log_reg.params", "params:log_reg.run"],
-            outputs="logistic_regression_models",
-            name="train_logistic_regression_node",
+            outputs=["logistic_regression_models", "logistic_regression_metrics", "logistic_regression_confusionmatrix"],
+            name="train_and_eval_logistic_regression_node",
         ),
         node(
-            func=evaluate_model,
-            inputs=["logistic_regression_models", "split_data", "params:log_reg.type"],
-            outputs="logistic_regression_metrics",
-            name="eval_logistic_regression_node",
-        ),
-        node(
-            func=train_model,
+            func=train_and_eval,
             inputs=["split_data", "params:rf.type", "params:rf.params", "params:rf.run"],
-            outputs="random_forest_models",
-            name="train_random_forest_node",
+            outputs=["random_forest_models", "random_forest_metrics", "random_forest_confusionmatrix"],
+            name="train_and_eval_random_forest_node",
         ),
         node(
-            func=evaluate_model,
-            inputs=["random_forest_models", "split_data", "params:rf.type"],
-            outputs="random_forest_metrics",
-            name="eval_random_forest_node",
-        ),
-        node(
-            func=train_model,
+            func=train_and_eval,
             inputs=["split_data", "params:lgbm.type", "params:lgbm.params", "params:lgbm.run"],
-            outputs="lightgbm_models",
-            name="train_lightgbm_node",
+            outputs=["lightgbm_models", "lightgbm_metrics", "lightgbm_confusionmatrix"],
+            name="train_and_eval_lightgbm_node",
         ),
         node(
-            func=evaluate_model,
-            inputs=["lightgbm_models", "split_data", "params:lgbm.type"],
-            outputs="lightgbm_metrics",
-            name="eval_lightgbm_node",
-        ),
-        node(
-            func=train_model,
+            func=train_and_eval,
             inputs=["split_data", "params:xgb.type", "params:xgb.params", "params:xgb.run"],
-            outputs="xgboost_models",
-            name="train_xgboost_node",
-        ),
-        node(
-            func=evaluate_model,
-            inputs=["xgboost_models", "split_data", "params:xgb.type"],
-            outputs="xgboost_metrics",
-            name="eval_xgboost_node",
+            outputs=["xgboost_models", "xgboost_metrics", "xgboost_confusionmatrix"],
+            name="train_and_eval_xgboost_node",
         ),
     ])
 
