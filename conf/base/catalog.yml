@@ -1,3 +1,9 @@
+_save_plt_plot: &save_plt_plot
+  type: matplotlib.MatplotlibWriter
+  save_args:
+    format: png
+    bbox_inches: tight
+
 # Data preprocessing
 cells2names:
   type: yaml.YAMLDataSet
@@ -285,3 +291,75 @@ across.xgboost_metrics:
       dataset: 
         type: text.TextDataSet
       filename_suffix: ".txt"
+
+within.logistic_regression_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_logistic_regression_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+across.logistic_regression_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_logistic_regression_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+within.random_forest_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_random_forest_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+across.random_forest_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_random_forest_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+within.lightgbm_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_lightgbm_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+across.lightgbm_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_lightgbm_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+within.xgboost_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_xgboost_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
+
+across.xgboost_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_xgboost_metrics
+      dataset:
+        <<: *save_plt_plot
+      filename_suffix: ".png"
