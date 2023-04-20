@@ -30,7 +30,7 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
             func=save_split_idxes,
             inputs="split_data",
             outputs="split_data_idxes",
-            name="split_data_node",
+            name="split_data_idx_node",
         ),
         node(
             func=train_model,
