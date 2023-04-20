@@ -143,7 +143,7 @@ def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict =
     return model
 
 
-def train_model(df_dict: Dict[str, pd.DataFrame], 
+def _train_model(df_dict: Dict[str, pd.DataFrame], 
                 model_type: str = 'log_reg', 
                 params: dict = {}, 
                 run: bool = True) -> tuple:
@@ -184,7 +184,16 @@ def train_model(df_dict: Dict[str, pd.DataFrame],
     return model_dict
 
 
-def evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_type: str) -> dict:
+def _make_prediction(df_test: pd.DataFrame, model) -> np.array:
+
+
+    X_test = df_test.drop(['label', 'cell_type'], axis=1)
+    y_pred = model.predict(X_test)
+
+    return y_pred
+
+
+def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_type: str) -> dict:
     """
     Evaluates the model on the test data.
     Args:
@@ -194,9 +203,10 @@ def evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_typ
     Returns:
         A dictionary with the evaluation metrics.
     """
-    model_dict = _dict_partitions(model_dict)
+    plt.ioff()
     
     metrics_dict_all = {}
+    matrices_dict = {}
     
     for cell_type in model_dict.keys():
         if cell_type == 'empty_model':
@@ -206,12 +216,9 @@ def evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_typ
 
         df_test = df_dict[cell_type][1]
         model = model_dict[cell_type]
-
-        X_test = df_test.drop(['label', 'cell_type'], axis=1)
         y_test = df_test['label']
-
-        y_pred = model.predict(X_test)
-
+        y_pred = _make_prediction(df_test, model)
+    
         metrics_dict = {
             f'{cell_type}/{model_type}/accuracy': metrics.accuracy_score(y_test, y_pred),
             f'{cell_type}/{model_type}/precision': metrics.precision_score(y_test, y_pred),
@@ -220,17 +227,35 @@ def evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_typ
             f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred),
             f'{cell_type}/{model_type}/MCC': metrics.matthews_corrcoef(y_test, y_pred),
         }
-
         metrics_dict = {k: round(v, 3) for k, v in metrics_dict.items()}
+
+        disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
+        disp.ax_.set_title(f'Confusion matrix for {cell_type} cell for {model_type} model')
+        matrices_dict[cell_type] = disp.figure_
 
         mlflow.log_metrics(metrics_dict)
         metrics_dict_toyaml = {k: float(str(v)) for k, v in metrics_dict.items()}
         yaml_string = yaml.dump(metrics_dict_toyaml)
         metrics_dict_all[cell_type] = yaml_string
     
+    matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
+
     if not metrics_dict_all:
         metrics_dict_all['empty_model'] = ''
+    if not matrices_dict:
+        matrices_dict['empty_model'] = plt.figure()
+    
 
-    return metrics_dict_all
+    return metrics_dict_all, matrices_dict
 
 
+
+def train_and_eval(df_dict: Dict[str, pd.DataFrame], 
+                    model_type: str = 'log_reg', 
+                    params: dict = {}, 
+                    run: bool = True):
+    
+    model_dict = _train_model(df_dict, model_type, params, run)
+    metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, model_type)
+
+    return model_dict, metrics_dict_all, matrices_dict
