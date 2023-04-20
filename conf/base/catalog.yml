@@ -237,7 +237,7 @@ within.logistic_regression_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/within_logistic_regression_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 across.logistic_regression_metrics:
@@ -246,7 +246,7 @@ across.logistic_regression_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/across_logistic_regression_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 within.random_forest_metrics:
@@ -255,7 +255,7 @@ within.random_forest_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/within_random_forest_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 across.random_forest_metrics:
@@ -264,7 +264,7 @@ across.random_forest_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/across_random_forest_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 within.lightgbm_metrics:
@@ -273,7 +273,7 @@ within.lightgbm_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/within_lightgbm_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 across.lightgbm_metrics:
@@ -282,7 +282,7 @@ across.lightgbm_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/across_lightgbm_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 within.xgboost_metrics:
@@ -291,7 +291,7 @@ within.xgboost_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/within_xgboost_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
 
 across.xgboost_metrics:
@@ -300,5 +300,5 @@ across.xgboost_metrics:
       type: PartitionedDataSet
       path: data/07_model_output/across_xgboost_metrics
       dataset: 
-        type: yaml.YAMLDataSet
+        type: text.TextDataSet
       filename_suffix: ".txt"
