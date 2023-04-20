@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - conda-forge::lightgbm~=3.1.1
   - conda-forge::matplotlib~=3.7.0
   - conda-forge::matplotlib-venn~=0.11.9
   - bioconda::meme~=5.4.1
