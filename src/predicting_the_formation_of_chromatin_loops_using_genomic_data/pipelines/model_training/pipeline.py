@@ -66,6 +66,8 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
         inputs=["concatenated_combined_functional_genomics_data",],
         parameters=[
             "params:cell_types",
+            "params:features_include_only",
+            "params:features_exclude",
             "params:test_size",
             "params:random_state",
             "params:log_reg.type",

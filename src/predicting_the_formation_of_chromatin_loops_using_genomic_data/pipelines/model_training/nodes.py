@@ -19,18 +19,31 @@ import yaml
 
 
 
-def read_data(df: pd.DataFrame, cell_types: list, type: str) -> pd.DataFrame:
+def read_data(df: pd.DataFrame, cell_types: list, type: str, 
+              features_include_only: list = [], features_exclude: list = []) -> pd.DataFrame:
     """Reads the data from the data frame and returns the data frame with the
     selected cell types, removes the columns that are not needed for the model.
     Args:
         df: Data frame with concatenated data for model training.
         cell_types: List of cell types to be used for model training.
-        shuffle: If True, the data frame is shuffled.
+        type: The type of the model to be trained. Either 'within' or 'across'.
+        features_include_only: List of columns to be included in the data frame.
+        features_exclude: List of columns to be excluded from the data frame.
     Returns:
         Data frame with the selected cell types and dropped columns that are not needed for the model.
     """
+    if features_include_only and features_exclude:
+        print('Warning! Both parameters features_include_only and features_exclude are given. Only the features_include_only parameter will be used.')
+
     df = df[df['cell_type'].isin(cell_types)]
     df = df.drop(['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end'], axis=1)
+    if features_include_only:
+        if 'label' not in features_include_only:
+            features_include_only.append('label')
+        df = df.loc[:, features_include_only]
+    elif features_exclude:
+        assert 'label' not in features_exclude, print('The label column cannot be excluded!')
+        df = df.drop(features_exclude, axis=1)
     
     if type == 'within':
         df = df.groupby('cell_type')

@@ -14,12 +14,16 @@ test_size: 0.3
 random_state:
 cell_types:
   - GM12878
-  - K562
+  # - K562
   # - IMR90
   # - HeLa
   # - HMEC
   # - HUVEC
   # - NHEK
+
+features_include_only:
+
+features_exclude:
 
 # MODELS SECTION
 # Logistic regression parameters
@@ -42,5 +46,5 @@ xgb:
   type: XGBoost # DO NOT CHANGE
   run: True 
   params:
-    n: 1000
     tree_method: hist
+    n_estimators: 1000
