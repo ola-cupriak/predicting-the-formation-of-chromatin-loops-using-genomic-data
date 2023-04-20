@@ -72,7 +72,7 @@ def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]) -> dict:
 
         idx_df = pd.concat([train_df, test_df])
 
-        assert len(set(list(train_idx['idx'])) & set(list(test_df['idx']))) == 0, print('Training and test datasets have common elements!')
+        assert len(set(list(train_idx['idx'])) & set(list(test_idx['idx']))) == 0, print('Training and test datasets have common elements!')
 
         idx_dict[cell_type] = idx_df
     
