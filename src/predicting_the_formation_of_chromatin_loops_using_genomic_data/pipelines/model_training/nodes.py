@@ -60,7 +60,23 @@ def split_data(dfs_dict: Dict[str, pd.DataFrame],
 
 
 def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]) -> dict:
-    pass
+    """
+    Check indexes in trainset and testset
+    """
+    idx_dict = {}
+    for cell_type, (train_df, test_df) in dfs_dict.items():
+        train_idx = pd.DataFrame(train_df.index, columns=['idx'])
+        train_idx['type'] = 'training'
+        test_idx = pd.DataFrame(test_df.index, columns=['idx'])
+        test_idx['type'] = 'test'
+
+        idx_df = pd.concat([train_df, test_df])
+
+        assert len(set(list(train_idx['idx'])) & set(list(test_df['idx']))) == 0, print('Training and test datasets have common elements!')
+
+        idx_dict[cell_type] = idx_df
+    
+    return idx_dict
 
 
 def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
@@ -197,19 +213,19 @@ def evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_typ
         y_pred = model.predict(X_test)
 
         metrics_dict = {
-            f'accuracy/{model_type}/{cell_type}': metrics.accuracy_score(y_test, y_pred),
-            f'precision/{model_type}/{cell_type}': metrics.precision_score(y_test, y_pred),
-            f'recall/{model_type}/{cell_type}': metrics.recall_score(y_test, y_pred),
-            f'f1/{model_type}/{cell_type}': metrics.f1_score(y_test, y_pred),
-            f'auc/{model_type}/{cell_type}': metrics.roc_auc_score(y_test, y_pred),
-            f'MCC/{model_type}/{cell_type}': metrics.matthews_corrcoef(y_test, y_pred),
+            f'{cell_type}/{model_type}/accuracy': metrics.accuracy_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/precision': metrics.precision_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/recall': metrics.recall_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/f1': metrics.f1_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/MCC': metrics.matthews_corrcoef(y_test, y_pred),
         }
 
         metrics_dict = {k: round(v, 3) for k, v in metrics_dict.items()}
 
         mlflow.log_metrics(metrics_dict)
-
-        yaml_string = yaml.dump(metrics_dict)
+        metrics_dict_toyaml = {k: float(str(v)) for k, v in metrics_dict.items()}
+        yaml_string = yaml.dump(metrics_dict_toyaml)
         metrics_dict_all[cell_type] = yaml_string
     
     if not metrics_dict_all:

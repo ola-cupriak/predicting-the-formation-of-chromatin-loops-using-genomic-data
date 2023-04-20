@@ -26,12 +26,12 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
             outputs="split_data",
             name="split_data_node",
         ),
-        # node(
-        #     func=save_split_idxes,
-        #     inputs=["split_data"],
-        #     outputs="split_data_idxes",
-        #     name="split_data_node",
-        # ),
+        node(
+            func=save_split_idxes,
+            inputs="split_data",
+            outputs="split_data_idxes",
+            name="split_data_node",
+        ),
         node(
             func=train_model,
             inputs=["split_data", "params:log_reg.type", "params:log_reg.params", "params:log_reg.run"],

@@ -111,53 +111,36 @@ concatenated_combined_functional_genomics_data:
 
 # Model training
 
-# GM12878.random_forest_model:
-#   filepath: data/06_models/GM12878_rf.pkl
-#   type: pickle.PickleDataSet
+# datasets split
 
-# HeLa.random_forest_model:
-#   filepath: data/06_models/HeLa_rf.pkl
-#   type: pickle.PickleDataSet
-
-# HMEC.random_forest_model:
-#   filepath: data/06_models/HMEC_rf.pkl
-#   type: pickle.PickleDataSet
-
-# HUVEC.random_forest_model:
-#   filepath: data/06_models/HUVEC_rf.pkl
-#   type: pickle.PickleDataSet
-
-# NHEK.random_forest_model:
-#   filepath: data/06_models/NHEK_rf.pkl
-#   type: pickle.PickleDataSet
-
-# K562.random_forest_model:
-#   filepath: data/06_models/K562_rf.pkl
-#   type: pickle.PickleDataSet
-
-# IMR90.random_forest_model:
-#   filepath: data/06_models/IMR90_rf.pkl
-#   type: pickle.PickleDataSet
+within.split_data_idxes:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/05_model_input/within_splits
+      dataset: 
+        type: pandas.ParquetDataSet
+        load_args:
+          engine: "pyarrow"
+        save_args:
+          engine: "pyarrow"
+      filename_suffix: ".parquet"
 
 
-# within.split_data_idxes:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       type: PartitionedDataSet
-#       path: data/05_model_input/within_splits
-#       dataset: 
-#         type: ???
-
-# across.split_data_idxes:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       type: PartitionedDataSet
-#       path: data/05_model_input/across_splits
-#       dataset: 
-#         type: ???
+across.split_data_idxes:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/05_model_input/across_splits
+      dataset: 
+        type: pandas.ParquetDataSet
+        load_args:
+          engine: "pyarrow"
+        save_args:
+          engine: "pyarrow"
+      filename_suffix: ".parquet"
 
 # models
-
 within.logistic_regression_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
