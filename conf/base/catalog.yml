@@ -1,24 +1,61 @@
+_save_pandas_csv: &save_pandas_csv
+  type: pandas.CSVDataSet
+  load_args:
+    delimiter: "\t"
+  save_args:
+    sep: "\t"
+
+_save_partitioned_pandas_csv: &save_partitioned_pandas_csv
+  path: data/01_raw/HiC_loops_annotations
+  dataset: 
+    <<: *_save_pandas_csv
+  filename_suffix: ".txt"
+
 _save_plt_plot: &save_plt_plot
   type: matplotlib.MatplotlibWriter
   save_args:
     format: png
     bbox_inches: tight
 
+_save_partitioned_plt_plot: &save_partitioned_plt_plot
+  type: PartitionedDataSet
+  dataset:
+    <<: *save_plt_plot
+  filename_suffix: ".png"
+
+_save_pandas_parquet: &save_pandas_parquet
+  type: pandas.ParquetDataSet
+  load_args:
+    engine: "pyarrow"
+  save_args:
+    engine: "pyarrow"
+
+_save_partitioned_pandas_parquet: &save_partitioned_pandas_parquet
+  type: PartitionedDataSet
+  dataset: 
+    <<: *save_pandas_parquet
+  filename_suffix: ".parquet"
+
+_save_partitioned_pickle: &save_partitioned_pickle
+  type: PartitionedDataSet
+  dataset: 
+    type: pickle.PickleDataSet
+  filename_suffix: ".pkl"
+
+_save_partitoned_text: &save_partitioned_text
+  type: PartitionedDataSet
+  dataset: 
+    type: text.TextDataSet
+  filename_suffix: ".txt"
+
 # Data preprocessing
 cells2names:
   type: yaml.YAMLDataSet
   filepath: data/01_raw/cells2names.yml
 
-
 HiC_loops_annoatations:
-  type: PartitionedDataSet
   path: data/01_raw/HiC_loops_annotations
-  dataset: 
-    type: pandas.CSVDataSet
-    load_args:
-      delimiter: "\t"
-  filename_suffix: ".txt"
-
+  <<: *save_partitioned_pandas_csv
 
 DNAse_seq_peaks:
   type: PartitionedDataSet
@@ -32,13 +69,11 @@ DNAse_seq_peaks:
       dtype: {'chr': 'string', 'start': 'int32', 'end': 'int32'}
   filename_suffix: ".bed"
 
-
 DNAse_seq_bigWig:
   type: PartitionedDataSet
   path: data/01_raw/DNase_seq_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
-
 
 CTCF_ChIP_seq_peaks:
   type: PartitionedDataSet
@@ -51,315 +86,294 @@ CTCF_ChIP_seq_peaks:
       names: ['chr', 'start', 'end']
   filename_suffix: ".bed"
 
-
 CTCF_ChIP_seq_bigWig:
   type: PartitionedDataSet
   path: data/01_raw/CTCF_ChIP_seq_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
 
-
 merged_HiC_loops_anotations:
-  type: pandas.CSVDataSet
   filepath: data/02_intermediate/merged_HiC_looplist.csv
-  load_args:
-    delimiter: "\t"
-  save_args:
-    sep: "\t"
-
+  <<: *save_pandas_csv
   
 merged_DNase_seq_peaks:
-  type: pandas.CSVDataSet
   filepath: data/02_intermediate/merged_DNase_seq_peaks.csv
-  load_args:
-    delimiter: "\t"
-  save_args:
-    sep: "\t"
+  <<: *save_pandas_csv
 
 
 overlaps_HiC_loops_DNase_seq_named:
-  type: pandas.CSVDataSet
   filepath: data/02_intermediate/overlaps_HiC_loops_DNase_seq.csv
-  load_args:
-    delimiter: "\t"
-  save_args:
-    sep: "\t"
+  <<: *save_pandas_csv
 
 
 motifs_found_anchors_with_open_chromatin:
-  type: pandas.ParquetDataSet
   filepath: data/02_intermediate/motifs_found_anchors_with_open_chromatin.parquet
-  load_args:
-    engine: "pyarrow"
-  save_args:
-    engine: "pyarrow"
+  <<: *save_pandas_parquet
 
   
 combined_functional_genomics_data:
-  type: PartitionedDataSet
   path: data/03_primary
-  dataset: 
-    type: pandas.ParquetDataSet
-    load_args:
-      engine: "pyarrow"
-    save_args:
-      engine: "pyarrow"
-  filename_suffix: ".parquet"
+  <<: *save_partitioned_pandas_parquet
 
 
 concatenated_combined_functional_genomics_data:
-  type: pandas.ParquetDataSet
   filepath: data/04_feature/concatenated_combined_functional_genomics_data.parquet
-  load_args:
-    engine: "pyarrow"
-  save_args:
-    engine: "pyarrow"
+  <<: *save_pandas_parquet
 
 # Model training
 
 # datasets split
-
 within.split_data_idxes:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
       path: data/05_model_input/within_splits
-      dataset: 
-        type: pandas.ParquetDataSet
-        load_args:
-          engine: "pyarrow"
-        save_args:
-          engine: "pyarrow"
-      filename_suffix: ".parquet"
-
+      <<: *save_partitioned_pandas_parquet
 
 across.split_data_idxes:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
       path: data/05_model_input/across_splits
-      dataset: 
-        type: pandas.ParquetDataSet
-        load_args:
-          engine: "pyarrow"
-        save_args:
-          engine: "pyarrow"
-      filename_suffix: ".parquet"
+      <<: *save_partitioned_pandas_parquet
 
 # models
 within.logistic_regression_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/within_logistic_regression_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/within/within_logistic_regression_models
+      <<: *save_partitioned_pickle
 
 across.logistic_regression_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/across_logistic_regression_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/across/across_logistic_regression_models
+      <<: *save_partitioned_pickle
 
 within.random_forest_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/within_random_forest_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/within/within_random_forest_models
+      <<: *save_partitioned_pickle
 
 across.random_forest_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/across_random_forest_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/across/across_random_forest_models
+      <<: *save_partitioned_pickle
 
 within.lightgbm_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/within_lightgbm_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/within/within_lightgbm_models
+      <<: *save_partitioned_pickle
 
 across.lightgbm_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/across_lightgbm_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/across/across_lightgbm_models
+      <<: *save_partitioned_pickle
 
 within.xgboost_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/within_xgboost_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/within/within_xgboost_models
+      <<: *save_partitioned_pickle
 
 across.xgboost_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/06_models/across_xgboost_models
-      dataset: 
-        type: pickle.PickleDataSet
-      filename_suffix: ".pkl"
+      path: data/06_models/across/across_xgboost_models
+      <<: *save_partitioned_pickle
 
 # metrics
 within.logistic_regression_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_logistic_regression_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/within/within_logistic_regression_metrics
+      <<: *save_partitioned_text
 
 across.logistic_regression_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_logistic_regression_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/across/across_logistic_regression_metrics
+      <<: *save_partitioned_text
 
 within.random_forest_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_random_forest_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/within/within_random_forest_metrics
+      <<: *save_partitioned_text
 
 across.random_forest_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_random_forest_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/across/across_random_forest_metrics
+      <<: *save_partitioned_text
 
 within.lightgbm_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_lightgbm_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/within/within_lightgbm_metrics
+      <<: *save_partitioned_text
 
 across.lightgbm_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_lightgbm_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/across/across_lightgbm_metrics
+      <<: *save_partitioned_text
 
 within.xgboost_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_xgboost_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/within/within_xgboost_metrics
+      <<: *save_partitioned_text
 
 across.xgboost_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_xgboost_metrics
-      dataset: 
-        type: text.TextDataSet
-      filename_suffix: ".txt"
+      path: data/07_model_output/across/across_xgboost_metrics
+      <<: *save_partitioned_text
 
 within.logistic_regression_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_logistic_regression_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/within/within_logistic_regression_metrics
+      <<: *save_partitioned_plt_plot
 
 across.logistic_regression_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_logistic_regression_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/across/across_logistic_regression_metrics
+      <<: *save_partitioned_plt_plot
 
 within.random_forest_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_random_forest_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/within/within_random_forest_metrics
+      <<: *save_partitioned_plt_plot
 
 across.random_forest_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_random_forest_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/across/across_random_forest_metrics
+      <<: *save_partitioned_plt_plot
 
 within.lightgbm_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_lightgbm_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/within/within_lightgbm_metrics
+      <<: *save_partitioned_plt_plot
 
 across.lightgbm_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_lightgbm_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/across/across_lightgbm_metrics
+      <<: *save_partitioned_plt_plot
 
 within.xgboost_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/within_xgboost_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/within/within_xgboost_metrics
+      <<: *save_partitioned_plt_plot
 
 across.xgboost_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      type: PartitionedDataSet
-      path: data/07_model_output/across_xgboost_metrics
-      dataset:
-        <<: *save_plt_plot
-      filename_suffix: ".png"
+      path: data/07_model_output/across/across_xgboost_metrics
+      <<: *save_partitioned_plt_plot
+
+#feature importance 
+within.logistic_regression_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_logistic_regression_feature_importance
+      <<: *save_partitioned_plt_plot
+
+across.logistic_regression_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_logistic_regression_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.random_forest_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_random_forest_feature_importance
+      <<: *save_partitioned_plt_plot
+
+across.random_forest_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_random_forest_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.lightgbm_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_lightgbm_feature_importance
+      <<: *save_partitioned_plt_plot
+
+across.lightgbm_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_lightgbm_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.xgboost_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_xgboost_feature_importance
+      <<: *save_partitioned_plt_plot
+
+across.xgboost_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_xgboost_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.logistic_regression_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_logistic_regression_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+across.logistic_regression_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_logistic_regression_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.random_forest_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_random_forest_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+across.random_forest_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_random_forest_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.lightgbm_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_lightgbm_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+across.lightgbm_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_lightgbm_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.xgboost_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_xgboost_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+across.xgboost_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_xgboost_feature_importance
+      <<: *save_partitioned_pandas_parquet
