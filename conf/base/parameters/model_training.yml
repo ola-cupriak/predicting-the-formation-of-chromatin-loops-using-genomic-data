@@ -35,12 +35,12 @@ rf:
 # LightGBM parameters
 lgbm:
   type: LightGBM # DO NOT CHANGE
-  run: False 
+  run: True 
   params:
 # XGBoost parameters
 xgb:
   type: XGBoost # DO NOT CHANGE
   run: True 
   params:
-    - n: 1000
-    - tree_method: hist
+    n: 1000
+    tree_method: hist
