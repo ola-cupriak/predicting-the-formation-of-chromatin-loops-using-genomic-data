@@ -34,25 +34,29 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
         node(
             func=train_and_eval,
             inputs=["split_data", "params:log_reg.type", "params:log_reg.params", "params:log_reg.run"],
-            outputs=["logistic_regression_models", "logistic_regression_metrics", "logistic_regression_confusionmatrix"],
+            outputs=["logistic_regression_models", "logistic_regression_metrics", "logistic_regression_confusionmatrix",
+                     "logistic_regression_feature_importance_df", "logistic_regression_feature_importance_plot"],
             name="train_and_eval_logistic_regression_node",
         ),
         node(
             func=train_and_eval,
             inputs=["split_data", "params:rf.type", "params:rf.params", "params:rf.run"],
-            outputs=["random_forest_models", "random_forest_metrics", "random_forest_confusionmatrix"],
+            outputs=["random_forest_models", "random_forest_metrics", "random_forest_confusionmatrix",
+                     "random-forest_feature_importance_df", "random-forest_feature_importance_plot"],
             name="train_and_eval_random_forest_node",
         ),
         node(
             func=train_and_eval,
             inputs=["split_data", "params:lgbm.type", "params:lgbm.params", "params:lgbm.run"],
-            outputs=["lightgbm_models", "lightgbm_metrics", "lightgbm_confusionmatrix"],
+            outputs=["lightgbm_models", "lightgbm_metrics", "lightgbm_confusionmatrix",
+                     "lightgbm_feature_importance_df", "lightgbm_feature_importance_plot"],
             name="train_and_eval_lightgbm_node",
         ),
         node(
             func=train_and_eval,
             inputs=["split_data", "params:xgb.type", "params:xgb.params", "params:xgb.run"],
-            outputs=["xgboost_models", "xgboost_metrics", "xgboost_confusionmatrix"],
+            outputs=["xgboost_models", "xgboost_metrics", "xgboost_confusionmatrix",
+                     "xgboost_feature_importance_df", "xgboost_feature_importance_plot"],
             name="train_and_eval_xgboost_node",
         ),
     ])

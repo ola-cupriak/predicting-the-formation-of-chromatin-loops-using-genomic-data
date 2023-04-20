@@ -249,6 +249,47 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_ty
     return metrics_dict_all, matrices_dict
 
 
+def _get_feature_importances(models_dict: dict, model_type: str) -> dict:
+    feature_importances_plot_dict = {}
+    feature_importances_dict = {}
+
+    for cell_type, model in models_dict.items():
+        if cell_type == 'empty_model':
+            continue
+        if isinstance(model, xgb.XGBClassifier):
+            importances = model.feature_importances_
+            idxs = np.argsort(importances)
+            importances = importances[idxs]
+            names = np.array(model.get_booster().feature_names)[idxs]
+        elif isinstance(model, lgb.LGBMClassifier):
+            importances = model.feature_importances_
+            idxs = np.argsort(importances)
+            importances = importances[idxs]
+            names = np.array(model.booster_.feature_name())[idxs]
+        elif isinstance(model, LogisticRegression):
+            importances = model.coef_[0]
+            idxs = np.argsort(importances)
+            importances = importances[idxs]
+            names = model.feature_names_in_[idxs]
+        elif isinstance(model, RandomForestClassifier):
+            importances = model.feature_importances_
+            idxs = np.argsort(importances)
+            importances = importances[idxs]
+            names = model.feature_names_in_[idxs]
+
+        importances = pd.Series(importances, index=names)
+        fig, ax = plt.subplots()
+        importances[-20:].plot.bar(ax=ax)
+        ax.set_title(f"Top20 feature importances for {cell_type} cell for {model_type} model")
+        ax.set_ylabel("Feature importance")
+        fig.tight_layout()
+
+        feature_importances_plot_dict[cell_type] = fig
+        feature_importances_dict[cell_type] = pd.DataFrame(importances, columns=['importance'])
+
+    return feature_importances_dict, feature_importances_plot_dict
+
+
 
 def train_and_eval(df_dict: Dict[str, pd.DataFrame], 
                     model_type: str = 'log_reg', 
@@ -257,5 +298,6 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
     
     model_dict = _train_model(df_dict, model_type, params, run)
     metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, model_type)
+    feature_importances_dict, feature_importances_plot_dict = _get_feature_importances(model_dict, model_type)
 
-    return model_dict, metrics_dict_all, matrices_dict
+    return model_dict, metrics_dict_all, matrices_dict, feature_importances_dict, feature_importances_plot_dict
