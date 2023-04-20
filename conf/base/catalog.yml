@@ -1,9 +1,4 @@
-# Here you can define all your data sets by using simple YAML syntax.
-#
-# Documentation for this file format can be found in "The Data Catalog"
-# Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
-
-
+# Data preprocessing
 cells2names:
   type: yaml.YAMLDataSet
   filepath: data/01_raw/cells2names.yml
@@ -113,3 +108,197 @@ concatenated_combined_functional_genomics_data:
     engine: "pyarrow"
   save_args:
     engine: "pyarrow"
+
+# Model training
+
+# GM12878.random_forest_model:
+#   filepath: data/06_models/GM12878_rf.pkl
+#   type: pickle.PickleDataSet
+
+# HeLa.random_forest_model:
+#   filepath: data/06_models/HeLa_rf.pkl
+#   type: pickle.PickleDataSet
+
+# HMEC.random_forest_model:
+#   filepath: data/06_models/HMEC_rf.pkl
+#   type: pickle.PickleDataSet
+
+# HUVEC.random_forest_model:
+#   filepath: data/06_models/HUVEC_rf.pkl
+#   type: pickle.PickleDataSet
+
+# NHEK.random_forest_model:
+#   filepath: data/06_models/NHEK_rf.pkl
+#   type: pickle.PickleDataSet
+
+# K562.random_forest_model:
+#   filepath: data/06_models/K562_rf.pkl
+#   type: pickle.PickleDataSet
+
+# IMR90.random_forest_model:
+#   filepath: data/06_models/IMR90_rf.pkl
+#   type: pickle.PickleDataSet
+
+
+# within.split_data_idxes:
+#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+#   data_set:
+#       type: PartitionedDataSet
+#       path: data/05_model_input/within_splits
+#       dataset: 
+#         type: ???
+
+# across.split_data_idxes:
+#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+#   data_set:
+#       type: PartitionedDataSet
+#       path: data/05_model_input/across_splits
+#       dataset: 
+#         type: ???
+
+# models
+
+within.logistic_regression_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/within_logistic_regression_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+across.logistic_regression_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/across_logistic_regression_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+within.random_forest_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/within_random_forest_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+across.random_forest_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/across_random_forest_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+within.lightgbm_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/within_lightgbm_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+across.lightgbm_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/across_lightgbm_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+within.xgboost_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/within_xgboost_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+across.xgboost_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/06_models/across_xgboost_models
+      dataset: 
+        type: pickle.PickleDataSet
+      filename_suffix: ".pkl"
+
+# metrics
+within.logistic_regression_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_logistic_regression_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+across.logistic_regression_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_logistic_regression_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+within.random_forest_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_random_forest_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+across.random_forest_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_random_forest_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+within.lightgbm_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_lightgbm_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+across.lightgbm_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_lightgbm_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+within.xgboost_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/within_xgboost_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"
+
+across.xgboost_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      type: PartitionedDataSet
+      path: data/07_model_output/across_xgboost_metrics
+      dataset: 
+        type: yaml.YAMLDataSet
+      filename_suffix: ".txt"

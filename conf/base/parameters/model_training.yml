@@ -1,5 +1,46 @@
-# This is a boilerplate parameters config generated for pipeline 'model_training'
-# using Kedro 0.18.7.
-#
-# Documentation for this file format can be found in "Parameters"
-# Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
+# PREPARE DATA SECTION
+across:
+  stratify:
+    - label
+    - cell_type
+  type: across # DO NOT CHANGE
+
+within:
+  stratify:
+    - label
+  type: within # DO NOT CHANGE
+
+test_size: 0.3
+random_state:
+cell_types:
+  - GM12878
+  - K562
+  # - IMR90
+  # - HeLa
+  # - HMEC
+  # - HUVEC
+  # - NHEK
+
+# MODELS SECTION
+# Logistic regression parameters
+log_reg:
+  type: logistic_regression # DO NOT CHANGE
+  run: True 
+  params:
+# Random forest parameters
+rf:
+  type: random_forest # DO NOT CHANGE
+  run: True 
+  params:
+# LightGBM parameters
+lgbm:
+  type: LightGBM # DO NOT CHANGE
+  run: False 
+  params:
+# XGBoost parameters
+xgb:
+  type: XGBoost # DO NOT CHANGE
+  run: True 
+  params:
+    - n: 1000
+    - tree_method: hist
