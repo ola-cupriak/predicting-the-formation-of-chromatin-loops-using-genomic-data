@@ -15,7 +15,8 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
     pipeline_template = pipeline([
         node(
             func=read_data,
-            inputs=["concatenated_combined_functional_genomics_data", "params:cell_types", "params:type"],
+            inputs=["concatenated_combined_functional_genomics_data", "params:cell_types", "params:type",
+                    "params:features_include_only", "params:features_exclude"],
             outputs="read_data",
             name="read_data_to_dict_node",
         ),
@@ -33,31 +34,38 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
         ),
         node(
             func=train_and_eval,
-            inputs=["split_data", "params:log_reg.type", "params:log_reg.params", "params:log_reg.run"],
+            inputs=["split_data", "params:log_reg.type", "params:log_reg.params", "params:log_reg.run", "params:run_name"],
             outputs=["logistic_regression_models", "logistic_regression_metrics", "logistic_regression_confusionmatrix",
                      "logistic_regression_feature_importance_df", "logistic_regression_feature_importance_plot"],
             name="train_and_eval_logistic_regression_node",
         ),
         node(
             func=train_and_eval,
-            inputs=["split_data", "params:rf.type", "params:rf.params", "params:rf.run"],
+            inputs=["split_data", "params:rf.type", "params:rf.params", "params:rf.run", "params:run_name"],
             outputs=["random_forest_models", "random_forest_metrics", "random_forest_confusionmatrix",
                      "random-forest_feature_importance_df", "random-forest_feature_importance_plot"],
             name="train_and_eval_random_forest_node",
         ),
         node(
             func=train_and_eval,
-            inputs=["split_data", "params:lgbm.type", "params:lgbm.params", "params:lgbm.run"],
+            inputs=["split_data", "params:lgbm.type", "params:lgbm.params", "params:lgbm.run", "params:run_name"],
             outputs=["lightgbm_models", "lightgbm_metrics", "lightgbm_confusionmatrix",
                      "lightgbm_feature_importance_df", "lightgbm_feature_importance_plot"],
             name="train_and_eval_lightgbm_node",
         ),
         node(
             func=train_and_eval,
-            inputs=["split_data", "params:xgb.type", "params:xgb.params", "params:xgb.run"],
+            inputs=["split_data", "params:xgb.type", "params:xgb.params", "params:xgb.run", "params:run_name"],
             outputs=["xgboost_models", "xgboost_metrics", "xgboost_confusionmatrix",
                      "xgboost_feature_importance_df", "xgboost_feature_importance_plot"],
             name="train_and_eval_xgboost_node",
+        ),
+        node(
+            func=train_and_eval,
+            inputs=["split_data", "params:dt.type", "params:dt.params", "params:dt.run", "params:run_name"],
+            outputs=["decision_tree_models", "decision_tree_metrics", "decision_tree_confusionmatrix",
+                     "decision_tree_feature_importance_df", "decision_tree_feature_importance_plot"],
+            name="train_and_eval_decision_tree_node",
         ),
     ])
 
@@ -65,6 +73,7 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
         pipe=pipeline_template,
         inputs=["concatenated_combined_functional_genomics_data",],
         parameters=[
+            "params:run_name",
             "params:cell_types",
             "params:features_include_only",
             "params:features_exclude",
@@ -82,6 +91,9 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
             "params:xgb.type",
             "params:xgb.params",
             "params:xgb.run",
+            "params:dt.type",
+            "params:dt.params",
+            "params:dt.run",
         ],
         namespace=namespace,
     )

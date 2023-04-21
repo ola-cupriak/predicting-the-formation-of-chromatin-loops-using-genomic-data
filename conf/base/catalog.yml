@@ -6,9 +6,9 @@ _save_pandas_csv: &save_pandas_csv
     sep: "\t"
 
 _save_partitioned_pandas_csv: &save_partitioned_pandas_csv
-  path: data/01_raw/HiC_loops_annotations
+  type: PartitionedDataSet
   dataset: 
-    <<: *_save_pandas_csv
+    <<: *save_pandas_csv
   filename_suffix: ".txt"
 
 _save_plt_plot: &save_plt_plot
@@ -184,6 +184,18 @@ across.xgboost_models:
       path: data/06_models/across/across_xgboost_models
       <<: *save_partitioned_pickle
 
+within.decision_tree_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/within/within_decision_tree_models
+      <<: *save_partitioned_pickle
+
+across.decision_tree_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/across/across_decision_tree_models
+      <<: *save_partitioned_pickle
+
 # metrics
 within.logistic_regression_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
@@ -233,6 +245,18 @@ across.xgboost_metrics:
       path: data/07_model_output/across/across_xgboost_metrics
       <<: *save_partitioned_text
 
+within.decision_tree_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_decision_tree_metrics
+      <<: *save_partitioned_text
+
+across.decision_tree_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_decision_tree_metrics
+      <<: *save_partitioned_text
+
 within.logistic_regression_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -279,6 +303,18 @@ across.xgboost_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_xgboost_metrics
+      <<: *save_partitioned_plt_plot
+
+within.decision_tree_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_decision_tree_metrics
+      <<: *save_partitioned_plt_plot
+
+across.decision_tree_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_decision_tree_metrics
       <<: *save_partitioned_plt_plot
 
 #feature importance 
@@ -330,6 +366,18 @@ across.xgboost_feature_importance_plot:
       path: data/07_model_output/across/across_xgboost_feature_importance
       <<: *save_partitioned_plt_plot
 
+within.decision_tree_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_decision_tree_feature_importance
+      <<: *save_partitioned_plt_plot
+
+across.decision_tree_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_decision_tree_feature_importance
+      <<: *save_partitioned_plt_plot
+
 within.logistic_regression_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -376,4 +424,16 @@ across.xgboost_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_xgboost_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.decision_tree_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/within/within_decision_tree_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+across.decision_tree_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/across/across_decision_tree_feature_importance
       <<: *save_partitioned_pandas_parquet

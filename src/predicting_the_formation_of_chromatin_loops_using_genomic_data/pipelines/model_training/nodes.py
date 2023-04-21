@@ -6,6 +6,7 @@ import os
 import pandas as pd
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
 import seaborn as sns
+from sklearn import tree
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import SGDClassifier
@@ -40,11 +41,12 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
     if features_include_only:
         if 'label' not in features_include_only:
             features_include_only.append('label')
+            assert len(set(df.columns)).intersection(set(features_include_only)) == len(features_include_only), print('The features_include_only parameter contains columns that are not in the data frame!')
         df = df.loc[:, features_include_only]
     elif features_exclude:
         assert 'label' not in features_exclude, print('The label column cannot be excluded!')
+        assert len(set(df.columns)).intersection(set(features_exclude)) == len(features_exclude), print('The features_exclude parameter contains columns that are not in the data frame!')
         df = df.drop(features_exclude, axis=1)
-    
     if type == 'within':
         df = df.groupby('cell_type')
         return {cell_type: df_cell for cell_type, df_cell in df}
@@ -156,6 +158,22 @@ def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict =
     return model
 
 
+def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
+    """
+    Trains a decision tree model on the training data and returns the trained model.
+    Args:
+        X_train: Data frame with the training data.
+        y_train: Data frame with the training labels.
+        params: Dictionary with the parameters for the model.
+    Returns:
+        The trained model.
+    """
+    model = tree.DecisionTreeClassifier(**params)
+    model.fit(X_train, y_train)
+
+    return model
+
+
 def _train_model(df_dict: Dict[str, pd.DataFrame], 
                 model_type: str = 'log_reg', 
                 params: dict = {}, 
@@ -189,6 +207,8 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
             model = _train_xgboost(X_train, y_train, params)
         elif model_type == 'LightGBM':
             model = _train_lightgbm(X_train, y_train, params)
+        elif model_type == 'decision_tree':
+            model = _train_decision_tree(X_train, y_train, params)
         else:
             raise ValueError(f'Invalid model type: {model_type}')
 
@@ -284,7 +304,7 @@ def _get_feature_importances(models_dict: dict, model_type: str) -> dict:
             idxs = np.argsort(importances)
             importances = importances[idxs]
             names = model.feature_names_in_[idxs]
-        elif isinstance(model, RandomForestClassifier):
+        elif isinstance(model, RandomForestClassifier) or isinstance(model, tree.DecisionTreeClassifier):
             importances = model.feature_importances_
             idxs = np.argsort(importances)
             importances = importances[idxs]
@@ -307,8 +327,12 @@ def _get_feature_importances(models_dict: dict, model_type: str) -> dict:
 def train_and_eval(df_dict: Dict[str, pd.DataFrame], 
                     model_type: str = 'log_reg', 
                     params: dict = {}, 
-                    run: bool = True):
+                    run: bool = True,
+                    run_name: str = None):
     
+    if run_name:
+        mlflow.set_tag('run_name', run_name)
+
     model_dict = _train_model(df_dict, model_type, params, run)
     metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, model_type)
     feature_importances_dict, feature_importances_plot_dict = _get_feature_importances(model_dict, model_type)

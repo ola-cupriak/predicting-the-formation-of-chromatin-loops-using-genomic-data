@@ -1,3 +1,4 @@
+run_name: within_all_features
 # PREPARE DATA SECTION
 across:
   stratify:
@@ -12,24 +13,24 @@ within:
 
 test_size: 0.3
 random_state:
-cell_types:
+cell_types: # list
   - GM12878
-  # - K562
-  # - IMR90
-  # - HeLa
+  - K562
+  - IMR90
+  - HeLa
   # - HMEC
   # - HUVEC
   # - NHEK
 
-features_include_only:
+features_include_only: # list
 
-features_exclude:
+features_exclude: # list
 
 # MODELS SECTION
 # Logistic regression parameters
 log_reg:
   type: logistic_regression # DO NOT CHANGE
-  run: True 
+  run: False 
   params:
 # Random forest parameters
 rf:
@@ -44,7 +45,12 @@ lgbm:
 # XGBoost parameters
 xgb:
   type: XGBoost # DO NOT CHANGE
-  run: True 
+  run: False 
   params:
     tree_method: hist
     n_estimators: 1000
+# Decision tree parameters
+dt:
+  type: decision_tree # DO NOT CHANGE
+  run: False 
+  params:
