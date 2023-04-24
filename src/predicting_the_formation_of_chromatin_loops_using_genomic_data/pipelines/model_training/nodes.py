@@ -41,12 +41,15 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
     if features_include_only:
         if 'label' not in features_include_only:
             features_include_only.append('label')
-            assert len(set(df.columns)).intersection(set(features_include_only)) == len(features_include_only), print('The features_include_only parameter contains columns that are not in the data frame!')
+            features_include_only.append('cell_type')
+            assert len(set(df.columns).intersection(set(features_include_only))) == len(features_include_only), print('The features_include_only parameter contains columns that are not in the data frame!')
         df = df.loc[:, features_include_only]
     elif features_exclude:
         assert 'label' not in features_exclude, print('The label column cannot be excluded!')
-        assert len(set(df.columns)).intersection(set(features_exclude)) == len(features_exclude), print('The features_exclude parameter contains columns that are not in the data frame!')
+        assert 'cell_type' not in features_exclude, print('The cell_type column cannot be excluded!')
+        assert len(set(df.columns).intersection(set(features_exclude))) == len(features_exclude), print('The features_exclude parameter contains columns that are not in the data frame!')
         df = df.drop(features_exclude, axis=1)
+    
     if type == 'within':
         df = df.groupby('cell_type')
         return {cell_type: df_cell for cell_type, df_cell in df}
