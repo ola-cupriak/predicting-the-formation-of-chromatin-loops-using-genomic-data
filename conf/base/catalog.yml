@@ -48,6 +48,18 @@ _save_partitoned_text: &save_partitioned_text
     type: text.TextDataSet
   filename_suffix: ".txt"
 
+_save_partitioned_yaml: &save_partitioned_yaml
+  type: PartitionedDataSet
+  dataset: 
+    type: yaml.YAMLDataSet
+  filename_suffix: ".yml"
+
+_save_partitioned_plotly_json: &save_partitioned_plotly_json
+  type: PartitionedDataSet
+  dataset: 
+    type: plotly.JSONDataSet
+  filename_suffix: ".json"
+
 # Data preprocessing
 cells2names:
   type: yaml.YAMLDataSet
@@ -135,6 +147,130 @@ across.split_data_idxes:
       path: data/05_model_input/across_splits
       <<: *save_partitioned_pandas_parquet
 
+# parameters
+within.logistic_regression_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/within/within_logistic_regression_params
+      <<: *save_partitioned_yaml
+
+across.logistic_regression_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/across/across_logistic_regression_params
+      <<: *save_partitioned_yaml
+
+within.random_forest_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/within/within_random_forest_params
+      <<: *save_partitioned_yaml
+
+across.random_forest_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/across/across_random_forest_params
+      <<: *save_partitioned_yaml
+
+within.lightgbm_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/within/within_lightgbm_params
+      <<: *save_partitioned_yaml
+
+across.lightgbm_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/across/across_lightgbm_params
+      <<: *save_partitioned_yaml
+
+within.xgboost_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/within/within_xgboost_params
+      <<: *save_partitioned_yaml
+
+across.xgboost_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/across/across_xgboost_params
+      <<: *save_partitioned_yaml
+
+within.decision_tree_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/within/within_decision_tree_params
+      <<: *save_partitioned_yaml
+
+across.decision_tree_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/across/across_decision_tree_params
+      <<: *save_partitioned_yaml
+
+# optimalization plots
+
+within.logistic_regression_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/within/within_logistic_regression_optimalization
+      <<: *save_partitioned_plotly_json
+
+across.logistic_regression_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/across/across_logistic_regression_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.random_forest_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/within/within_random_forest_optimalization
+      <<: *save_partitioned_plotly_json
+
+across.random_forest_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/across/across_random_forest_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.lightgbm_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/within/within_lightgbm_optimalization
+      <<: *save_partitioned_plotly_json
+
+across.lightgbm_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/across/across_lightgbm_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.xgboost_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/within/within_xgboost_optimalization
+      <<: *save_partitioned_plotly_json
+
+across.xgboost_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/across/across_xgboost_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.decision_tree_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/within/within_decision_tree_optimalization
+      <<: *save_partitioned_plotly_json
+
+across.decision_tree_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/across/across_decision_tree_optimalization
+      <<: *save_partitioned_plotly_json
+
+
 # models
 within.logistic_regression_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
@@ -201,61 +337,61 @@ within.logistic_regression_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/within/within_logistic_regression_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 across.logistic_regression_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_logistic_regression_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 within.random_forest_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/within/within_random_forest_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 across.random_forest_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_random_forest_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 within.lightgbm_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/within/within_lightgbm_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 across.lightgbm_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_lightgbm_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 within.xgboost_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/within/within_xgboost_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 across.xgboost_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_xgboost_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 within.decision_tree_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/within/within_decision_tree_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 across.decision_tree_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/across/across_decision_tree_metrics
-      <<: *save_partitioned_text
+      <<: *save_partitioned_yaml
 
 within.logistic_regression_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet

@@ -1,27 +1,25 @@
+import json
 import lightgbm as lgb
 import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
-import os
+import optuna
 import pandas as pd
+import plotly.graph_objects as go
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
-import seaborn as sns
 from sklearn import tree
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score
 from sklearn import metrics  
-from sklearn import utils
-from typing import Any, Callable, Dict
+from typing import Any, Dict, List, Tuple, Callable
 import xgboost as xgb
-import yaml
 
 
 
 def read_data(df: pd.DataFrame, cell_types: list, type: str, 
-              features_include_only: list = [], features_exclude: list = []) -> pd.DataFrame:
+              features_include_only: list = [], features_exclude: list = []
+              ) -> Dict[str, pd.DataFrame]:
     """Reads the data from the data frame and returns the data frame with the
     selected cell types, removes the columns that are not needed for the model.
     Args:
@@ -31,7 +29,8 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
         features_include_only: List of columns to be included in the data frame.
         features_exclude: List of columns to be excluded from the data frame.
     Returns:
-        Data frame with the selected cell types and dropped columns that are not needed for the model.
+        Dictionary with DataFrames with the selected cell types 
+        and dropped columns that are not needed for the models.
     """
     if features_include_only and features_exclude:
         print('Warning! Both parameters features_include_only and features_exclude are given. Only the features_include_only parameter will be used.')
@@ -60,7 +59,8 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
 def split_data(dfs_dict: Dict[str, pd.DataFrame], 
                 test_size: float = 0.2, 
                 stratify: list = [], 
-                random_state: int = None) -> tuple:
+                random_state: int = None
+                ) -> Dict[str, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Splits the data into training and test sets.
     Args:
@@ -69,7 +69,7 @@ def split_data(dfs_dict: Dict[str, pd.DataFrame],
         stratify: The column name to be used for stratification.
         random_state: The seed to be used for random number generation.
     Returns:
-        A tuple with the training and test data frames.
+        A dictionary with tuples with the training and test data frames.
     """
     for cell_type, df in dfs_dict.items():
         dfs_dict[cell_type] = train_test_split(df, test_size=test_size, stratify=df.loc[:, stratify], random_state=random_state)
@@ -77,9 +77,14 @@ def split_data(dfs_dict: Dict[str, pd.DataFrame],
     return dfs_dict
 
 
-def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]) -> dict:
+def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]
+                     ) -> Dict[str, pd.DataFrame]:
     """
-    Check indexes in trainset and testset
+    Check indexes in trainset and testset.
+    Args:
+        dfs_dict: Dictionary with the training and test data frames.
+    Returns:
+        Dictionary with the DataFrames with indexes of training and test datasets.
     """
     idx_dict = {}
     for cell_type, (train_df, test_df) in dfs_dict.items():
@@ -97,7 +102,7 @@ def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]) -> dict:
     return idx_dict
 
 
-def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
+def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> LogisticRegression:
     """
     Trains a logistic regression model on the training data and returns the trained model.
     Args:
@@ -113,7 +118,7 @@ def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, par
     return model
 
 
-def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
+def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> RandomForestClassifier():
     """
     Trains a random forest model on the training data and returns the trained model.
     Args:
@@ -129,7 +134,7 @@ def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
     return model
 
 
-def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
+def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> xgb.XGBClassifier():
     """
     Trains a XGBoost model on the training data and returns the trained model.
     Args:
@@ -145,7 +150,7 @@ def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = 
     return model
 
 
-def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
+def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> lgb.LGBMClassifier():
     """
     Trains a LightGBM model on the training data and returns the trained model.
     Args:
@@ -161,7 +166,7 @@ def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict =
     return model
 
 
-def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}):
+def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> tree.DecisionTreeClassifier():
     """
     Trains a decision tree model on the training data and returns the trained model.
     Args:
@@ -179,8 +184,7 @@ def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
 
 def _train_model(df_dict: Dict[str, pd.DataFrame], 
                 model_type: str = 'log_reg', 
-                params: dict = {}, 
-                run: bool = True) -> tuple:
+                params: dict = {}) -> Dict[str, Any]:
     """
     Train choosen model on the training data.
     Args:
@@ -188,30 +192,28 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
         model_type: The type of model to be trained.
         random_state: The seed to be used for random number generation.
     Returns:
-        A tuple with the trained model and the training data.
+        A dictionary with the trained models.
     """
-    if not run:
-        return {'empty_model': ''}
-    if not params:
-        params={}
-    
     model_dict = {} 
     for cell_type, (df_train, _) in df_dict.items():
         print(f'Training {model_type} for {cell_type}...')
+        cell_params = params[cell_type]
+        if not cell_params:
+            cell_params = {}
     
         X_train = df_train.drop(['label', 'cell_type'], axis=1)
         y_train = df_train['label']
 
         if model_type == 'logistic_regression':
-            model = _train_logistic_regression(X_train, y_train, params)
+            model = _train_logistic_regression(X_train, y_train, cell_params)
         elif model_type == 'random_forest':
-            model = _train_random_forest(X_train, y_train, params)
+            model = _train_random_forest(X_train, y_train, cell_params)
         elif model_type == 'XGBoost':
-            model = _train_xgboost(X_train, y_train, params)
+            model = _train_xgboost(X_train, y_train, cell_params)
         elif model_type == 'LightGBM':
-            model = _train_lightgbm(X_train, y_train, params)
+            model = _train_lightgbm(X_train, y_train, cell_params)
         elif model_type == 'decision_tree':
-            model = _train_decision_tree(X_train, y_train, params)
+            model = _train_decision_tree(X_train, y_train, cell_params)
         else:
             raise ValueError(f'Invalid model type: {model_type}')
 
@@ -221,7 +223,14 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
 
 
 def _make_prediction(df_test: pd.DataFrame, model) -> np.array:
-
+    """
+    Makes predictions on the test data.
+    Args:
+        df_test: Data frame with the test data.
+        model: The trained model.
+    Returns:
+        A numpy array with the predictions.
+    """
 
     X_test = df_test.drop(['label', 'cell_type'], axis=1)
     y_pred = model.predict(X_test)
@@ -229,7 +238,8 @@ def _make_prediction(df_test: pd.DataFrame, model) -> np.array:
     return y_pred
 
 
-def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_type: str) -> dict:
+def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_type: str
+                    ) -> Tuple[dict, dict]:
     """
     Evaluates the model on the test data.
     Args:
@@ -237,7 +247,7 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_ty
         df_test: Data frame with the test data.
         model_type: The type of model to be trained.
     Returns:
-        A dictionary with the evaluation metrics.
+        A tuple with 2 dictionaries - with the evaluation metrics and the confusion matrices plots.
     """
     plt.ioff()
     
@@ -245,9 +255,6 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_ty
     matrices_dict = {}
     
     for cell_type in model_dict.keys():
-        if cell_type == 'empty_model':
-            continue
-
         print(f'Evaluating {model_type} for {cell_type}...')
 
         df_test = df_dict[cell_type][1]
@@ -270,28 +277,27 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_ty
         matrices_dict[cell_type] = disp.figure_
 
         mlflow.log_metrics(metrics_dict)
-        metrics_dict_toyaml = {k: float(str(v)) for k, v in metrics_dict.items()}
-        yaml_string = yaml.dump(metrics_dict_toyaml)
-        metrics_dict_all[cell_type] = yaml_string
+        metrics_dict = {k: float(str(v)) for k, v in metrics_dict.items()}
     
     matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
-
-    if not metrics_dict_all:
-        metrics_dict_all['empty_model'] = ''
-    if not matrices_dict:
-        matrices_dict['empty_model'] = plt.figure()
-    
 
     return metrics_dict_all, matrices_dict
 
 
-def _get_feature_importances(models_dict: dict, model_type: str) -> dict:
+def _get_feature_importances(models_dict: dict, model_type: str) -> Tuple[dict, dict]:
+    """
+    Get the feature importances for the trained model.
+    Args:
+        model: The trained model.
+        model_type: The type of model.
+    Returns:
+        A tuple with two dictionaries - fiest with the feature importances DataFrame 
+        and second with plot of top20 feature importances.
+    """
     feature_importances_plot_dict = {}
     feature_importances_dict = {}
 
     for cell_type, model in models_dict.items():
-        if cell_type == 'empty_model':
-            continue
         if isinstance(model, xgb.XGBClassifier):
             importances = model.feature_importances_
             idxs = np.argsort(importances)
@@ -326,17 +332,122 @@ def _get_feature_importances(models_dict: dict, model_type: str) -> dict:
     return feature_importances_dict, feature_importances_plot_dict
 
 
+def optimize_parameters(df_dict: Dict[str, pd.DataFrame], 
+                        model_type: str = 'log_reg', 
+                        params: dict = {},
+                        optimize: bool = True,
+                        run: bool = True,
+                        test_size: float = 0.2,
+                        validation_size = 0.3,
+                        stratify: list = [],
+                        random_state: int = None,
+                        optim_time: int = None,
+                        n_trials: int = 10,
+                        eval_metric: Callable = metrics.roc_auc_score,
+                        direction: str = "maximize",
+                        ) -> Tuple[dict, dict]:
+    if not run:
+        return {'empty_model': ''}, {'empty_model': go.Figure()}
+    
+    if not params: 
+        params = {}
+    params_dict = {k: params for k in df_dict.keys()}
+    if not optimize:
+        return params_dict, {'empty_model': go.Figure()}
+
+    plot_dict = {}
+    validation_size = validation_size/(1-test_size)
+    for cell_type, (cell_df, _) in df_dict.items():
+        df_train, df_val = train_test_split(cell_df, test_size=validation_size, stratify=cell_df.loc[:, stratify], random_state=random_state)
+        X_train = df_train.drop(['label', 'cell_type'], axis=1)
+        y_train = df_train['label']
+        X_val = df_val.drop(['label', 'cell_type'], axis=1)
+        y_val = df_val['label']
+        
+        del(df_train)
+        del(df_val)
+
+        def objective(trial):
+            cell_params = params_dict[cell_type]
+            params_to_opt = {}
+            for name, val_dict in cell_params.items():
+                if val_dict['type'] == 'categorical':
+                    params_to_opt[name] = trial.suggest_categorical(name, val_dict['choices'])
+                elif val_dict['type'] == 'int':
+                    params_to_opt[name] = trial.suggest_int(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
+                elif val_dict['type'] == 'float':
+                    params_to_opt[name] = trial.suggest_float(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
+
+            
+            if model_type == 'logistic_regression':
+                model = _train_logistic_regression(X_train, y_train, params_to_opt)
+            elif model_type == 'random_forest':
+                model = _train_random_forest(X_train, y_train, params_to_opt)
+            elif model_type == 'decision_tree':
+                model = _train_decision_tree(X_train, y_train, params_to_opt)
+            elif model_type == 'LightGBM':
+                model = _train_lightgbm(X_train, y_train, params_to_opt)
+            elif model_type == 'XGBoost':
+                model = _train_xgboost(X_train, y_train, params_to_opt)
+            else:
+                raise ValueError(f"Wrong model type: {model_type}")
+            
+            valid_preds = model.predict(X_val)
+            valid_score = eval_metric(y_val, valid_preds)
+
+            return valid_score
+
+        if random_state:
+            sampler = optuna.samplers.TPESampler(seed=random_state)
+        else:
+            sampler = optuna.samplers.TPESampler()
+        study = optuna.create_study(direction=direction, sampler=sampler)
+
+        if n_trials and optim_time:
+            study.optimize(objective, n_trials=n_trials, timeout=optim_time)
+        elif optim_time:
+            study.optimize(objective, timeout=optim_time)
+        elif n_trials:
+            study.optimize(objective, n_trials=n_trials)
+        else:
+            raise ValueError("You have to specify either n_trials or optim_time")
+
+        best_params = study.best_params
+
+        params_dict[cell_type] = best_params
+        fig = optuna.visualization.plot_optimization_history(study)
+        plot_dict[cell_type] = fig
+    return params_dict, plot_dict
+
+
 
 def train_and_eval(df_dict: Dict[str, pd.DataFrame], 
                     model_type: str = 'log_reg', 
                     params: dict = {}, 
                     run: bool = True,
-                    run_name: str = None):
+                    run_name: str = None
+                    ) -> Tuple[dict, dict, dict, dict, dict]:
+    """
+    Trains and evaluates the model.
+    Args:
+        df_dict: A dictionary with the train and test data frames.
+        model_type: The type of model to be trained.
+        params: A dictionary with the model parameters.
+        run: If True, the model will be trained and evaluated with MLFlow.
+        run_name: The name of the run.
+    Returns:
+        A tuple with dictionaries with the trained models, the evaluation metrics, the confusion matrices,
+        the feature importances and the feature importances plot.
+    """
+    if not run:
+        return {'empty_model': ''}, {'empty_model': ''}, {'empty_model': plt.figure()}, {'empty_model': pd.DataFrame()}, {'empty_model': plt.figure()}
     
     if run_name:
-        mlflow.set_tag('run_name', run_name)
+        mlflow.set_tag("mlflow.runName", run_name)
 
-    model_dict = _train_model(df_dict, model_type, params, run)
+    params = _dict_partitions(params)
+
+    model_dict = _train_model(df_dict, model_type, params)
     metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, model_type)
     feature_importances_dict, feature_importances_plot_dict = _get_feature_importances(model_dict, model_type)
 
