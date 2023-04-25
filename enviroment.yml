@@ -8,6 +8,7 @@ dependencies:
   - conda-forge::matplotlib-venn~=0.11.9
   - bioconda::meme~=5.4.1
   - numpy~=1.23.5
+  - conda-forge::optuna~=3.1.1
   - pandas~=1.5.3
   - prettytable~=3.5.0
   - pip:
