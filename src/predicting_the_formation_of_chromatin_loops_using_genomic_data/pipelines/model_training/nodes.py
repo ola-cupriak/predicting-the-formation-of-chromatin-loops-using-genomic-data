@@ -276,7 +276,7 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_ty
         disp.ax_.set_title(f'Confusion matrix for {cell_type} cell for {model_type} model')
         matrices_dict[cell_type] = disp.figure_
 
-        mlflow.log_metrics(metrics_dict)
+        mlflow.log_metrics({f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
         metrics_dict = {k: float(str(v)) for k, v in metrics_dict.items()}
     
     matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
@@ -358,6 +358,7 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
     plot_dict = {}
     validation_size = validation_size/(1-test_size)
     for cell_type, (cell_df, _) in df_dict.items():
+        print(f'Optimizing parameters of {model_type} for {cell_type} cell...')
         df_train, df_val = train_test_split(cell_df, test_size=validation_size, stratify=cell_df.loc[:, stratify], random_state=random_state)
         X_train = df_train.drop(['label', 'cell_type'], axis=1)
         y_train = df_train['label']
