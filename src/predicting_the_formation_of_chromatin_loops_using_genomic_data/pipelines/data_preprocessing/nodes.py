@@ -1,17 +1,13 @@
+import copy
 import pyBigWig
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
 from typing import Any, Callable, Dict
 import pandas as pd
-import copy
 from tqdm import tqdm
 from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio import motifs
 import pybedtools
 import subprocess
 import warnings
-from io import StringIO
 import time
 
 warnings.simplefilter(action="ignore")
@@ -40,7 +36,8 @@ def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
     
 def read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
-                dataset_name: str, r: int) -> Dict[str, pd.DataFrame]:
+                dataset_name: str, r: int,
+                cells_to_use: list=[]) -> Dict[str, pd.DataFrame]:
     """
     Load and modify the dataframes with chromatin loops anotations.
     Args:
@@ -48,15 +45,19 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
         r: radius of the region.
+        cells_to_use: list of cell types to use.
     Returns:
         dictionary with cell types as keys and pandas DataFrames as values.
     """
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
+    assert set(cells_to_use).issubset(set(cells2names_dataset_dict.values())), f"Cell types: {set(cells_to_use)-set(cells2names_dataset_dict.values())} are not in the dataset. Please check data_preprocessing.yml file."
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
         cell_type = cells2names_dataset_dict[keys_dict[name]]
+        if cells_to_use and cell_type not in cells_to_use:
+            continue
         f1 = lambda x: x['chr1'].split("chr")[-1]
         f2 = lambda x: x['chr2'].split("chr")[-1]
         df["chr1"] = df.apply(f1, axis=1)
@@ -84,22 +85,27 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
 
 def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
                 cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
+                dataset_name: str,
+                cells_to_use: list) -> Dict[str, pd.DataFrame]:
     """
     Load dataframes with DNase-seq/ChIP-seq peaks and modify the chromosome columns.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
+        cells_to_use: list of cell types to use.
     Returns:
         dictionary with cell types as keys and pandas DataFrames as values.
     """
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
+    assert set(cells_to_use).issubset(set(cells2names_dataset_dict.values())), f"Cell types: {set(cells_to_use)-set(cells2names_dataset_dict.values())} are not in the dataset. Please check data_preprocessing.yml file."
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
         cell_type = cells2names_dataset_dict[keys_dict[name]]
+        if cells_to_use and cell_type not in cells_to_use:
+            continue
         f = lambda x: x['chr'].split("chr")[-1]
         df["chr"] = df.apply(f, axis=1)
         df = _sort_df(df, 'start')
@@ -112,22 +118,28 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
 
 def read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
                 cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
+                dataset_name: str,
+                cells_to_use: list) -> Dict[str, pd.DataFrame]:
     """
     Load dataframes with DNase-seq/ChIP-seq bigWig data.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
+        cells_to_use: list of cell types to use.
     Returns:
         dictionary with cell types as keys and paths to bigWig files as values.
     """
     input_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
+    assert set(cells_to_use).issubset(set(cells2names_dataset_dict.values())), f"Cell types: {set(cells_to_use)-set(cells2names_dataset_dict.values())} are not in the dataset. Please check data_preprocessing.yml file."
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     bigWig_data_dict = dict()
     for name, bigWig_path in input_dict.items():
-        bigWig_data_dict[cells2names_dataset_dict[keys_dict[name]]] = bigWig_path
+        cell_type = cells2names_dataset_dict[keys_dict[name]]
+        if cells_to_use and cell_type not in cells_to_use:
+            continue
+        bigWig_data_dict[cell_type] = bigWig_path
 
     return bigWig_data_dict
 
@@ -580,25 +592,27 @@ def remove_overlapping(main_dfs_dict: dict):
     return main_dfs_dict
 
 
-def concat_dfs_from_dict(main_dfs_dict: dict, keys_to_concat: list=None) -> pd.DataFrame:
+def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.DataFrame:
+    '''
+    Concat 
+    '''
 
     print('Concatenating dataframes from dictionary...')
     # check if all keys_to_concat are in main_dfs_dict
-    if keys_to_concat:
-        assert set(keys_to_concat).issubset(set(main_dfs_dict.keys())), 'Some keys are not in main_dfs_dict. Check data_preprocessing.yml file.'
+    if cells_to_use:
+        assert set(cells_to_use) == set(main_dfs_dict.keys()), 'Something went wrong when filtering out the cell types to be used. Check data_preprocessing.yml file.'
     else:
-        keys_to_concat = list(main_dfs_dict.keys())
+        cells_to_use = list(cells_to_use.keys())
 
-    expected_len = sum([len(main_dfs_dict[key]) for key in keys_to_concat])
+    expected_len = sum([len(main_dfs_dict[key]) for key in cells_to_use])
 
-    for i in range(len(keys_to_concat)):
+    for i in range(len(cells_to_use)):
         if i == 0:
-            main_df = main_dfs_dict[keys_to_concat[i]]
+            main_df = main_dfs_dict[cells_to_use[i]]
         else:
-            main_df = pd.concat([main_df, main_dfs_dict[keys_to_concat[i]]], ignore_index=True)
-        main_dfs_dict.pop(keys_to_concat[i])
+            main_df = pd.concat([main_df, main_dfs_dict[cells_to_use[i]]], ignore_index=True)
+        main_dfs_dict.pop(cells_to_use[i])
             
-    
     assert len(main_df) == expected_len, 'Something went wrong with concatenating dataframes from dictionary - expected length is not equal to actual length.'
 
     #main_df.reset_index()
