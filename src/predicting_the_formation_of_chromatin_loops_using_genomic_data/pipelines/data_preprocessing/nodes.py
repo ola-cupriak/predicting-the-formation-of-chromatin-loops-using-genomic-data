@@ -189,17 +189,10 @@ def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, c
     """
     bed1 = pybedtools.BedTool.from_dataframe(df1)
     bed2 = pybedtools.BedTool.from_dataframe(df2)
-    if count:
-        intersection = bed1.intersect(bed2, c=count)
-        intersection = pd.read_table(intersection.fn, names=names)
-    else:
-        if wa and wb:
-            intersection = bed1.intersect(bed2, wa=wa, wb=wb)
-            intersection = pd.read_table(intersection.fn, names=names)
-        else:
-            intersection = bed1.intersect(bed2)
-            intersection = pd.read_table(intersection.fn, names=names)
     
+    intersection = bed1.intersect(bed2, c=count, wa=wa, wb=wb)
+    intersection = pd.read_table(intersection.fn, names=names)
+
     return intersection
 
 
