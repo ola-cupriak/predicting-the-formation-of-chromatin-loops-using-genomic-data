@@ -23,7 +23,7 @@ def create_pipeline(type: str, **kwargs) -> Pipeline:
         ),
         node(
             func=split_data,
-            inputs=["read_data", "params:test_size", "params:stratify", "params:random_state"],
+            inputs=["read_data", "params:type", "params:test_size", "params:stratify", "params:random_state"],
             outputs="split_data",
             name="split_data_node",
         ),

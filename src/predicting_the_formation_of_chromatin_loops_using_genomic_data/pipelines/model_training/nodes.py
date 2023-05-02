@@ -53,10 +53,11 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
         df = df.groupby('cell_type')
         return {cell_type: df_cell for cell_type, df_cell in df}
     elif type == 'across':
-        return {'all': df}
+        return {cell_type: df for cell_type in pd.unique(df['cell_type'])}
 
 
 def split_data(dfs_dict: Dict[str, pd.DataFrame], 
+                type: str, 
                 test_size: float = 0.2, 
                 stratify: list = [], 
                 random_state: int = None
@@ -71,8 +72,12 @@ def split_data(dfs_dict: Dict[str, pd.DataFrame],
     Returns:
         A dictionary with tuples with the training and test data frames.
     """
+    
     for cell_type, df in dfs_dict.items():
-        dfs_dict[cell_type] = train_test_split(df, test_size=test_size, stratify=df.loc[:, stratify], random_state=random_state)
+        if type == 'within':
+            dfs_dict[cell_type] = train_test_split(df, test_size=test_size, stratify=df.loc[:, stratify], random_state=random_state)
+        elif type == 'across':
+            dfs_dict[cell_type] = (df[df['cell_type'] != cell_type], df[df['cell_type'] == cell_type])
 
     return dfs_dict
 
