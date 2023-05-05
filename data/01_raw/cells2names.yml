@@ -20,13 +20,11 @@ DNase_seq_bigWig:
   ENCFF352SET.bigWig: K562
   ENCFF558DRT.bigWig: HUVEC
   ENCFF582ZRH.bigWig: NHEK
-  ENCFF636YSC.bigWig: KBM7
   ENCFF830TNF.bigWig: HeLa
   ENCFF901GZH.bigWig: GM12878
 DNase_seq_peaks:
   ENCFF097KBE.bed: HUVEC
   ENCFF273MVV.bed: GM12878
-  ENCFF384AQH.bed: KBM7
   ENCFF621ZJY.bed: K562
   ENCFF672BMB.bed: HMEC
   ENCFF775GBM.bed: HeLa
@@ -39,7 +37,6 @@ HiC_loops_annotations:
   GSE63525_HeLa_HiCCUPS_looplist.txt: HeLa
   GSE63525_IMR90_HiCCUPS_looplist.txt: IMR90
   GSE63525_K562_HiCCUPS_looplist.txt: K562
-  GSE63525_KBM7_HiCCUPS_looplist.txt: KBM7
   GSE63525_NHEK_HiCCUPS_looplist.txt: NHEK
 reference_genomes:
   GRCh37_latest_genomic.fna: hg19
