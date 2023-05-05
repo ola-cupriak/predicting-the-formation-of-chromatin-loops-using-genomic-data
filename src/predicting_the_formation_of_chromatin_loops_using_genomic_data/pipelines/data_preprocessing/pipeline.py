@@ -78,12 +78,12 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="path_fasta_anchors_with_open_chromtin",
                 name="getfasta_anchors_with_open_chromtin_node",
             ),
-            # node(
-            #     func=find_motifs,
-            #     inputs=["params:path_motifs_JASPAR_vertebrates", "params:path_fasta_anchors_with_open_chromtin"],
-            #     outputs="motifs_found_anchors_with_open_chromatin",
-            #     name="find_motifs_in_anchors_with_open_chromtin_node",
-            # ),
+            node(
+                func=find_motifs,
+                inputs=["params:path_motifs_JASPAR_vertebrates", "params:path_fasta_anchors_with_open_chromtin"],
+                outputs="motifs_found_anchors_with_open_chromatin",
+                name="find_motifs_in_anchors_with_open_chromtin_node",
+            ),
             node(
                 func=count_peaks,
                 inputs=["concat_label_HiC_loops_anotations", "readed_CTCF_ChIP_seq_peaks", "params:CTCF_ChIP-seq_peaks", "params:radius"],
