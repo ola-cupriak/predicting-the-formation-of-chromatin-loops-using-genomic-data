@@ -23,5 +23,5 @@ def register_pipelines() -> Dict[str, Pipeline]:
         "data_downloading": data_downloading_pipeline,
         "data_preprocessing": data_preprocessing_pipeline,
         "model_training_across_cells": model_training_across_pipeline,
-        "model_training_within_cell": model_training_within_pipeline,
+        "model_training_within_cells": model_training_within_pipeline,
     }
