@@ -48,7 +48,9 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         r: radius of the region.
         cells_to_use: list of cell types to use.
     Returns:
-        dictionary with cell types as keys and pandas DataFrames as values.
+        dictionary:
+            keys: cell types 
+            values: pandas DataFrames with chromatin loops anotations.
     """
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
@@ -96,7 +98,9 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
         dataset_name: name of the dataset to select from cells2names.
         cells_to_use: list of cell types to use.
     Returns:
-        dictionary with cell types as keys and pandas DataFrames as values.
+        dictionary:
+            keys: cell types 
+            values: pandas DataFrames with DNase-seq/ChIP-seq peaks.
     """
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
@@ -122,14 +126,16 @@ def read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
                 dataset_name: str,
                 cells_to_use: list) -> Dict[str, pd.DataFrame]:
     """
-    Load dataframes with DNase-seq/ChIP-seq bigWig data.
+    Create a dictionary with paths to DNase-seq/CTCF ChIP-seq bigWig files for each cell type.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
         cells_to_use: list of cell types to use.
     Returns:
-        dictionary with cell types as keys and paths to bigWig files as values.
+        dictionary:
+            keys: cell types 
+            values: paths to DNase-seq/CTCF ChIP-seq bigWig files.
     """
     input_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
@@ -164,7 +170,9 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
     Returns:
-        dictionary with cell types as keys and changed pandas DataFrames as values.
+        dictionary:
+            keys: cell types
+            values: pandas DataFrames with labels added.
     """
     df = _concat_dfs(dfs_dict)
     df = _sort_df(df, 'x')
@@ -189,7 +197,7 @@ def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, c
         wa: write the original entry in A for each overlap.
         wb: write the original entry in B for each overlap.
     Returns:
-        pd.DataFrame with overlapping regions or number of overlapping regions.
+        pandas DataFrame with overlapping regions or number of overlapping regions.
     """
     bed1 = pybedtools.BedTool.from_dataframe(df1)
     bed2 = pybedtools.BedTool.from_dataframe(df2)
@@ -206,13 +214,10 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
     Args:
         main_df: pandas DataFrame with chromatin loops.
         peaks_df: pandas DataFrame with experiment peaks.
-        anchors_df: pandas DataFrame with anchors coordinates and sequences.
         experiment: name of the experiment.
         r: radius of the anchors.
-        motifs_path: path to the file with motifs.
     Returns:
-        pandas DataFrame with chromatin loops and the numbers of experiment peaks in both regions of each loop
-        and columns with counts of each motif in each region if motifs_path is not None.
+        pandas DataFrame with added columns of numbers of experiment peaks in both regions of each loop
     """
     for region in ['x', 'y']:
         second_reg = 'y' if region == 'x' else 'x'
@@ -244,13 +249,12 @@ def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dic
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         peaks_dfs_dict: dictionary with cell types as keys and pandas DataFrames with experiment peaks as values.
-        anchors_df: pandas DataFrame with anchors coordinates and sequences.
         experiment: name of the experiment.
         r: radius of the region around the loop center.
-        motifs_path: path to the file with motifs.
     Returns:
-        dictionary with cell types as keys and pandas DataFrames with chromatin loops and the numbers of peaks 
-        (and motifs counts if motifs_path is not None) in both regions of each loop as values.
+        dictionary:
+            keys: cell types
+            values: pandas DataFrame with added columns of numbers of experiment peaks in both regions of each loop
     """
     print(f'Adding peaks counts for {experiment}...')
     # if main_dfs_dict values are not DataFrames, load them
@@ -296,12 +300,13 @@ def calculate_weighted_mean(distribution: list):
 
 def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, r: int) -> pd.DataFrame:
     """
-    Count the number of experiment peaks in both regions of each chromatin loop.
+    Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
+    of the bigWig data in both regions of each chromatin loop.
     Args:
         main_df: pandas DataFrame with chromatin loops.
         bigWig_obj: pyBigWig object with experiment peaks
     Returns:
-        pandas DataFrame with chromatin loops and ...
+        pandas DataFrame with added columns of bigWig data statistics in both regions of each loop
     """
     bigWig_obj = pyBigWig.open(bigWig_path)
     regions = ['x', 'y']
@@ -320,14 +325,17 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
                     bigWig_data_dict: dict,
                     experiment: str, r: int) -> pd.DataFrame:
     """
-    Count the number of peaks in both regions of each chromatin loop,
+    Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
+    of the bigWig data in both regions of each chromatin loop,
     for each dataframe from the main_dfs_dict dictionary.
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         bigWig_data_dict: dictionary with cell types as keys and pyBigWig objects as values.
         r: radius of the region around the loop center.
     Returns:
-        dictionary with pandas DataFrames with chromatin loops and ...
+        dictionary:
+            keys: cell types 
+            values: pandas DataFrames with added columns of bigWig data statistics in both regions of each loop
     """
     print(f'Adding {experiment} data...')
     # if main_dfs_dict values are not DataFrames, load them
@@ -346,7 +354,8 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
 
 def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    Combines the columns describing x regions and the columns describing y regions 
+    Concatenates all anchors DataFrames into one DataFrame and 
+    combines the columns describing x regions and the columns describing y regions 
     into one set of columns describing all regions.
     (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
     Args:
@@ -374,6 +383,13 @@ def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Concatenates all peaks DataFrames into one DataFrame.
+    Args:
+        peaks_dict: dictionary with cell types as keys and pandas DataFrames as values.
+    Returns:
+        pandas DataFrame with all peaks.
+    """
     df = _concat_dfs(peaks_dict)
     # sort by chr and region
     df = _sort_df(df, 'start')
@@ -511,7 +527,14 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
 
 
 def _reverse_names(colnames: list) :
-    
+    """
+    Create dictionary with swapped suffixes.
+    Columns with suffix '_f' will be swapped to columns with suffix '_r' and vice versa.
+    Args:
+        colnames: list of column names.
+    Returns:
+        dictionary with swapped suffixes.
+    """
     to_reverse_f = [name for name in colnames if '_f' in name]
     to_reverse_r = [name for name in colnames if '_r' in name]
     to_reverse_f = {name: name.replace('_f', '_r') for name in to_reverse_f}
@@ -523,7 +546,14 @@ def _reverse_names(colnames: list) :
 
 
 def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> pd.DataFrame:
-    
+    """
+    Counts motif occurances in both regions of each chromatin loop.
+    Args:
+        main_df: pandas DataFrame with chromatin loops.
+        motifs_df: pandas DataFrame with motif occurrences found.
+    Returns:
+        pandas DataFrame with added columns of each motif counts in both regions of each chromatin loop.
+    """
     # change dtypes in main_df
     main_df[['chr', 'cell_type']] = main_df[['chr', 'cell_type']].astype('string')
 
@@ -557,7 +587,17 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> p
 
 
 def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
-
+    """
+    Counts motif occurances in both regions of each chromatin loop,
+    for each dataframe from the main_dfs_dict dictionary.
+    Args:
+        main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
+        motifs_df: dictionary with cell types as keys and pandas DataFrame with motif occurrences found as values.
+    Returns:
+        dictionary:
+            keys: cell types 
+            values: pandas DataFrame with added columns of each motif counts in both regions of each chromatin loop
+    """
     print('Adding motifs counts...')
     motifs_df[['chr', 'cell_type']] = motifs_df[['chr', 'cell_type']].astype('string')
     # if main_dfs_dict values are not DataFrames, load them
@@ -579,20 +619,25 @@ def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
 
 
 
-
 def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
-    
+    """
+    Remove negative examples that overlap with positive examples.
+    Args:
+        df: pandas DataFrame with positive and negative examples.
+    Returns:
+        pandas DataFrame with removed negative examples that overlap with positive examples.
+    """
     df['id'] = [i for i in range(len(df))]
     df_1x = df.loc[df.loc[:,'label']==1,['chr', 'x_start', 'x_end', 'id']]
     df_0x = df.loc[df.loc[:,'label']==0,['chr', 'x_start', 'x_end', 'id']]
     df_1y = df.loc[df.loc[:,'label']==1,['chr', 'y_start', 'y_end', 'id']]
     df_0y = df.loc[df.loc[:,'label']==0,['chr', 'y_start', 'y_end', 'id']]
-
+    # Find overlapping regions for x and y anchors separately
     x_overlap = get_overlapping_regions(df_1x, df_0x, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
     y_overlap = get_overlapping_regions(df_1y, df_0y, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
-
+    # Find overlapping regions for x and y anchors together
     x_and_y = (set(x_overlap['id']) & set(y_overlap['id']))
-
+    # Remove overlapping negative examples
     df = df.loc[~df['id'].isin(x_and_y),:]
     df = df.loc[:, df.columns != 'id']
 
@@ -603,7 +648,16 @@ def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def remove_overlapping(main_dfs_dict: dict):
-
+    """
+    Remove negative examples that overlap with positive examples,
+    for each dataframe from the main_dfs_dict dictionary.
+    Args:
+        main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
+    Returns:
+        dictionary:
+            keys: cell types
+            values: pandas DataFrame with removed negative examples that overlap with positive examples
+    """
     print('Removing overlapping negative examples...')
     # if main_dfs_dict values are not DataFrames, load them
     if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
@@ -622,9 +676,13 @@ def remove_overlapping(main_dfs_dict: dict):
 
 def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.DataFrame:
     '''
-    Concat 
+    Concatenates dataframes from dictionary.
+    Args:   
+        main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
+        cells_to_use: list of cell types to be used. If empty, all cell types from main_dfs_dict will be used.
+    Returns:
+        pandas DataFrame with concatenated dataframes from dictionary.
     '''
-
     print('Concatenating dataframes from dictionary...')
     # check if all keys_to_concat are in main_dfs_dict
     if cells_to_use:
