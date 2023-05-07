@@ -186,7 +186,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     return dfs_dict
 
 
-def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, count: bool = False, 
+def _get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, count: bool = False, 
                             wa: bool = False, wb: bool = False) -> pd.DataFrame:
     """
     Get overlapping regions from two bed files.
@@ -208,21 +208,45 @@ def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, c
     return intersection
 
 
-def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str, r: int) -> pd.DataFrame:
+def _find_the_closest_peak(main_df: pd.DataFrame, peak_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Find the distance of the closest peak from the centre of each region.
+    Args:
+        main_df: pandas DataFrame with regions.
+        peak_df: pandas DataFrame with peaks.
+    Returns:
+        pandas DataFrame with the distances of the closest peaks to the centre of each region.
+    """ 
+    # Remove peaks on chromosomes that are not in the main_df
+    chromosomes = main_df['chr'].unique()
+    peak_df = peak_df.loc[peak_df['chr'].isin(chromosomes),:]
+
+    assert len(main_df.loc[main_df.iloc[:,1] != main_df.iloc[:,2],:]) == 0, 'The region columns are not equal'
+    bed1 = pybedtools.BedTool.from_dataframe(main_df)
+    bed2 = pybedtools.BedTool.from_dataframe(peak_df)
+
+    closest = bed1.closest(bed2, d=True, t='first')
+    closest = pd.read_table(closest.fn, names=['chr', 'centre', 'centre_dup', 'second_reg', 'cell_type',
+                                            'chr_peak', 'start_peak', 'end_peak', 'cell_type_peak', 'distance'])
+    closest = closest.loc[:,['chr', 'centre', 'second_reg', 'distance', 'cell_type']]
+
+    return closest
+
+
+def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str) -> pd.DataFrame:
     """
     Count the number of experiment peaks in both regions of each chromatin loop.
     Args:
         main_df: pandas DataFrame with chromatin loops.
         peaks_df: pandas DataFrame with experiment peaks.
         experiment: name of the experiment.
-        r: radius of the anchors.
     Returns:
         pandas DataFrame with added columns of numbers of experiment peaks in both regions of each loop
     """
     for region in ['x', 'y']:
         second_reg = 'y' if region == 'x' else 'x'
-        peak_counts = main_df[['chr', f'{region}_start', f'{region}_end', f'{second_reg}', 'cell_type']]
-        peak_counts = get_overlapping_regions(peak_counts, peaks_df, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'], count=True)
+        peak_counts = main_df.loc[:,['chr', f'{region}_start', f'{region}_end', f'{second_reg}', 'cell_type']]
+        peak_counts = _get_overlapping_regions(peak_counts, peaks_df, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'], count=True)
         peak_counts.rename(columns={'count': f'{region}_{experiment}_counts',
                                     'start': f'{region}_start',
                                     'end': f'{region}_end',
@@ -236,27 +260,63 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
         assert len(main_df) == main_len_before, 'Length of the main_df changed after merging'
 
     to_change_dtype = [f'x_{experiment}_counts', f'y_{experiment}_counts']
-    main_df[to_change_dtype] = main_df[to_change_dtype].astype('int16')
+    main_df.loc[:,to_change_dtype] = main_df.loc[:,to_change_dtype].astype('int16')
 
     return main_df
 
 
-def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dict[str, pd.DataFrame], 
-                experiment: str, r: int) -> pd.DataFrame:
+def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str) -> pd.DataFrame:
     """
-    Count the number of peaks in both regions of each chromatin loop,
+    Find the distance of the closest peak of the experiment from the center of each anchor from the chromatin loop.
+    Args:
+        main_df: pandas DataFrame with chromatin loops.
+        peaks_df: pandas DataFrame with experiment peaks.
+        experiment: name of the experiment.
+    Returns:
+        pandas DataFrame with added columns of distances of the closest peak of the experiment 
+        from the center of each anchor from the chromatin loop.
+    """
+    for region in ['y', 'x']:
+        second_reg = 'y' if region == 'x' else 'x'
+        distances = main_df.loc[:,['chr', f'{region}', f'{second_reg}', 'cell_type']]
+        distances = _sort_df(distances, region)
+        distances = distances.loc[:,['chr', f'{region}', f'{region}', f'{second_reg}', 'cell_type']]
+        distances = _find_the_closest_peak(distances, peaks_df)
+        distances.rename(columns={'distance': f'{region}_{experiment}_distance',
+                                    'centre': f'{region}',
+                                    'second_reg': f'{second_reg}'
+                                    }, inplace=True)
+
+        assert len(distances) == len(main_df), 'Length of the main_df and distances are not equal'
+
+        main_len_before = len(main_df)
+        main_df = main_df.merge(distances)
+
+        assert len(main_df) == main_len_before, 'Length of the main_df changed after merging'
+
+    to_change_dtype = [f'x_{experiment}_distance', f'y_{experiment}_distance']
+    main_df.loc[:,to_change_dtype] = main_df.loc[:,to_change_dtype].astype('int16')
+
+    return main_df
+
+
+def count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dict[str, pd.DataFrame], 
+                experiment: str) -> pd.DataFrame:
+    """
+    Count the number of peaks in both regions of each chromatin loop
+    and find the distance of the closest peak from the center of each anchor from the chromatin loop,
     for each dataframe from the main_dfs_dict dictionary.
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         peaks_dfs_dict: dictionary with cell types as keys and pandas DataFrames with experiment peaks as values.
         experiment: name of the experiment.
-        r: radius of the region around the loop center.
     Returns:
         dictionary:
             keys: cell types
-            values: pandas DataFrame with added columns of numbers of experiment peaks in both regions of each loop
+            values: pandas DataFrame with added columns of numbers of experiment peaks in both regions of each chromatin loop
+                    and columns of distances of the closest peak of the experiment from the center of each anchor from the chromatin loop.
     """
-    print(f'Adding peaks counts for {experiment}...')
+    print(f'Adding peaks counts and distances from anchor centers for {experiment}...')
     # if main_dfs_dict values are not DataFrames, load them
     if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
         main_dfs_dict = _dict_partitions(main_dfs_dict)
@@ -264,7 +324,8 @@ def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dic
         print(f'...for {peaks_name} cell...')
         for main_name, main_df in main_dfs_dict.items():
             if main_name == peaks_name:
-                main_df = _count_peaks_single_df(main_df, peaks_df, experiment, r)
+                main_df = _count_peaks_single_df(main_df, peaks_df, experiment)
+                main_df = _find_the_closest_peaks_single_df(main_df, peaks_df, experiment)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
@@ -298,7 +359,7 @@ def calculate_weighted_mean(distribution: list):
     return sum([distribution[i]*weights[i] for i in range(len(distribution))]) / sum(weights)
 
 
-def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, r: int) -> pd.DataFrame:
+def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str) -> pd.DataFrame:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop.
@@ -311,7 +372,7 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
     bigWig_obj = pyBigWig.open(bigWig_path)
     regions = ['x', 'y']
     for region in regions:
-        main_df[f'{region}_{experiment}_weighted_mean'] = main_df.apply(lambda x: calculate_weighted_mean(bigWig_obj.values('chr'+x['chr'], int(x[region]-r), int(x[region]+r))), axis=1)
+        main_df[f'{region}_{experiment}_weighted_mean'] = main_df.apply(lambda x: calculate_weighted_mean(bigWig_obj.values('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'])), axis=1)
         main_df[f'{region}_{experiment}_mean'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='mean')[0], axis=1)
         main_df[f'{region}_{experiment}_max'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='max')[0], axis=1)
         main_df[f'{region}_{experiment}_min'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='min')[0], axis=1)
@@ -323,7 +384,7 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
 
 def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
                     bigWig_data_dict: dict,
-                    experiment: str, r: int) -> pd.DataFrame:
+                    experiment: str) -> pd.DataFrame:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop,
@@ -331,7 +392,6 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         bigWig_data_dict: dictionary with cell types as keys and pyBigWig objects as values.
-        r: radius of the region around the loop center.
     Returns:
         dictionary:
             keys: cell types 
@@ -345,7 +405,7 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
         print(f'...for {bigWig_name} cell...')
         for main_name, main_df in main_dfs_dict.items():
             if main_name == bigWig_name:
-                main_df = _add_bigWig_data_single_df(main_df, bigWig_path, experiment, r)
+                main_df = _add_bigWig_data_single_df(main_df, bigWig_path, experiment)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
@@ -407,9 +467,9 @@ def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) ->
     Returns:
         pandas DataFrame with overlapping regions coordinates and names.
     """
-    intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 
+    intersection_wa_wb = _get_overlapping_regions(anchors_df, peaks_df, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 
                                                                               'peak_start', 'peak_end', 'cell_type'], wa=True, wb=True)
-    intersection = get_overlapping_regions(anchors_df, peaks_df, names=['chr', 'start', 'end'])
+    intersection = _get_overlapping_regions(anchors_df, peaks_df, names=['chr', 'start', 'end'])
 
     joined_intersection = pd.merge(intersection_wa_wb, intersection, left_index=True, right_index=True)
     joined_intersection['name'] = joined_intersection.apply(lambda x: f"{x['chr']}:{x['anchor_start']}:{x['anchor_end']}:{x['cell_type']}", axis=1)
@@ -479,7 +539,6 @@ def _modify_output(lines: list):
             file.write(f'{key}\t{value}\n')
     
     return lines
-
 
 
 def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
@@ -585,7 +644,6 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> p
     return main_df_new
 
 
-
 def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
     """
     Counts motif occurances in both regions of each chromatin loop,
@@ -618,7 +676,6 @@ def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
     return main_dfs_dict
 
 
-
 def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
     """
     Remove negative examples that overlap with positive examples.
@@ -633,8 +690,8 @@ def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
     df_1y = df.loc[df.loc[:,'label']==1,['chr', 'y_start', 'y_end', 'id']]
     df_0y = df.loc[df.loc[:,'label']==0,['chr', 'y_start', 'y_end', 'id']]
     # Find overlapping regions for x and y anchors separately
-    x_overlap = get_overlapping_regions(df_1x, df_0x, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
-    y_overlap = get_overlapping_regions(df_1y, df_0y, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
+    x_overlap = _get_overlapping_regions(df_1x, df_0x, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
+    y_overlap = _get_overlapping_regions(df_1y, df_0y, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
     # Find overlapping regions for x and y anchors together
     x_and_y = (set(x_overlap['id']) & set(y_overlap['id']))
     # Remove overlapping negative examples
