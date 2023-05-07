@@ -1,4 +1,5 @@
 import copy
+import numpy as np
 import pyBigWig
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
 from typing import Any, Callable, Dict
@@ -177,13 +178,16 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
     return dfs_dict
 
 
-def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, count: bool = False, wa: bool = False, wb: bool = False) -> pd.DataFrame:
+def get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, count: bool = False, 
+                            wa: bool = False, wb: bool = False) -> pd.DataFrame:
     """
     Get overlapping regions from two bed files.
     Args:
         df1: path to bed file 1
         df2: path to bed file 2
-        count: if True, count the number of overlapping regions.
+        count: for each entry in A, report the number of hits in B
+        wa: write the original entry in A for each overlap.
+        wb: write the original entry in B for each overlap.
     Returns:
         pd.DataFrame with overlapping regions or number of overlapping regions.
     """
@@ -263,6 +267,33 @@ def count_peaks(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dic
     return main_dfs_dict
 
 
+def get_triangle_kernel(kerlen: int) -> list:
+    """
+    Get a triangle kernel of length kerlen.
+    Args:
+        kerlen: length of the kernel.
+    Returns:
+        list with the triangle kernel.
+    """
+    r = np.arange(kerlen)
+    kernel1d = (kerlen + 1 - np.abs(r - r[::-1])) / 2
+    kernel1d /= kernel1d.sum()
+    
+    return kernel1d
+
+
+def calculate_weighted_mean(distribution: list):
+    """
+    Calculate weighted mean of the distribution.
+    Args:
+        distribution: list with values of the distribution.
+    Returns:
+        weighted mean of the distribution.
+    """
+    weights = get_triangle_kernel(len(distribution))
+    return sum([distribution[i]*weights[i] for i in range(len(distribution))]) / sum(weights)
+
+
 def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, r: int) -> pd.DataFrame:
     """
     Count the number of experiment peaks in both regions of each chromatin loop.
@@ -275,12 +306,12 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
     bigWig_obj = pyBigWig.open(bigWig_path)
     regions = ['x', 'y']
     for region in regions:
-        #main_df[f'{region}_{experiment}_values_vector'] = main_df.apply(lambda x: np.array(bigWig_obj.values('chr'+x['chr'], int(x[region]-r), int(x[region]+r)), dtype=np.float32), axis=1)
+        main_df[f'{region}_{experiment}_weighted_mean'] = main_df.apply(lambda x: calculate_weighted_mean(bigWig_obj.values('chr'+x['chr'], int(x[region]-r), int(x[region]+r))), axis=1)
         main_df[f'{region}_{experiment}_mean'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='mean')[0], axis=1)
         main_df[f'{region}_{experiment}_max'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='max')[0], axis=1)
         main_df[f'{region}_{experiment}_min'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='min')[0], axis=1)
         # change dtype to save memory
-        to_change_dtype = [f'{region}_{experiment}_mean', f'{region}_{experiment}_max', f'{region}_{experiment}_min']
+        to_change_dtype = [f'{region}_{experiment}_weighted_mean', f'{region}_{experiment}_mean', f'{region}_{experiment}_max', f'{region}_{experiment}_min']
         main_df[to_change_dtype] = main_df[to_change_dtype].astype('float32')
     return main_df
 
@@ -313,14 +344,15 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     return main_dfs_dict
 
 
-def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame], r: int) -> pd.DataFrame:
+def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    Combines two columns with regions into one colun and removes duplicate rows.
+    Combines the columns describing x regions and the columns describing y regions 
+    into one set of columns describing all regions.
+    (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-        r: radius of the region.
     Returns:
-        pandas DataFrame with one column with regions.
+        pandas DataFrame with one set of columns describing all regions.
     """
     df_with_2_regions = _concat_dfs(dfs_dict)
     df_part1 = df_with_2_regions[['chr', 'x_start', 'x_end']]
@@ -350,22 +382,15 @@ def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     return df
 
 
-def _prepare_peaks_df(peaks_df: pd.DataFrame):
-    
-    peaks_df = peaks_df[['chr', 'start', 'end']]
-    # remove duplicate rows
-    peaks_df = peaks_df.drop_duplicates()
-    # reset index
-    peaks_df = peaks_df.reset_index(drop=True)
-
-    return peaks_df
-
-
 def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:
     """
+    Get overlapping regions between anchors and peaks.
+    Args:
+        anchors_df: pandas DataFrame with anchors coordinates.
+        peaks_df: pandas DataFrame with peaks coordinates.
+    Returns:
+        pandas DataFrame with overlapping regions coordinates and names.
     """
-    #peaks_df = _prepare_peaks_df(peaks_df)
-
     intersection_wa_wb = get_overlapping_regions(anchors_df, peaks_df, names=['anchor_chr', 'anchor_start', 'anchor_end', 'peak_chr', 
                                                                               'peak_start', 'peak_end', 'cell_type'], wa=True, wb=True)
     intersection = get_overlapping_regions(anchors_df, peaks_df, names=['chr', 'start', 'end'])
@@ -378,7 +403,7 @@ def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) ->
 
 def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str) -> str:
     """
-    Cut sequences from chromosomes using bedtools for coordinates from bed file.
+    Cut sequences from chromosomes using BEDTools for coordinates from the pandas DataFrame.
     Args:
         df: pandas DataFrame with coordinates.
         path_simp_genome: path to fasta file with chromosomes.
@@ -401,28 +426,38 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     return path_to_save
 
 
-def _motify_output(lines: list):
+def _modify_output(lines: list):
+    """
+    Modifies each line of output of the FIMO tool.
+    Saves motif IDs and corresponding names to a file.
+    Args:
+        lines: list of lines from the output file.
+    Returns:
+        list of modified lines.
+    """
     motif_id2name = {}
     for i in tqdm(range(len(lines))):
+        # Change header to tsv format
         if i == 0:
             lines[i] = lines[i].replace('sequence_name', 'chr\tstart\tend\tcell_type')
         else:
+            # Get the information you need 
             elements = lines[i].split('\t')
             motif_id, motif_alt_id, name, _, _, strand, _, _, _, _ = elements
-
+            # Save motif_id and motif_alt_id to the dictionary
             motif_id2name[motif_id] = motif_alt_id
-
+            # Change name format to tsv format
             name = name.replace(':', '\t')
+            # Add strand information to the motif_id
             if strand == '+':
                 motif_id += '_f'
             else:
                 motif_id += '_r'
-            
+            # Update the list of lines
             elements[0] = motif_id
             elements[2] = name
-
             lines[i] = '\t'.join(elements)
-    
+    # Save motif_id2name to the file
     with open('data/02_intermediate/motif_id2name.txt', 'w') as file:
         for key, value in motif_id2name.items():
             file.write(f'{key}\t{value}\n')
@@ -433,36 +468,36 @@ def _motify_output(lines: list):
 
 def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     """
-    Find motifs in fasta sequences.
+    Finds motif occurances in fasta sequences.
     Args:
         path_motifs: path to file with motifs in jaspar format.
         path_fasta: path to fasta file with sequences.
     Returns:
-        pandas DataFrame with counts of motifs found in anchors.
+        pandas DataFrame with counts of each motif found in fasta sequences.
     """
-    # change jaspar format to meme format
+    # Change jaspar format to meme format
     path_for_meme = path_motifs.replace('.txt', '.meme')
     subprocess.run(f'jaspar2meme -bundle {path_motifs} > {path_for_meme}', shell=True)
-    # find motifs
+    # Find motif occurances in fasta sequences
     start = time.time()
     print('Finding motifs...')
     subprocess.run(f'fimo --text {path_for_meme} {path_fasta} > data/temp/temp.csv', shell=True)
     print(f'Finding motifs took {time.time() - start} seconds')
-    # read output
+    # Read output
     with open('data/temp/temp.csv', 'r') as f:
         output = f.readlines()
-    # save modified output to temp file
-    output = _motify_output(output)
+    # Save modified output to temporary file
+    output = _modify_output(output)
     with open('data/temp/temp.csv', 'w') as f:
         f.writelines(output)
     output = None
-    # read temp file as pandas DataFrame
+    # Read temporary file as pandas DataFrame
     dtypes = {'chr': "string", 'start': "int32", 'end': "int32", 'motif_id': "string", 'cell_type': "string"}
     df = pd.read_csv('data/temp/temp.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
     subprocess.run('rm data/temp/temp.csv', shell=True)
     df = df[['chr', 'start', 'end', 'motif_id', 'cell_type']]
     len_before = len(df)
-    # count motif occurences
+    # Count motif occurences
     df = pd.DataFrame(df.groupby(['chr', 'start', 'end', 'cell_type', 'motif_id'], observed=True).size(), columns=['count'])
     df['count'] = df['count'].astype('int16')
     df = df.unstack('motif_id', fill_value=0)
@@ -475,7 +510,7 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     return df
 
 
-def _reverse_names(colnames: list):
+def _reverse_names(colnames: list) :
     
     to_reverse_f = [name for name in colnames if '_f' in name]
     to_reverse_r = [name for name in colnames if '_r' in name]
@@ -578,7 +613,7 @@ def remove_overlapping(main_dfs_dict: dict):
         print(f'...for {main_name} cell...')
         len_before = len(main_df)
         main_df = _remove_overlapping_single_df(main_df)
-        print(f'...removed {len_before - len(main_df)} examples...')
+        print(f'...{len_before - len(main_df)} examples were removed.')
         main_dfs_dict[main_name] = main_df
     print('Done!')
 
@@ -608,9 +643,8 @@ def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.DataF
             
     assert len(main_df) == expected_len, 'Something went wrong with concatenating dataframes from dictionary - expected length is not equal to actual length.'
 
-    #main_df.reset_index()
     main_df = _sort_df(main_df, 'x_start')
 
-    print(f'Done!\n{main_df.info()}')
+    print(f'Done!')
 
     return main_df
