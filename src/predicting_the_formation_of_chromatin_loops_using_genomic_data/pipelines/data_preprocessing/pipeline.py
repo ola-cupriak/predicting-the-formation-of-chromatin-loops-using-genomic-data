@@ -6,10 +6,10 @@ generated using Kedro 0.18.6
 from kedro.pipeline import Pipeline, node, pipeline
 from .nodes import read_hic, read_peaks, read_bigWig
 from .nodes import add_labels
-from .nodes import count_peaks
+from .nodes import count_peaks_and_distances
 from .nodes import add_bigWig_data
 from .nodes import all_anchors2one_df, all_peaks2one_df
-from .nodes import get_overlapping_regions, get_overlaps_with_names
+from .nodes import get_overlaps_with_names
 from .nodes import getfasta_bedfile
 from .nodes import find_motifs, count_motifs
 from .nodes import remove_overlapping
@@ -56,7 +56,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=all_anchors2one_df,
-                inputs=["readed_HiC_loops_anotations", "params:radius"],
+                inputs=["readed_HiC_loops_anotations"],
                 outputs="merged_HiC_loops_anotations",
                 name="merge_HiC_loops_anotations_to_one_df_node",
             ),
@@ -85,26 +85,26 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="find_motifs_in_anchors_with_open_chromtin_node",
             ),
             node(
-                func=count_peaks,
-                inputs=["concat_label_HiC_loops_anotations", "readed_CTCF_ChIP_seq_peaks", "params:CTCF_ChIP-seq_peaks", "params:radius"],
+                func=count_peaks_and_distances,
+                inputs=["concat_label_HiC_loops_anotations", "readed_CTCF_ChIP_seq_peaks", "params:CTCF_ChIP-seq_peaks"],
                 outputs="HiC_loops_anotations_with_CTCF_ChIP_seq_peaks",
                 name="add_CTCF_ChIP_seq_peaks_node",
             ),
             node(
-                func=count_peaks,
-                inputs=["HiC_loops_anotations_with_CTCF_ChIP_seq_peaks", "readed_DNase_seq_peaks", "params:DNase-seq_peaks", "params:radius"],
+                func=count_peaks_and_distances,
+                inputs=["HiC_loops_anotations_with_CTCF_ChIP_seq_peaks", "readed_DNase_seq_peaks", "params:DNase-seq_peaks"],
                 outputs="HiC_loops_anotations_with_DNase_seq_peaks",
                 name="add_DNase_seq_peaks_node",
             ),
             node(
                 func=add_bigWig_data,
-                inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "readed_DNase_seq_bigWig", "params:DNase-seq_bigWig", "params:radius"],
+                inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "readed_DNase_seq_bigWig", "params:DNase-seq_bigWig"],
                 outputs="HiC_loops_anotations_with_DNase_seq_bigWig_data",
                 name="add_DNase_seq_bigWig_data_node",
             ),
             node(
                 func=add_bigWig_data,
-                inputs=["HiC_loops_anotations_with_DNase_seq_bigWig_data", "readed_CTCF_ChIP_seq_bigWig", "params:CTCF_ChIP-seq_bigWig", "params:radius"],
+                inputs=["HiC_loops_anotations_with_DNase_seq_bigWig_data", "readed_CTCF_ChIP_seq_bigWig", "params:CTCF_ChIP-seq_bigWig"],
                 outputs="HiC_loops_anotations_with_CTCF_ChIP_seq_bigWig_data",
                 name="add_CTCF_ChIP_seq_bigWig_data_node",
             ),
