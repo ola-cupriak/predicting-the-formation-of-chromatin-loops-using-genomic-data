@@ -690,10 +690,12 @@ def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
     df_1y = df.loc[df.loc[:,'label']==1,['chr', 'y_start', 'y_end', 'id']]
     df_0y = df.loc[df.loc[:,'label']==0,['chr', 'y_start', 'y_end', 'id']]
     # Find overlapping regions for x and y anchors separately
-    x_overlap = _get_overlapping_regions(df_1x, df_0x, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
-    y_overlap = _get_overlapping_regions(df_1y, df_0y, names=['chr1', 'satrt1', 'end1', 'chr2', 'start2', 'end2', 'id'], wa=True, wb=True)
-    # Find overlapping regions for x and y anchors together
-    x_and_y = (set(x_overlap['id']) & set(y_overlap['id']))
+    x_overlap = _get_overlapping_regions(df_1x, df_0x, names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
+    y_overlap = _get_overlapping_regions(df_1y, df_0y, names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
+    # Find overlapping regions for x and y anchors together (rows with the same id_pos and id_neg)
+    x = set(x_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
+    y = set(y_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
+    x_and_y = set([i[1] for i in x & y])
     # Remove overlapping negative examples
     df = df.loc[~df['id'].isin(x_and_y),:]
     df = df.loc[:, df.columns != 'id']
