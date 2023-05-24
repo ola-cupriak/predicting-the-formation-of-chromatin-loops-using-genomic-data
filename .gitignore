@@ -18,7 +18,7 @@ notebooks/**
 plots/**
 mlruns/**
 
-!notebooks/model.ipynb
+!notebooks/exploratory_data_analysis.ipynb
 
 # except their sub-folders
 !data/**/

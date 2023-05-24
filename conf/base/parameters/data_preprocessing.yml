@@ -1,3 +1,15 @@
+# negative sampling types
+n1: 
+  type: anchors_from_other_cell_types
+  neg_pos_ratio: None
+n2:
+  type: new_pairs_of_anchors
+  neg_pos_ratio: 5
+n3:
+  type: open_chromatin_regions
+  neg_pos_ratio: 5
+
+
 radius: 2500
 # datasets names 
 HiC_data: HiC_loops_annotations

@@ -16,9 +16,9 @@ from .nodes import remove_overlapping
 from .nodes import concat_dfs_from_dict
 
 
-def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline(
-        [
+def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
+    namespace = neg_sampling_type
+    pipeline_template =  pipeline([
             node(
                 func=read_hic,
                 inputs=["HiC_loops_annoatations", "cells2names", "params:HiC_data", "params:radius", "params:cell_types_to_use"],
@@ -50,7 +50,8 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=add_labels,
-                inputs="readed_HiC_loops_anotations",
+                inputs=["readed_HiC_loops_anotations", "params:type", "readed_DNase_seq_peaks", 
+                        "params:radius", "params:neg_pos_ratio", "params:random_state"],
                 outputs="concat_label_HiC_loops_anotations",
                 name="concat_label_HiC_loops_anotations_node",
             ),
@@ -126,5 +127,33 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="concatenated_combined_functional_genomics_data",
                 name="concatenate_combined_functional_genomics_data_node",
             ),
-        ]
+        ])
+    
+    main_pipeline = pipeline(
+        pipe=pipeline_template,
+        inputs=[
+            "HiC_loops_annoatations", 
+            "cells2names", 
+            "DNAse_seq_peaks", 
+            "CTCF_ChIP_seq_peaks", 
+            "DNAse_seq_bigWig", 
+            "CTCF_ChIP_seq_bigWig"
+        ],
+        parameters=[
+            "params:HiC_data",
+            "params:radius", 
+            "params:random_state",
+            "params:cell_types_to_use",
+            "params:DNase-seq_peaks",
+            "params:CTCF_ChIP-seq_peaks",
+            "params:DNase-seq_bigWig",
+            "params:CTCF_ChIP-seq_bigWig",
+            "params:path_hg19_simplified", 
+            "params:path_fasta_anchors_with_open_chromtin",
+            "params:path_motifs_JASPAR_vertebrates",
+        ],
+        namespace=namespace,
     )
+
+    return main_pipeline
+

@@ -104,32 +104,76 @@ CTCF_ChIP_seq_bigWig:
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
 
-merged_HiC_loops_anotations:
-  filepath: data/02_intermediate/merged_HiC_looplist.csv
+n1.merged_HiC_loops_anotations:
+  filepath: data/02_intermediate/n1/n1_merged_HiC_looplist.csv
+  <<: *save_pandas_csv
+
+n2.merged_HiC_loops_anotations:
+  filepath: data/02_intermediate/n2/n2_merged_HiC_looplist.csv
+  <<: *save_pandas_csv
+
+n3.merged_HiC_loops_anotations:
+  filepath: data/02_intermediate/n3/n3_merged_HiC_looplist.csv
   <<: *save_pandas_csv
   
-merged_DNase_seq_peaks:
-  filepath: data/02_intermediate/merged_DNase_seq_peaks.csv
+n1.merged_DNase_seq_peaks:
+  filepath: data/02_intermediate/n1/n1_merged_DNase_seq_peaks.csv
   <<: *save_pandas_csv
 
-
-overlaps_HiC_loops_DNase_seq_named:
-  filepath: data/02_intermediate/overlaps_HiC_loops_DNase_seq.csv
+n2.merged_DNase_seq_peaks:
+  filepath: data/02_intermediate/n2/n2_merged_DNase_seq_peaks.csv
   <<: *save_pandas_csv
 
+n3.merged_DNase_seq_peaks:
+  filepath: data/02_intermediate/n3/n3_merged_DNase_seq_peaks.csv
+  <<: *save_pandas_csv
 
-motifs_found_anchors_with_open_chromatin:
-  filepath: data/02_intermediate/motifs_found_anchors_with_open_chromatin.parquet
+n1.overlaps_HiC_loops_DNase_seq_named:
+  filepath: data/02_intermediate/n1/n1_overlaps_HiC_loops_DNase_seq.csv
+  <<: *save_pandas_csv
+
+n2.overlaps_HiC_loops_DNase_seq_named:
+  filepath: data/02_intermediate/n2/n2_overlaps_HiC_loops_DNase_seq.csv
+  <<: *save_pandas_csv
+
+n3.overlaps_HiC_loops_DNase_seq_named:
+  filepath: data/02_intermediate/n3/n3_overlaps_HiC_loops_DNase_seq.csv
+  <<: *save_pandas_csv
+
+n1.motifs_found_anchors_with_open_chromatin:
+  filepath: data/02_intermediate/n1/n1_motifs_found_anchors_with_open_chromatin.parquet
   <<: *save_pandas_parquet
 
-  
-combined_functional_genomics_data:
-  path: data/03_primary
+n2.motifs_found_anchors_with_open_chromatin:
+  filepath: data/02_intermediate/n2/n2_motifs_found_anchors_with_open_chromatin.parquet
+  <<: *save_pandas_parquet
+
+n3.motifs_found_anchors_with_open_chromatin:
+  filepath: data/02_intermediate/n3/n3_motifs_found_anchors_with_open_chromatin.parquet
+  <<: *save_pandas_parquet
+
+n1.combined_functional_genomics_data:
+  path: data/03_primary/n1
   <<: *save_partitioned_pandas_parquet
 
+n2.combined_functional_genomics_data:
+  path: data/03_primary/n2
+  <<: *save_partitioned_pandas_parquet
 
-concatenated_combined_functional_genomics_data:
-  filepath: data/04_feature/concatenated_combined_functional_genomics_data.parquet
+n3.combined_functional_genomics_data:
+  path: data/03_primary/n3
+  <<: *save_partitioned_pandas_parquet
+
+n1.concatenated_combined_functional_genomics_data:
+  filepath: data/04_feature/n1/n1_concatenated_combined_functional_genomics_data.parquet
+  <<: *save_pandas_parquet
+
+n2.concatenated_combined_functional_genomics_data:
+  filepath: data/04_feature/n2/n2_concatenated_combined_functional_genomics_data.parquet
+  <<: *save_pandas_parquet
+
+n3.concatenated_combined_functional_genomics_data:
+  filepath: data/04_feature/n3/n3_concatenated_combined_functional_genomics_data.parquet
   <<: *save_pandas_parquet
 
 # Model training

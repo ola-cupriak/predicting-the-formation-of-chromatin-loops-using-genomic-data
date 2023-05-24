@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict
 import pandas as pd
 from tqdm import tqdm
 from Bio import SeqIO
+import polars as pl
 import pybedtools
 import subprocess
 import warnings
@@ -164,28 +165,6 @@ def _concat_dfs(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     return df
 
 
-def add_labels(dfs_dict: Dict[str, pd.DataFrame]) -> None:
-    """
-    Add labels to the dataframes depending on the cell type.
-    Args:
-        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-    Returns:
-        dictionary:
-            keys: cell types
-            values: pandas DataFrames with labels added.
-    """
-    df = _concat_dfs(dfs_dict)
-    df = _sort_df(df, 'x')
-    for name, cell_df in dfs_dict.items():
-        cell_type = cell_df['cell_type'].unique()[0]
-        f = lambda x: 1 if x['cell_type'] == cell_type else 0
-        df['label'] = df.apply(f, axis=1)
-        df['label'] = df['label'].astype('int16')
-        dfs_dict[name] = copy.deepcopy(df)
-    
-    return dfs_dict
-
-
 def _get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, count: bool = False, 
                             wa: bool = False, wb: bool = False) -> pd.DataFrame:
     """
@@ -206,6 +185,204 @@ def _get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, 
     intersection = pd.read_table(intersection.fn, names=names)
 
     return intersection
+
+
+def _remove_neg_overlapping_pos(pos_df, neg_df):
+    pos_df['id'] = [i for i in range(len(pos_df))]
+    neg_df['id'] = [i for i in range(len(neg_df))]
+    # Find overlapping regions for x and y anchors separately
+    x_overlap = _get_overlapping_regions(pos_df[['chr', 'x_start', 'x_end', 'id']], neg_df[['chr', 'x_start', 'x_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
+    y_overlap = _get_overlapping_regions(pos_df[['chr', 'y_start', 'y_end', 'id']], neg_df[['chr', 'y_start', 'y_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
+    # Find overlapping regions for x and y anchors together (rows with the same id_pos and id_neg)
+    x = set(x_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
+    y = set(y_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
+    x_and_y = set([i[1] for i in x & y])
+    # Remove overlapping negative examples
+    neg_df = neg_df.loc[~neg_df['id'].isin(x_and_y),:]
+    neg_df = neg_df.loc[:, neg_df.columns != 'id']
+
+    return neg_df
+
+
+def _create_pairs_each_with_each_single_df(df: pd.DataFrame, df_loops, r: int) -> pd.DataFrame:
+    """
+    """
+    df['center'] = (df['start'] + df['end']) // 2
+    df = df[['chr', 'center']]
+    df_grouped = df.groupby('chr')
+    df_pairs = pd.DataFrame()
+    # Merge each record with each record from the same chromosome 
+    for _, df_chr in df_grouped:
+        df_chr = df_chr.reset_index(drop=True)
+        df_chr = df_chr.merge(df_chr, how='outer', on='chr', suffixes=['_x', '_y'])
+        df_chr = df_chr[df_chr['center_x'] < df_chr['center_y']]
+        # remove overlapping
+        df_chr['x_start'] = df_chr['center_x'] - r
+        df_chr['x_end'] = df_chr['center_x'] + r
+        df_chr['y_start'] = df_chr['center_y'] - r
+        df_chr['y_end'] = df_chr['center_y'] + r
+        df_chr = df_chr[df_chr['x_end'] < df_chr['y_start']]
+        df_chr = _remove_neg_overlapping_pos(df_loops, df_chr)
+        df_pairs = pd.concat([df_pairs, df_chr])
+    
+    return df_pairs
+
+
+def _x_and_y_anchors2one_col(df: pd.DataFrame, 
+                             x_cols2use: list=['chr', 'x_start', 'x_end'], 
+                             y_cols2use: list=['chr', 'y_start', 'y_end'], 
+                             new_cols: list=['chr', 'start', 'end'], 
+                             sortby:str='start') -> pd.DataFrame:
+    """
+    Combines the columns describing x regions and the columns describing y regions 
+    into one set of columns describing all regions.
+    (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
+    Args:
+        df: DataFrame with columns describing x regions and columns describing y regions.
+    Returns:
+        pandas DataFrame with one set of columns describing all regions.
+    """
+    df_part1 = df[x_cols2use]
+    df_part2 = df[y_cols2use]
+    # rename columns
+    df_part1.columns = new_cols
+    df_part2.columns = new_cols
+    # combine two columns into one
+    anchors_df = pd.concat([df_part1, df_part2], axis=0)
+    # remove duplicate rows
+    anchors_df = anchors_df.drop_duplicates()
+    # sort by chr and region
+    anchors_df = _sort_df(anchors_df, sortby)
+    # reset index
+    anchors_df = anchors_df.reset_index(drop=True)
+    anchors_df = anchors_df[new_cols]
+
+    return anchors_df
+
+
+def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Concatenates all anchors DataFrames from dfs_dict into one DataFrame and 
+    combines the columns describing x regions and the columns describing y regions 
+    into one set of columns describing all regions.
+    (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
+    Args:
+        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
+    Returns:
+        pandas DataFrame with one set of columns describing all regions.
+    """
+    df_with_2_regions = _concat_dfs(dfs_dict)
+    anchors_df = _x_and_y_anchors2one_col(df_with_2_regions)
+    
+    return anchors_df
+
+
+def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Concatenates all peaks DataFrames into one DataFrame.
+    Args:
+        peaks_dict: dictionary with cell types as keys and pandas DataFrames as values.
+    Returns:
+        pandas DataFrame with all peaks.
+    """
+    df = _concat_dfs(peaks_dict)
+    # sort by chr and region
+    df = _sort_df(df, 'start')
+    df = df.reset_index(drop=True)
+
+    return df
+
+
+def _create_new_anchors_pairs(df: pd.DataFrame):
+    """
+    Merge all values in one column (x) with all values in second column (y)
+    """
+    df_new_pairs = _x_and_y_anchors2one_col(df, ['chr', 'x'], ['chr', 'y'], ['chr', 'anchor'], 'anchor')
+    df_new_pairs = df_new_pairs.merge(df_new_pairs, how='outer', on='chr', suffixes=['_x', '_y'])
+    df_new_pairs.rename(columns={'anchor_x': 'x', 'anchor_y': 'y'}, inplace=True)
+    df_new_pairs = df_new_pairs[df_new_pairs['x'] < df_new_pairs['y']]
+    
+    return df_new_pairs
+    
+
+def _remove_duplicated_pairs(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove pairs from neg_df that are present in pos_df
+    Args:
+        df_pos: pandas DataFrame with positive examples.
+        df_neg: pandas DataFrame with negative examples.
+    Returns:
+        pandas DataFrame with negative examples that are not present in positive examples.
+    """
+    df_pos = df_pos[['chr', 'x', 'y']]
+    df_neg = df_neg[['chr', 'x', 'y']]
+    df_neg = df_neg.merge(df_pos, how='left', on=['chr', 'x', 'y'], indicator=True)
+    df_neg = df_neg[df_neg['_merge'] == 'left_only']
+    df_neg.drop(columns='_merge', inplace=True)
+
+    return df_neg
+
+def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: int, neg_pos_ratio: float, random_state: int):
+    df_neg = _create_new_anchors_pairs(df)
+    df_neg = _remove_duplicated_pairs(df, df_neg)
+    df_neg['x_start'] = df_neg['x'] - r
+    df_neg['x_end'] = df_neg['x'] + r
+    df_neg['y_start'] = df_neg['y'] - r
+    df_neg['y_end'] = df_neg['y'] + r
+    df_neg['cell_type'] = cell_type
+    df_neg['label'] = 0
+    df_neg = df_neg[df_neg['x_end'] < df_neg['y_start']]
+    df['label'] = 1
+    df_neg = df_neg[['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end', 'cell_type', 'label']]
+    # randomy sample negative examples WITHOUT REPEATS to get the desired neg_pos_retio
+    df_neg = df_neg.sample(n=int(neg_pos_ratio * len(df)), random_state=random_state, replace=False)
+    # merge positive and negative examples
+    df = pd.concat([df, df_neg], axis=0)
+    # sort by chr and region
+    df = _sort_df(df, 'x_start')
+    df = df.reset_index(drop=True)
+    df['label'] = df['label'].astype('int16')
+
+    return df
+
+
+def add_labels(dfs_dict: Dict[str, pd.DataFrame], type: str, peaks_dict: Dict[str, pd.DataFrame], r, neg_pos_ratio: float, random_state: int) -> None:
+    """
+    Add labels to the dataframes depending on the cell type and type of model to train.
+    Within model: 1 if cell type is the same as the cell type of the loop, 0 otherwise.
+    Across model: negative sampling involving the use of open regions of chromatin that 
+                do not overlap with any positive example
+    Args:
+        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
+        type: type of model to train, either 'within' or 'across'.
+        peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
+        r
+    Returns:
+        dictionary:
+            keys: cell types
+            values: pandas DataFrames with labels added.
+    """
+    assert type in ['anchors_from_other_cell_types', 
+                    'new_pairs_of_anchors', 
+                    'open_chromatin_regions'], f"Negative sampling type should be either 'anchors_from_other_cell_types', 'new_pairs_of_anchors' or 'open_chromatin_regions, but got {type}."
+
+    if type == 'anchors_from_other_cell_types':
+        df = _concat_dfs(dfs_dict)
+        df = _sort_df(df, 'x')
+        for name, cell_df in dfs_dict.items():
+            cell_type = cell_df['cell_type'].unique()[0]
+            f = lambda x: 1 if x['cell_type'] == cell_type else 0
+            df['label'] = df.apply(f, axis=1)
+            df['label'] = df['label'].astype('int16')
+            dfs_dict[name] = copy.deepcopy(df)
+    elif type == 'new_pairs_of_anchors':
+        for name, cell_df in dfs_dict.items():
+            cell_df = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state)
+            dfs_dict[name] = cell_df
+    else:
+        pass
+    
+    return dfs_dict
 
 
 def _find_the_closest_peak(main_df: pd.DataFrame, peak_df: pd.DataFrame) -> pd.DataFrame:
@@ -410,52 +587,6 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     print('Done!')
 
     return main_dfs_dict
-
-
-def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """
-    Concatenates all anchors DataFrames into one DataFrame and 
-    combines the columns describing x regions and the columns describing y regions 
-    into one set of columns describing all regions.
-    (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
-    Args:
-        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-    Returns:
-        pandas DataFrame with one set of columns describing all regions.
-    """
-    df_with_2_regions = _concat_dfs(dfs_dict)
-    df_part1 = df_with_2_regions[['chr', 'x_start', 'x_end']]
-    df_part2 = df_with_2_regions[['chr', 'y_start', 'y_end']]
-    # rename columns
-    df_part1.columns = ['chr', 'start', 'end']
-    df_part2.columns = ['chr', 'start', 'end']
-    # combine two columns into one
-    anchors_df = pd.concat([df_part1, df_part2], axis=0)
-    # remove duplicate rows
-    anchors_df = anchors_df.drop_duplicates()
-    # sort by chr and region
-    anchors_df = _sort_df(anchors_df, 'start')
-    # reset index
-    anchors_df = anchors_df.reset_index(drop=True)
-    anchors_df = anchors_df[['chr', 'start', 'end']]
-    
-    return anchors_df
-
-
-def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """
-    Concatenates all peaks DataFrames into one DataFrame.
-    Args:
-        peaks_dict: dictionary with cell types as keys and pandas DataFrames as values.
-    Returns:
-        pandas DataFrame with all peaks.
-    """
-    df = _concat_dfs(peaks_dict)
-    # sort by chr and region
-    df = _sort_df(df, 'start')
-    df = df.reset_index(drop=True)
-
-    return df
 
 
 def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:

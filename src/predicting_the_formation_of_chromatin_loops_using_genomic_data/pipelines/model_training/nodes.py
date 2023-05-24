@@ -431,7 +431,8 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
                     model_type: str = 'log_reg', 
                     params: dict = {}, 
                     run: bool = True,
-                    run_name: str = None
+                    run_name: str = None,
+                    neg_sampling_type: str = None,
                     ) -> Tuple[dict, dict, dict, dict, dict]:
     """
     Trains and evaluates the model.
@@ -450,6 +451,8 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
     
     if run_name:
         mlflow.set_tag("mlflow.runName", run_name)
+    if neg_sampling_type:
+        mlflow.set_tag("neg_sampling_type", neg_sampling_type)
 
     params = _dict_partitions(params)
 
