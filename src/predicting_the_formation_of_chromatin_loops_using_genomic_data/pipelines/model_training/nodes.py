@@ -53,7 +53,14 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
         df = df.groupby('cell_type')
         return {cell_type: df_cell for cell_type, df_cell in df}
     elif type == 'across':
-        return {cell_type: df for cell_type in pd.unique(df['cell_type'])}
+        new_df = pd.DataFrame()
+        for cell_type in pd.unique(df['cell_type']):
+            df_cell_pos = df[(df['cell_type'] == cell_type)&(df['label'] == 1)].sample(frac=0.5, random_state=42, replace=False)
+            df_cell_neg = df[(df['cell_type'] == cell_type)&(df['label'] == 0)].sample(frac=0.5, random_state=42, replace=False)
+            new_df = pd.concat([new_df, df_cell_pos, df_cell_neg])  
+        return {'df': new_df}
+
+
 
 
 def split_data(dfs_dict: Dict[str, pd.DataFrame], 
@@ -77,12 +84,13 @@ def split_data(dfs_dict: Dict[str, pd.DataFrame],
         if type == 'within':
             dfs_dict[cell_type] = train_test_split(df, test_size=test_size, stratify=df.loc[:, stratify], random_state=random_state)
         elif type == 'across':
-            dfs_dict[cell_type] = (df[df['cell_type'] != cell_type], df[df['cell_type'] == cell_type])
+            pass
 
     return dfs_dict
 
 
-def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]
+def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame],
+                     type: str, 
                      ) -> Dict[str, pd.DataFrame]:
     """
     Check indexes in trainset and testset.
@@ -91,6 +99,8 @@ def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame]
     Returns:
         Dictionary with the DataFrames with indexes of training and test datasets.
     """
+    if type == 'across':
+        return {}
     idx_dict = {}
     for cell_type, (train_df, test_df) in dfs_dict.items():
         train_idx = pd.DataFrame(train_df.index, columns=['idx'])
@@ -188,19 +198,31 @@ def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
 
 
 def _train_model(df_dict: Dict[str, pd.DataFrame], 
+                mtype: str,
                 model_type: str = 'log_reg', 
                 params: dict = {}) -> Dict[str, Any]:
     """
     Train choosen model on the training data.
     Args:
-        df_train: Data frame with the training data.
+        df_dict: Dictionary with the training and test data frames.
+        mtype: within or across
         model_type: The type of model to be trained.
         random_state: The seed to be used for random number generation.
     Returns:
         A dictionary with the trained models.
     """
+    if mtype=='within':
+        cell_types = list(df_dict.keys())
+    else:
+        cell_types = list(pd.unique(df_dict['df']['cell_type']))
+
     model_dict = {} 
-    for cell_type, (df_train, _) in df_dict.items():
+    for cell_type in cell_types:
+        if mtype=='within':
+            df_train = df_dict[cell_type][0]
+        else:
+            df_train = df_dict['df'][df_dict['df']['cell_type'] != cell_type]
+
         print(f'Training {model_type} for {cell_type}...')
         cell_params = params[cell_type]
         if not cell_params:
@@ -243,7 +265,7 @@ def _make_prediction(df_test: pd.DataFrame, model) -> np.array:
     return y_pred
 
 
-def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_type: str
+def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], mtype: str, model_type: str
                     ) -> Tuple[dict, dict]:
     """
     Evaluates the model on the test data.
@@ -261,8 +283,11 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], model_ty
     
     for cell_type in model_dict.keys():
         print(f'Evaluating {model_type} for {cell_type}...')
+        if mtype=='within':
+            df_test = df_dict[cell_type][1]
+        else:
+            df_test = df_dict['df'][df_dict['df']['cell_type'] == cell_type]
 
-        df_test = df_dict[cell_type][1]
         model = model_dict[cell_type]
         y_test = df_test['label']
         y_pred = _make_prediction(df_test, model)
@@ -427,7 +452,8 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
 
 
 
-def train_and_eval(df_dict: Dict[str, pd.DataFrame], 
+def train_and_eval(df_dict: Dict[str, pd.DataFrame],
+                    mtype: str,  
                     model_type: str = 'log_reg', 
                     params: dict = {}, 
                     run: bool = True,
@@ -438,6 +464,7 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
     Trains and evaluates the model.
     Args:
         df_dict: A dictionary with the train and test data frames.
+        mtype: within or across
         model_type: The type of model to be trained.
         params: A dictionary with the model parameters.
         run: If True, the model will be trained and evaluated with MLFlow.
@@ -451,13 +478,11 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
     
     if run_name:
         mlflow.set_tag("mlflow.runName", run_name)
-    if neg_sampling_type:
-        mlflow.set_tag("neg_sampling_type", neg_sampling_type)
 
     params = _dict_partitions(params)
 
-    model_dict = _train_model(df_dict, model_type, params)
-    metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, model_type)
+    model_dict = _train_model(df_dict, mtype, model_type, params)
+    metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, mtype, model_type)
     feature_importances_dict, feature_importances_plot_dict = _get_feature_importances(model_dict, model_type)
 
     return model_dict, metrics_dict_all, matrices_dict, feature_importances_dict, feature_importances_plot_dict

@@ -1,4 +1,4 @@
-run_name: within.CTCF_ChIP_seq_mean/weighted_mean/min/max/counts/distance.without_opt
+run_name: across.n1.full_data.without_opt
 
 across:
   stratify:
@@ -11,7 +11,7 @@ within:
     - label
   type: within # DO NOT CHANGE
 
-neg_sampling_type: n1 
+neg_sampling_type: n1
 
 test_size: 0.2
 validation_size: 0.3
@@ -26,18 +26,18 @@ cell_types: # list
   - NHEK
 
 features_include_only: # list
-  - x_CTCF_ChIP_seq_bigWig_mean
-  - y_CTCF_ChIP_seq_bigWig_mean
-  - x_CTCF_ChIP_seq_bigWig_weighted_mean
-  - y_CTCF_ChIP_seq_bigWig_weighted_mean
-  - x_CTCF_ChIP_seq_bigWig_min
-  - y_CTCF_ChIP_seq_bigWig_min
-  - x_CTCF_ChIP_seq_bigWig_max
-  - y_CTCF_ChIP_seq_bigWig_max
-  - x_CTCF_ChIP_seq_peaks_counts
-  - y_CTCF_ChIP_seq_peaks_counts
-  - x_CTCF_ChIP_seq_peaks_distance
-  - y_CTCF_ChIP_seq_peaks_distance
+  # - x_CTCF_ChIP_seq_bigWig_mean
+  # - y_CTCF_ChIP_seq_bigWig_mean
+  # - x_CTCF_ChIP_seq_bigWig_weighted_mean
+  # - y_CTCF_ChIP_seq_bigWig_weighted_mean
+  # - x_CTCF_ChIP_seq_bigWig_min
+  # - y_CTCF_ChIP_seq_bigWig_min
+  # - x_CTCF_ChIP_seq_bigWig_max
+  # - y_CTCF_ChIP_seq_bigWig_max
+  # - x_CTCF_ChIP_seq_peaks_counts
+  # - y_CTCF_ChIP_seq_peaks_counts
+  # - x_CTCF_ChIP_seq_peaks_distance
+  # - y_CTCF_ChIP_seq_peaks_distance
 
 features_exclude: # list
   # - x_DNase_seq_bigWig_max

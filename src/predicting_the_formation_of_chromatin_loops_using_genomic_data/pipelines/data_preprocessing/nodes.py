@@ -109,14 +109,18 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
+        df = pl.from_pandas(df)
         cell_type = cells2names_dataset_dict[keys_dict[name]]
         if cells_to_use and cell_type not in cells_to_use:
             continue
-        f = lambda x: x['chr'].split("chr")[-1]
-        df["chr"] = df.apply(f, axis=1)
+        df = df.with_columns(df.select(['chr']).apply(
+            lambda x: x[0].split('chr')[-1], return_dtype=pl.Utf8
+            ).rename({'apply': 'chr'}))
+
+        df = df.with_columns(pl.lit(cell_type).cast(pl.Utf8).alias('cell_type'))
+        df = df.to_pandas()
         df = _sort_df(df, 'start')
-        df['cell_type'] = cell_type
-        df['cell_type'] = df['cell_type'].astype('string')
+
         new_dfs_dict[cell_type] = df
 
     return new_dfs_dict
@@ -187,43 +191,54 @@ def _get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, 
     return intersection
 
 
-def _remove_neg_overlapping_pos(pos_df, neg_df):
-    pos_df['id'] = [i for i in range(len(pos_df))]
-    neg_df['id'] = [i for i in range(len(neg_df))]
-    # Find overlapping regions for x and y anchors separately
-    x_overlap = _get_overlapping_regions(pos_df[['chr', 'x_start', 'x_end', 'id']], neg_df[['chr', 'x_start', 'x_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
-    y_overlap = _get_overlapping_regions(pos_df[['chr', 'y_start', 'y_end', 'id']], neg_df[['chr', 'y_start', 'y_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
-    # Find overlapping regions for x and y anchors together (rows with the same id_pos and id_neg)
-    x = set(x_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
-    y = set(y_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
-    x_and_y = set([i[1] for i in x & y])
-    # Remove overlapping negative examples
-    neg_df = neg_df.loc[~neg_df['id'].isin(x_and_y),:]
-    neg_df = neg_df.loc[:, neg_df.columns != 'id']
+# def _remove_neg_overlapping_pos(pos_df, neg_df):
+#     pos_df['id'] = [i for i in range(len(pos_df))]
+#     neg_df['id'] = [i for i in range(len(neg_df))]
+#     # Find overlapping regions for x and y anchors separately
+#     x_overlap = _get_overlapping_regions(pos_df[['chr', 'x_start', 'x_end', 'id']], neg_df[['chr', 'x_start', 'x_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
+#     y_overlap = _get_overlapping_regions(pos_df[['chr', 'y_start', 'y_end', 'id']], neg_df[['chr', 'y_start', 'y_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
+#     # Find overlapping regions for x and y anchors together (rows with the same id_pos and id_neg)
+#     x = set(x_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
+#     y = set(y_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
+#     x_and_y = set([i[1] for i in x & y])
+#     # Remove overlapping negative examples
+#     neg_df = neg_df.loc[~neg_df['id'].isin(x_and_y),:]
+#     neg_df = neg_df.loc[:, neg_df.columns != 'id']
 
-    return neg_df
+#     return neg_df
 
 
-def _create_pairs_each_with_each_single_df(df: pd.DataFrame, df_loops, r: int) -> pd.DataFrame:
+def _create_pairs_each_with_each_single_df(df_pos, df_open_chromatin, cell_type, r, neg_pos_ratio, random_state) -> pd.DataFrame:
     """
     """
-    df['center'] = (df['start'] + df['end']) // 2
-    df = df[['chr', 'center']]
-    df_grouped = df.groupby('chr')
-    df_pairs = pd.DataFrame()
-    # Merge each record with each record from the same chromosome 
-    for _, df_chr in df_grouped:
-        df_chr = df_chr.reset_index(drop=True)
+    df_open_chromatin['center'] = (df_open_chromatin['start'] + df_open_chromatin['end']) // 2
+    df_open_chromatin = df_open_chromatin[['chr', 'center']] 
+    chromosomes = pd.unique(df_pos['chr'])
+    chromosomes = {k: len(df_pos[df_pos['chr'] == k])*neg_pos_ratio for k in chromosomes}
+    df_neg = pd.DataFrame()
+
+    for ch in chromosomes.keys():
+        df_chr = df_open_chromatin[df_open_chromatin['chr'] == ch]
         df_chr = df_chr.merge(df_chr, how='outer', on='chr', suffixes=['_x', '_y'])
         df_chr = df_chr[df_chr['center_x'] < df_chr['center_y']]
-        # remove overlapping
         df_chr['x_start'] = df_chr['center_x'] - r
         df_chr['x_end'] = df_chr['center_x'] + r
         df_chr['y_start'] = df_chr['center_y'] - r
         df_chr['y_end'] = df_chr['center_y'] + r
         df_chr = df_chr[df_chr['x_end'] < df_chr['y_start']]
-        df_chr = _remove_neg_overlapping_pos(df_loops, df_chr)
-        df_pairs = pd.concat([df_pairs, df_chr])
+        df_chr.rename(columns={'center_x': 'x', 'center_y': 'y'}, inplace=True)
+        # df_chr = _remove_neg_overlapping_pos(df_pos, df_chr)
+        df_chr = df_chr.sample(n=round(int(neg_pos_ratio * chromosomes[ch])), random_state=random_state, replace=False)
+        df_neg = pd.concat([df_neg, df_chr])
+    
+    df_neg['cell_type'] = cell_type
+    df_neg['label'] = 0
+    df_pos['label'] = 1
+    df_pairs = pd.concat([df_pos, df_neg])
+    df_pairs.reset_index(drop=True, inplace=True)
+
+    df_pairs = df_pairs.astype({'x': 'int32', 'y': 'int32', 'x_start': 'int32', 'x_end': 'int32', 
+                                'y_start': 'int32', 'y_end': 'int32', 'label': 'int16'})
     
     return df_pairs
 
@@ -260,39 +275,6 @@ def _x_and_y_anchors2one_col(df: pd.DataFrame,
     return anchors_df
 
 
-def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """
-    Concatenates all anchors DataFrames from dfs_dict into one DataFrame and 
-    combines the columns describing x regions and the columns describing y regions 
-    into one set of columns describing all regions.
-    (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
-    Args:
-        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-    Returns:
-        pandas DataFrame with one set of columns describing all regions.
-    """
-    df_with_2_regions = _concat_dfs(dfs_dict)
-    anchors_df = _x_and_y_anchors2one_col(df_with_2_regions)
-    
-    return anchors_df
-
-
-def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """
-    Concatenates all peaks DataFrames into one DataFrame.
-    Args:
-        peaks_dict: dictionary with cell types as keys and pandas DataFrames as values.
-    Returns:
-        pandas DataFrame with all peaks.
-    """
-    df = _concat_dfs(peaks_dict)
-    # sort by chr and region
-    df = _sort_df(df, 'start')
-    df = df.reset_index(drop=True)
-
-    return df
-
-
 def _create_new_anchors_pairs(df: pd.DataFrame):
     """
     Merge all values in one column (x) with all values in second column (y)
@@ -322,6 +304,7 @@ def _remove_duplicated_pairs(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> pd.D
 
     return df_neg
 
+
 def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: int, neg_pos_ratio: float, random_state: int):
     df_neg = _create_new_anchors_pairs(df)
     df_neg = _remove_duplicated_pairs(df, df_neg)
@@ -329,19 +312,20 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: i
     df_neg['x_end'] = df_neg['x'] + r
     df_neg['y_start'] = df_neg['y'] - r
     df_neg['y_end'] = df_neg['y'] + r
+    df_neg = df_neg[df_neg['x_end'] < df_neg['y_start']]
     df_neg['cell_type'] = cell_type
     df_neg['label'] = 0
-    df_neg = df_neg[df_neg['x_end'] < df_neg['y_start']]
     df['label'] = 1
     df_neg = df_neg[['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end', 'cell_type', 'label']]
     # randomy sample negative examples WITHOUT REPEATS to get the desired neg_pos_retio
-    df_neg = df_neg.sample(n=int(neg_pos_ratio * len(df)), random_state=random_state, replace=False)
+    df_neg = df_neg.sample(n=round(int(neg_pos_ratio * len(df))), random_state=random_state, replace=False)
     # merge positive and negative examples
     df = pd.concat([df, df_neg], axis=0)
     # sort by chr and region
     df = _sort_df(df, 'x_start')
     df = df.reset_index(drop=True)
-    df['label'] = df['label'].astype('int16')
+    df = df.astype({'x': 'int32', 'y': 'int32', 'x_start': 'int32', 'x_end': 'int32', 
+                    'y_start': 'int32', 'y_end': 'int32', 'label': 'int16'})
 
     return df
 
@@ -380,7 +364,8 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame], type: str, peaks_dict: Dict[st
             cell_df = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state)
             dfs_dict[name] = cell_df
     else:
-        pass
+        for name, cell_df in dfs_dict.items():
+            cell_df = _create_pairs_each_with_each_single_df()
     
     return dfs_dict
 
@@ -538,6 +523,7 @@ def calculate_weighted_mean(distribution: list):
 
 def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str) -> pd.DataFrame:
     """
+    POLARS
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop.
     Args:
@@ -548,14 +534,25 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
     """
     bigWig_obj = pyBigWig.open(bigWig_path)
     regions = ['x', 'y']
+    main_df = pl.from_pandas(main_df)
     for region in regions:
-        main_df[f'{region}_{experiment}_weighted_mean'] = main_df.apply(lambda x: calculate_weighted_mean(bigWig_obj.values('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'])), axis=1)
-        main_df[f'{region}_{experiment}_mean'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='mean')[0], axis=1)
-        main_df[f'{region}_{experiment}_max'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='max')[0], axis=1)
-        main_df[f'{region}_{experiment}_min'] = main_df.apply(lambda x: bigWig_obj.stats('chr'+x['chr'], x[f'{region}_start'], x[f'{region}_end'], type='min')[0], axis=1)
-        # change dtype to save memory
-        to_change_dtype = [f'{region}_{experiment}_weighted_mean', f'{region}_{experiment}_mean', f'{region}_{experiment}_max', f'{region}_{experiment}_min']
-        main_df[to_change_dtype] = main_df[to_change_dtype].astype('float32')
+        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
+            lambda x: calculate_weighted_mean(bigWig_obj.values('chr'+x[0], x[1], x[2])), return_dtype=pl.Float32
+            ).rename({'apply':f'{region}_{experiment}_weighted_mean'}))
+        
+        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
+            lambda x: bigWig_obj.stats('chr'+x[0], x[1], x[2], type='mean')[0], return_dtype=pl.Float32
+            ).rename({'apply':f'{region}_{experiment}_mean'}))
+    
+        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
+            lambda x: bigWig_obj.stats('chr'+x[0], x[1], x[2], type='max')[0], return_dtype=pl.Float32
+            ).rename({'apply':f'{region}_{experiment}_max'}))
+        
+        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
+            lambda x: bigWig_obj.stats('chr'+x[0], x[1], x[2], type='min')[0], return_dtype=pl.Float32
+            ).rename({'apply':f'{region}_{experiment}_min'}))
+        
+    main_df = main_df.to_pandas()
     return main_df
 
 
@@ -587,6 +584,39 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     print('Done!')
 
     return main_dfs_dict
+
+
+def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Concatenates all anchors DataFrames from dfs_dict into one DataFrame and 
+    combines the columns describing x regions and the columns describing y regions 
+    into one set of columns describing all regions.
+    (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
+    Args:
+        dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
+    Returns:
+        pandas DataFrame with one set of columns describing all regions.
+    """
+    df_with_2_regions = _concat_dfs(dfs_dict)
+    anchors_df = _x_and_y_anchors2one_col(df_with_2_regions)
+    
+    return anchors_df
+
+
+def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Concatenates all peaks DataFrames into one DataFrame.
+    Args:
+        peaks_dict: dictionary with cell types as keys and pandas DataFrames as values.
+    Returns:
+        pandas DataFrame with all peaks.
+    """
+    df = _concat_dfs(peaks_dict)
+    # sort by chr and region
+    df = _sort_df(df, 'start')
+    df = df.reset_index(drop=True)
+
+    return df
 
 
 def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:
@@ -749,7 +779,6 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> p
 
     # add id column
     main_df['id'] = [i for i in range(len(main_df))]
-    assert len(main_df) == len(main_df['id'].unique()), 'Something went wrong with adding id column'
     main_df_new = copy.deepcopy(main_df)
     columns_no = len(main_df_new.columns)
 
