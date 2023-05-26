@@ -15,8 +15,8 @@ from kedro.framework.project import settings
 
 
 
-def create_pipeline(type: str, **kwargs) -> Pipeline:
-    namespace = type
+def create_pipeline(mtype: str, **kwargs) -> Pipeline:
+    namespace = mtype
 
     conf_path = settings.CONF_SOURCE
     conf_loader = ConfigLoader(conf_source=conf_path)
