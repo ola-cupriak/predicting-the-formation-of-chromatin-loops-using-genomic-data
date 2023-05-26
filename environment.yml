@@ -6,7 +6,6 @@ dependencies:
   - pyarrow=8.0.0
   - conda-forge::numpy=1.21.6
   - conda-forge::biopython=1.78
-  - bioconda::meme=4.11.2
   - bioconda::pybedtools=0.8.1
   - bioconda::pybigwig=0.3.18
   - lightgbm=3.1.1
@@ -19,8 +18,10 @@ dependencies:
   - pyyaml=6.0
   - tqdm=4.64.1
   - prettytable=3.5.0
-  - conda-forge::polars=0.14.23
+  - ipykernel=6.15.2
+  - bioconda::meme=4.11.2
   - pip:
     - kedro==0.18.8
     - kedro-mlflow==0.11.8
     - kedro-viz==6.1.1
+    - polars==0.17.15
