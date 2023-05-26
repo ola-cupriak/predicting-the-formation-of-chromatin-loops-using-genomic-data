@@ -13,6 +13,10 @@ n3:
   neg_pos_ratio: 5
   path_fasta_anchors_with_open_chromtin: data/02_intermediate/n3/n3_anchors_with_open_chromtin.fasta
 
+n4:
+  type: new_pairs_and_open_chromatin
+  neg_pos_ratio: 5
+  path_fasta_anchors_with_open_chromtin: data/02_intermediate/n4/n4_anchors_with_open_chromtin.fasta
 
 
 radius: 2500
