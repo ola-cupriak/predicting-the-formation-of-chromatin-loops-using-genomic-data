@@ -308,6 +308,7 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], mtype: s
 
         mlflow.log_metrics({f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
         metrics_dict = {k: float(str(v)) for k, v in metrics_dict.items()}
+        metrics_dict_all[cell_type] = metrics_dict
     
     matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
 
