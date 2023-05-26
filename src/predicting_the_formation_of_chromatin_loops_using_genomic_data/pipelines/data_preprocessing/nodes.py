@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import math
 import pyBigWig
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
 from typing import Any, Callable, Dict
@@ -7,6 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 from Bio import SeqIO
 import polars as pl
+import pyarrow.parquet as pq
 import pybedtools
 import subprocess
 import warnings
@@ -214,26 +216,33 @@ def _create_pairs_each_with_each_single_df(df_pos, df_open_chromatin, cell_type,
     df_open_chromatin['center'] = (df_open_chromatin['start'] + df_open_chromatin['end']) // 2
     df_open_chromatin = df_open_chromatin[['chr', 'center']] 
     chromosomes = pd.unique(df_pos['chr'])
-    chromosomes = {k: len(df_pos[df_pos['chr'] == k])*neg_pos_ratio for k in chromosomes}
+    chromosomes = {k: round(len(df_pos[df_pos['chr'] == k])*neg_pos_ratio) for k in chromosomes}
     df_neg = pd.DataFrame()
 
     for ch in chromosomes.keys():
         df_chr = df_open_chromatin[df_open_chromatin['chr'] == ch]
-        df_chr = df_chr.merge(df_chr, how='outer', on='chr', suffixes=['_x', '_y'])
-        df_chr = df_chr[df_chr['center_x'] < df_chr['center_y']]
-        df_chr['x_start'] = df_chr['center_x'] - r
-        df_chr['x_end'] = df_chr['center_x'] + r
-        df_chr['y_start'] = df_chr['center_y'] - r
-        df_chr['y_end'] = df_chr['center_y'] + r
-        df_chr = df_chr[df_chr['x_end'] < df_chr['y_start']]
-        df_chr.rename(columns={'center_x': 'x', 'center_y': 'y'}, inplace=True)
-        # df_chr = _remove_neg_overlapping_pos(df_pos, df_chr)
-        df_chr = df_chr.sample(n=round(int(neg_pos_ratio * chromosomes[ch])), random_state=random_state, replace=False)
+        df_chr = pl.from_pandas(df_chr)
+        if len(df_chr) > 1000:
+            df_chr = df_chr.sample(n=1000, with_replacement=False, seed=random_state, shuffle=True)
+        df_chr = df_chr.join(df_chr, how='outer', on='chr', suffix='_y')
+        # rename columns in polars
+        df_chr = df_chr.rename({'center': 'x', 'center_y': 'y'})
+        # filter columns in polars
+        df_chr = df_chr.filter(pl.col('x') < pl.col('y'))
+        df_chr = df_chr.filter(pl.col('x') + r < pl.col('y') - r)
+        # sample with polars
+        df_chr = df_chr.sample(n=chromosomes[ch], with_replacement=False, seed=random_state, shuffle=True)
+        # convert back to pandas
+        df_chr = df_chr.to_pandas()
         df_neg = pd.concat([df_neg, df_chr])
     
     df_neg['cell_type'] = cell_type
     df_neg['label'] = 0
-    df_pos['label'] = 1
+    df_neg['x_start'] = df_neg['x'] - r
+    df_neg['x_end'] = df_neg['x'] + r
+    df_neg['y_start'] = df_neg['y'] - r
+    df_neg['y_end'] = df_neg['y'] + r
+
     df_pairs = pd.concat([df_pos, df_neg])
     df_pairs.reset_index(drop=True, inplace=True)
 
@@ -280,9 +289,10 @@ def _create_new_anchors_pairs(df: pd.DataFrame):
     Merge all values in one column (x) with all values in second column (y)
     """
     df_new_pairs = _x_and_y_anchors2one_col(df, ['chr', 'x'], ['chr', 'y'], ['chr', 'anchor'], 'anchor')
-    df_new_pairs = df_new_pairs.merge(df_new_pairs, how='outer', on='chr', suffixes=['_x', '_y'])
-    df_new_pairs.rename(columns={'anchor_x': 'x', 'anchor_y': 'y'}, inplace=True)
-    df_new_pairs = df_new_pairs[df_new_pairs['x'] < df_new_pairs['y']]
+    df_new_pairs = pl.from_pandas(df_new_pairs)
+    df_new_pairs = df_new_pairs.join(df_new_pairs, how='outer', on='chr', suffix='_y').filter(pl.col('anchor') < pl.col('anchor_y'))
+    df_new_pairs = df_new_pairs.rename({'anchor': 'x', 'anchor_y': 'y'})
+    df_new_pairs = df_new_pairs.to_pandas()
     
     return df_new_pairs
     
@@ -305,7 +315,7 @@ def _remove_duplicated_pairs(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> pd.D
     return df_neg
 
 
-def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: int, neg_pos_ratio: float, random_state: int):
+def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: int, neg_pos_ratio: float, random_state: int, df_len: int):
     df_neg = _create_new_anchors_pairs(df)
     df_neg = _remove_duplicated_pairs(df, df_neg)
     df_neg['x_start'] = df_neg['x'] - r
@@ -315,10 +325,9 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: i
     df_neg = df_neg[df_neg['x_end'] < df_neg['y_start']]
     df_neg['cell_type'] = cell_type
     df_neg['label'] = 0
-    df['label'] = 1
     df_neg = df_neg[['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end', 'cell_type', 'label']]
     # randomy sample negative examples WITHOUT REPEATS to get the desired neg_pos_retio
-    df_neg = df_neg.sample(n=round(int(neg_pos_ratio * len(df))), random_state=random_state, replace=False)
+    df_neg = df_neg.sample(n=round(int(neg_pos_ratio * df_len)), random_state=random_state, replace=False)
     # merge positive and negative examples
     df = pd.concat([df, df_neg], axis=0)
     # sort by chr and region
@@ -330,7 +339,7 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: i
     return df
 
 
-def add_labels(dfs_dict: Dict[str, pd.DataFrame], type: str, peaks_dict: Dict[str, pd.DataFrame], r, neg_pos_ratio: float, random_state: int) -> None:
+def add_labels(dfs_dict: Dict[str, pd.DataFrame], mtype: str, peaks_dict: Dict[str, pd.DataFrame], r, neg_pos_ratio: float, random_state: int) -> None:
     """
     Add labels to the dataframes depending on the cell type and type of model to train.
     Within model: 1 if cell type is the same as the cell type of the loop, 0 otherwise.
@@ -346,26 +355,35 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame], type: str, peaks_dict: Dict[st
             keys: cell types
             values: pandas DataFrames with labels added.
     """
-    assert type in ['anchors_from_other_cell_types', 
+    assert mtype in ['anchors_from_other_cell_types', 
                     'new_pairs_of_anchors', 
-                    'open_chromatin_regions'], f"Negative sampling type should be either 'anchors_from_other_cell_types', 'new_pairs_of_anchors' or 'open_chromatin_regions, but got {type}."
-
-    if type == 'anchors_from_other_cell_types':
+                    'open_chromatin_regions',
+                    'new_pairs_and_open_chromatin'], f"Negative sampling type should be either 'anchors_from_other_cell_types', 'new_pairs_of_anchors' or 'open_chromatin_regions, but got {type}."
+    if mtype == 'anchors_from_other_cell_types':
         df = _concat_dfs(dfs_dict)
         df = _sort_df(df, 'x')
-        for name, cell_df in dfs_dict.items():
-            cell_type = cell_df['cell_type'].unique()[0]
-            f = lambda x: 1 if x['cell_type'] == cell_type else 0
+    
+    for name, cell_df in dfs_dict.items():
+        print('Creating negative examples for cell type', name, '...')
+
+        if mtype == 'anchors_from_other_cell_types':
+            f = lambda x: 1 if x['cell_type'] == name else 0
             df['label'] = df.apply(f, axis=1)
             df['label'] = df['label'].astype('int16')
             dfs_dict[name] = copy.deepcopy(df)
-    elif type == 'new_pairs_of_anchors':
-        for name, cell_df in dfs_dict.items():
-            cell_df = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state)
-            dfs_dict[name] = cell_df
-    else:
-        for name, cell_df in dfs_dict.items():
-            cell_df = _create_pairs_each_with_each_single_df()
+        elif mtype == 'new_pairs_of_anchors':
+            cell_df['label'] = 1
+            df_len = len(cell_df)
+            dfs_dict[name] = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state, df_len)
+        elif mtype == 'open_chromatin_regions':
+            cell_df['label'] = 1
+            dfs_dict[name] = _create_pairs_each_with_each_single_df(cell_df, peaks_dict[name], name, r, neg_pos_ratio, random_state)
+        else:
+            cell_df['label'] = 1
+            df_len = len(cell_df)
+            with_neg = _create_pairs_each_with_each_single_df(cell_df, peaks_dict[name], name, r, neg_pos_ratio/2, random_state)
+            with_neg = _get_negatives_by_new_anchors_pairing(with_neg, name, r, neg_pos_ratio/2, random_state, df_len)
+            dfs_dict[name] = with_neg
     
     return dfs_dict
 
@@ -597,6 +615,10 @@ def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     Returns:
         pandas DataFrame with one set of columns describing all regions.
     """
+    # if dfs_dict values are not DataFrames, load them
+    if not isinstance(list(dfs_dict.values())[0], pd.DataFrame):
+        dfs_dict = _dict_partitions(dfs_dict)
+
     df_with_2_regions = _concat_dfs(dfs_dict)
     anchors_df = _x_and_y_anchors2one_col(df_with_2_regions)
     
@@ -663,7 +685,7 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     return path_to_save
 
 
-def _modify_output(lines: list):
+def _modify_output(line: str, i: int):
     """
     Modifies each line of output of the FIMO tool.
     Saves motif IDs and corresponding names to a file.
@@ -672,34 +694,28 @@ def _modify_output(lines: list):
     Returns:
         list of modified lines.
     """
-    motif_id2name = {}
-    for i in tqdm(range(len(lines))):
-        # Change header to tsv format
-        if i == 0:
-            lines[i] = lines[i].replace('sequence_name', 'chr\tstart\tend\tcell_type')
+    # Change header to tsv format
+    if i == 0:
+        line = line.replace('sequence name', 'chr\tanchor_start\tanchor_end\tcell_type')
+        line = line.replace('#pattern name', 'motif_id')
+    else:
+        # Get the information you need 
+        elements = line.split('\t')
+        motif_id, name, _, _, strand, _, _, _, _ = elements
+        # Save motif_id and motif_alt_id to the dictionary
+        # Change name format to tsv format
+        name = name.replace(':', '\t')
+        # Add strand information to the motif_id
+        if strand == '+':
+            motif_id += '_f'
         else:
-            # Get the information you need 
-            elements = lines[i].split('\t')
-            motif_id, motif_alt_id, name, _, _, strand, _, _, _, _ = elements
-            # Save motif_id and motif_alt_id to the dictionary
-            motif_id2name[motif_id] = motif_alt_id
-            # Change name format to tsv format
-            name = name.replace(':', '\t')
-            # Add strand information to the motif_id
-            if strand == '+':
-                motif_id += '_f'
-            else:
-                motif_id += '_r'
-            # Update the list of lines
-            elements[0] = motif_id
-            elements[2] = name
-            lines[i] = '\t'.join(elements)
-    # Save motif_id2name to the file
-    with open('data/02_intermediate/motif_id2name.txt', 'w') as file:
-        for key, value in motif_id2name.items():
-            file.write(f'{key}\t{value}\n')
+            motif_id += '_r'
+        # Update the list of lines
+        elements[0] = motif_id
+        elements[1] = name
+        line = '\t'.join(elements)
     
-    return lines
+    return line
 
 
 def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
@@ -720,17 +736,27 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     subprocess.run(f'fimo --text {path_for_meme} {path_fasta} > data/temp/temp.csv', shell=True)
     print(f'Finding motifs took {time.time() - start} seconds')
     # Read output
+    lines = []
+    n_lines = 0
     with open('data/temp/temp.csv', 'r') as f:
-        output = f.readlines()
-    # Save modified output to temporary file
-    output = _modify_output(output)
-    with open('data/temp/temp.csv', 'w') as f:
-        f.writelines(output)
-    output = None
+        for i, line in tqdm(enumerate(f)):
+            lines.append(_modify_output(line, i))
+            n_lines = i
+            if i % 1000000 == 0:
+                print(i)
+                # Save modified output to temporary file
+                with open('data/temp/temp2.csv', 'a') as f2:
+                    f2.writelines(lines)
+                    del lines
+                    lines = []
+        with open('data/temp/temp2.csv', 'a') as f2:
+            f2.writelines(lines)
+            del lines
     # Read temporary file as pandas DataFrame
     dtypes = {'chr': "string", 'start': "int32", 'end': "int32", 'motif_id': "string", 'cell_type': "string"}
-    df = pd.read_csv('data/temp/temp.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
+    df = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
     subprocess.run('rm data/temp/temp.csv', shell=True)
+    subprocess.run('rm data/temp/temp2.csv', shell=True)
     df = df[['chr', 'start', 'end', 'motif_id', 'cell_type']]
     len_before = len(df)
     # Count motif occurences
@@ -744,6 +770,46 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     assert sum(df.iloc[:, 4:].sum(axis=1)) == len_before, 'Something went wrong with counting motifs'
     
     return df
+    
+    # DIFFERENT APPROACH - NOT WORKING
+    # dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string"}
+    # df = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
+    # #####subprocess.run('rm data/temp/temp.csv', shell=True)
+    # df = df[['chr', 'anchor_start', 'anchor_end', 'motif_id', 'cell_type']]
+    # len_before = len(df)
+    # # Count motif occurences
+    # df.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
+    # motif_cols = list(pd.unique(df['motif_id']))
+    # df = pl.from_pandas(df)
+    # all_columns = ['chr', 'start', 'end', 'cell_type'] + motif_cols
+    # # save to parquet
+    # for motif_id in tqdm(motif_cols):
+    #     df.with_columns([df['motif_id'] == motif_id]).write_parquet(f'data/temp/temp_{motif_id}.parquet')
+
+
+    # df.to_parquet('data/temp/temp2.parquet', engine='pyarrow')
+    # del df
+
+    # df = pd.DataFrame(columns=all_columns)
+
+    # parquet_file = pq.ParquetFile('data/temp/temp2.parquet')
+    # for batch in parquet_file.iter_batches(batch_size=1000000):
+    #     batch_df = batch.to_pandas()
+    #     batch_df = pd.DataFrame(batch_df.groupby(['chr', 'start', 'end', 'cell_type', 'motif_id'], observed=True).size(), columns=['count'])
+    #     batch_df['count'] = batch_df['count'].astype('int16')
+    #     batch_df = batch_df.unstack('motif_id', fill_value=0)
+    #     batch_df.columns = ['_'.join(x) for x in batch_df.columns if x[0]=='count']
+    #     batch_df.reset_index(inplace=True)
+    #     batch_df.rename(columns={name: name.replace('count_', '') for name in batch_df.columns}, inplace=True)
+    #     # add non existing columns with zeros
+    #     for col in all_columns:
+    #         if col not in batch_df.columns:
+    #             batch_df[col] = 0
+    #     df = df.append(batch_df, ignore_index=True)
+    
+    # assert sum(df.iloc[:, 4:].sum(axis=1)) == len_before, 'Something went wrong with counting motifs'
+    
+    # return df
 
 
 def _reverse_names(colnames: list) :
