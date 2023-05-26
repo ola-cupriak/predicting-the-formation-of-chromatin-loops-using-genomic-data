@@ -104,6 +104,18 @@ CTCF_ChIP_seq_bigWig:
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
 
+n1.positive_and_negative_HiC_loops_anotations:
+  path: data/02_intermediate/n1/n1_positive_and_negative_HiC_looplist
+  <<: *save_partitioned_pandas_parquet
+
+n2.positive_and_negative_HiC_loops_anotations:
+  path: data/02_intermediate/n2/n2_positive_and_negative_HiC_looplist
+  <<: *save_partitioned_pandas_parquet
+
+n3.positive_and_negative_HiC_loops_anotations:
+  path: data/02_intermediate/n3/n3_positive_and_negative_HiC_looplist
+  <<: *save_partitioned_pandas_parquet
+
 n1.merged_HiC_loops_anotations:
   filepath: data/02_intermediate/n1/n1_merged_HiC_looplist.csv
   <<: *save_pandas_csv
