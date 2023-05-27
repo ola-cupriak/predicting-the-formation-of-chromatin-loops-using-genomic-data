@@ -20,8 +20,10 @@ dependencies:
   - prettytable=3.5.0
   - ipykernel=6.15.2
   - bioconda::meme=4.11.2
+  - bioconda::deeptools=3.5.2
   - pip:
     - kedro==0.18.8
     - kedro-mlflow==0.11.8
     - kedro-viz==6.1.1
     - polars==0.17.15
+    - crossmap==0.6.5
