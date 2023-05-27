@@ -28,8 +28,8 @@ mlruns/**
 !.gitkeep
 
 # also keep the file with cell type to file name conversion
-!data/01_raw/cells2names.yml
-
+!data/01_raw/Homo_sapiens/cells2names.yml
+!data/01_raw/D_melanogaster/cells2names.yml
 
 ##########################
 # Common files

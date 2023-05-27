@@ -1,0 +1,3 @@
+reference_genomes:
+  dm3ToDm6.over.chain: dm3todm6_chain
+  dm6.fa: dm6
