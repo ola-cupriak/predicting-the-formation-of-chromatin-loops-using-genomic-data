@@ -739,6 +739,8 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     lines = []
     n_lines = 0
     with open('data/temp/temp.csv', 'r') as f:
+        with open('data/temp/temp2.csv', 'w') as f2:
+            pass
         for i, line in tqdm(enumerate(f)):
             lines.append(_modify_output(line, i))
             n_lines = i
@@ -753,8 +755,9 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
             f2.writelines(lines)
             del lines
     # Read temporary file as pandas DataFrame
-    dtypes = {'chr': "string", 'start': "int32", 'end': "int32", 'motif_id': "string", 'cell_type': "string"}
+    dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string"}
     df = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
+    df.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
     subprocess.run('rm data/temp/temp.csv', shell=True)
     subprocess.run('rm data/temp/temp2.csv', shell=True)
     df = df[['chr', 'start', 'end', 'motif_id', 'cell_type']]
