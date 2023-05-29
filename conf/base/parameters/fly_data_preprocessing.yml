@@ -1,5 +1,27 @@
-# This is a boilerplate parameters config generated for pipeline 'fly_data_preprocessing'
-# using Kedro 0.18.8.
-#
-# Documentation for this file format can be found in "Parameters"
-# Link: https://docs.kedro.org/en/0.18.8/kedro_project_setup/configuration.html#parameters
+fly_radius: 150
+# datasets names 
+fly_HiC_data: HiC_loops_annotations
+Beaf-32_ChIP_seq_bigWig: Beaf-32_ChIP_seq_bigWig
+CP190_ChIP_seq_bigWig: CP190_ChIP_seq_bigWig
+fly_CTCF_ChIP_seq_bigWig: CTCF_ChIP_seq_bigWig
+Cap-H2_ChIP_seq_bigWig: Cap-H2_ChIP_seq_bigWig
+Chromator_ChIP_seq_bigWig: Chromator_ChIP_seq_bigWig
+GAF_ChIP_seq_bigWig: GAF_ChIP_seq_bigWig
+Ibf2_ChIP_seq_bigWig: Ibf2_ChIP_seq_bigWig
+M1BP_ChIP_seq_bigWig: M1BP_ChIP_seq_bigWig
+Pita_ChIP_seq_bigWig: Pita_ChIP_seq_bigWig
+Rad21_ChIP_seq_bigWig: Rad21_ChIP_seq_bigWig
+SuHw_ChIP_seq_bigWig: SuHw_ChIP_seq_bigWig
+ZIPIC_ChIP_seq_bigWig: ZIPIC_ChIP_seq_bigWig
+Zw5_ChIP_seq_bigWig: Zw5_ChIP_seq_bigWig
+DNase_seq_4-6h_bigWig: DNase_seq_4-6h_bigWig
+DNase_seq_6-8h_bigWig: DNase_seq_6-8h_bigWig
+DNase_seq_8-10h_bigWig: DNase_seq_8-10h_bigWig
+DNase_seq_10-12h_bigWig: DNase_seq_10-12h_bigWig
+
+# file paths
+path_dm6_simplified: data/02_intermediate/D_melanogaster/reference_genomes_simp/dm6.fasta
+path_motifs_JASPAR_insects: data/01_raw/D_melanogaster/motifs_JASPAR/JASPAR2022_CORE_insects_non-redundant_pfms_jaspar.txt
+# list of cell types to use
+fly_cell_types_to_use:
+  - neuronal
