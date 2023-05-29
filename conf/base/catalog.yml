@@ -758,9 +758,9 @@ FLY_Pita_ChIP_seq_bigWig:
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
-FLY_Red21_ChIP_seq_bigWig:
+FLY_Rad21_ChIP_seq_bigWig:
   type: PartitionedDataSet
-  path: data/01_raw/D_melanogaster/Red21_ChIP_seq_bigWig
+  path: data/01_raw/D_melanogaster/Rad21_ChIP_seq_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
