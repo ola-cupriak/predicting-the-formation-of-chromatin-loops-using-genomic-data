@@ -686,7 +686,7 @@ FLY_DNase_seq_4-6h_bigWig:
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigwig"
 
-FLY_DNase_seq_4-8h_bigWig:
+FLY_DNase_seq_6-8h_bigWig:
   type: PartitionedDataSet
   path: data/01_raw/D_melanogaster/DNase_seq_4-8h_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
