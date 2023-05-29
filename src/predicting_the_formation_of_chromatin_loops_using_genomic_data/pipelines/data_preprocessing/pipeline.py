@@ -77,13 +77,13 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             ),
             node(
                 func=getfasta_bedfile,
-                inputs=["overlaps_HiC_loops_DNase_seq_named", "params:path_hg19_simplified", "params:path_fasta_anchors_with_open_chromtin"],
-                outputs="path_fasta_anchors_with_open_chromtin",
+                inputs=["overlaps_HiC_loops_DNase_seq_named", "params:path_hg19_simplified", "params:human_path_fasta_anchors_with_open_chromtin"],
+                outputs="human_path_fasta_anchors_with_open_chromtin",
                 name="getfasta_anchors_with_open_chromtin_node",
             ),
             node(
                 func=find_motifs,
-                inputs=["params:path_motifs_JASPAR_vertebrates", "path_fasta_anchors_with_open_chromtin"],
+                inputs=["params:path_motifs_JASPAR_vertebrates", "human_path_fasta_anchors_with_open_chromtin"],
                 outputs="motifs_found_anchors_with_open_chromatin",
                 name="find_motifs_in_anchors_with_open_chromtin_node",
             ),
