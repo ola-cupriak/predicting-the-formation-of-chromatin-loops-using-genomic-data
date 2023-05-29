@@ -60,11 +60,10 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
     cells_to_use = cells_to_use or []
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
-    keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     assert set(cells_to_use).issubset(set(cells2names_dataset_dict.values())), f"Cell types: {set(cells_to_use)-set(cells2names_dataset_dict.values())} are not in the dataset. Please check data_preprocessing.yml file."
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
-        cell_type = cells2names_dataset_dict[keys_dict[name]]
+        cell_type = cells2names_dataset_dict[name]
         if cells_to_use and cell_type not in cells_to_use:
             continue
         f1 = lambda x: x['chr1'].split("chr")[-1]
