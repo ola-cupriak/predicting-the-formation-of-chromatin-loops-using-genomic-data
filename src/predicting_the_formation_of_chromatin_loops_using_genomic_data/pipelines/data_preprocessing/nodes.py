@@ -668,7 +668,7 @@ def get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) ->
     return joined_intersection[['chr', 'start', 'end', 'name']]
 
 
-def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str) -> str:
+def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str, organism: str = 'human') -> str:
     """
     Cut sequences from chromosomes using BEDTools for coordinates from the pandas DataFrame.
     Args:
@@ -680,7 +680,8 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     """
     fasta = pybedtools.BedTool(path_simp_genome)
     df_to_search = df
-    df_to_search['chr'] = 'chr' + df_to_search['chr'].astype(str)
+    if organism == 'human':
+        df_to_search['chr'] = 'chr' + df_to_search['chr'].astype(str)
     bed = pybedtools.BedTool.from_dataframe(df_to_search)
     fasta_bed = bed.sequence(fi=fasta, nameOnly=True)
 
