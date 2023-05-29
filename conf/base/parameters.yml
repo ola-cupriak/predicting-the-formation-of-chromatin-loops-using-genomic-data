@@ -3,20 +3,23 @@ random_state: 42
 # negative sampling types
 n1: 
   type: anchors_from_other_cell_types
-  neg_pos_ratio: None
+  human_neg_pos_ratio: None
   human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n1/n1_anchors_with_open_chromtin.fasta
 n2:
   type: new_pairs_of_anchors
-  neg_pos_ratio: 5
+  human_neg_pos_ratio: 5
+  fly_neg_pos_ratio: 5
   human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n2/n2_anchors_with_open_chromtin.fasta
   fly_path_fasta_anchors_with_open_chromtin: data/02_intermediate/D_melanogaster/n2/n2_anchors_with_open_chromtin.fasta
 n3:
   type: open_chromatin_regions
-  neg_pos_ratio: 5
+  human_neg_pos_ratio: 5
+  fly_neg_pos_ratio: 5
   human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n3/n3_anchors_with_open_chromtin.fasta
   fly_path_fasta_anchors_with_open_chromtin: data/02_intermediate/D_melanogaster/n3/n3_anchors_with_open_chromtin.fasta
 n4:
   type: new_pairs_and_open_chromatin
-  neg_pos_ratio: 5
+  human_neg_pos_ratio: 5
+  fly_neg_pos_ratio: 5
   human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n4/n4_anchors_with_open_chromtin.fasta
   fly_path_fasta_anchors_with_open_chromtin: data/02_intermediate/D_melanogaster/n4/n4_anchors_with_open_chromtin.fasta

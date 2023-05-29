@@ -130,7 +130,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             node(
                 func=fly_add_labels,
                 inputs=["FLY_readed_HiC_loops_anotations", "params:type", 
-                        "params:fly_radius", "params:neg_pos_ratio", "params:random_state"],
+                        "params:fly_radius", "params:fly_neg_pos_ratio", "params:random_state"],
                 outputs="FLY_positive_and_negative_HiC_loops_anotations",
                 name="FLY_add_positive_and_negative_HiC_loops_anotations_node",
             ),

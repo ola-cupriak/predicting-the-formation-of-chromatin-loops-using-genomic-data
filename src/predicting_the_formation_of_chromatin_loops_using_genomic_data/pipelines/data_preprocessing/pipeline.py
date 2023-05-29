@@ -53,7 +53,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             node(
                 func=add_labels,
                 inputs=["readed_HiC_loops_anotations", "params:type", "readed_DNase_seq_peaks", 
-                        "params:radius", "params:neg_pos_ratio", "params:random_state"],
+                        "params:radius", "params:human_neg_pos_ratio", "params:random_state"],
                 outputs="positive_and_negative_HiC_loops_anotations",
                 name="add_positive_and_negative_HiC_loops_anotations_node",
             ),
