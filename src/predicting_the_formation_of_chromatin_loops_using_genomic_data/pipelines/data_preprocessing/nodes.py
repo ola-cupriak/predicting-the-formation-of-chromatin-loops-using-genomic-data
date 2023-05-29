@@ -195,30 +195,26 @@ def _get_overlapping_regions(df1: pd.DataFrame, df2: pd.DataFrame, names: list, 
     return intersection
 
 
-# def _remove_neg_overlapping_pos(pos_df, neg_df):
-#     pos_df['id'] = [i for i in range(len(pos_df))]
-#     neg_df['id'] = [i for i in range(len(neg_df))]
-#     # Find overlapping regions for x and y anchors separately
-#     x_overlap = _get_overlapping_regions(pos_df[['chr', 'x_start', 'x_end', 'id']], neg_df[['chr', 'x_start', 'x_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
-#     y_overlap = _get_overlapping_regions(pos_df[['chr', 'y_start', 'y_end', 'id']], neg_df[['chr', 'y_start', 'y_end', 'id']], names=['chr1', 'satrt1', 'end1', 'id_pos', 'chr2', 'start2', 'end2', 'id_neg'], wa=True, wb=True)
-#     # Find overlapping regions for x and y anchors together (rows with the same id_pos and id_neg)
-#     x = set(x_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
-#     y = set(y_overlap.loc[:,['id_pos', 'id_neg']].apply(tuple, axis=1))
-#     x_and_y = set([i[1] for i in x & y])
-#     # Remove overlapping negative examples
-#     neg_df = neg_df.loc[~neg_df['id'].isin(x_and_y),:]
-#     neg_df = neg_df.loc[:, neg_df.columns != 'id']
-
-#     return neg_df
-
-
-def _create_pairs_each_with_each_single_df(df_pos, df_open_chromatin, cell_type, r, neg_pos_ratio, random_state) -> pd.DataFrame:
+def _create_pairs_each_with_each_single_df(df_pos: pd.DataFrame, df_open_chromatin: pd.DataFrame, 
+                                            cell_type: str, r: int, neg_pos_ratio: float, random_state: int) -> pd.DataFrame:
     """
+    Create new anchor pairs from open chromatin regions to generate negative examples.
+    Args:
+        df_pos: pandas DataFrame with positive anchor pairs.
+        df_open_chromatin: pandas DataFrame with open chromatin regions.
+        cell_type: cell type to use.
+        r: radius of the anchor region.
+        neg_pos_ratio: ratio of negative to positive examples.
+        random_state: random state.
+    Returns:
+        pandas DataFrame with positive and negative anchor pairs.
     """
     df_open_chromatin['center'] = (df_open_chromatin['start'] + df_open_chromatin['end']) // 2
     df_open_chromatin = df_open_chromatin[['chr', 'center']] 
     chromosomes = pd.unique(df_pos['chr'])
-    chromosomes = {k: round(len(df_pos[df_pos['chr'] == k])*neg_pos_ratio) for k in chromosomes}
+    chromosomes = {k: None for k in chromosomes}
+    if neg_pos_ratio:
+        chromosomes = {k: round(len(df_pos[df_pos['chr'] == k])*neg_pos_ratio) for k in chromosomes}
     df_neg = pd.DataFrame()
 
     for ch in chromosomes.keys():
@@ -233,7 +229,8 @@ def _create_pairs_each_with_each_single_df(df_pos, df_open_chromatin, cell_type,
         df_chr = df_chr.filter(pl.col('x') < pl.col('y'))
         df_chr = df_chr.filter(pl.col('x') + r < pl.col('y') - r)
         # sample with polars
-        df_chr = df_chr.sample(n=chromosomes[ch], with_replacement=False, seed=random_state, shuffle=True)
+        if neg_pos_ratio:
+            df_chr = df_chr.sample(n=chromosomes[ch], with_replacement=False, seed=random_state, shuffle=True)
         # convert back to pandas
         df_chr = df_chr.to_pandas()
         df_neg = pd.concat([df_neg, df_chr])
@@ -290,9 +287,13 @@ def _x_and_y_anchors2one_col(df: pd.DataFrame,
     return anchors_df
 
 
-def _create_new_anchors_pairs(df: pd.DataFrame):
+def _create_new_anchors_pairs(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Merge all values in one column (x) with all values in second column (y)
+    Join all values from one column (x) with all values from second column (y).
+    Args:
+        df: pandas DataFrame with columns describing x regions and columns describing y regions.
+    Returns:
+        pandas DataFrame with new pairs of anchors.
     """
     df_new_pairs = _x_and_y_anchors2one_col(df, ['chr', 'x'], ['chr', 'y'], ['chr', 'anchor'], 'anchor')
     df_new_pairs = pl.from_pandas(df_new_pairs)
@@ -321,7 +322,21 @@ def _remove_duplicated_pairs(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> pd.D
     return df_neg
 
 
-def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: int, neg_pos_ratio: float, random_state: int, df_len: int):
+def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, 
+                                        r: int, neg_pos_ratio: float, 
+                                        random_state: int, df_len: int) -> pd.DataFrame:
+    """
+    Create negative examples by pairing anchors derived from the same chromosome.
+    Args:
+        df: pandas DataFrame with positive examples.
+        cell_type: cell type of the positive examples.
+        r: radius of the region around the anchor.
+        neg_pos_ratio: ratio of negative to positive examples.
+        random_state: random state.
+        df_len: length of the positive examples DataFrame.
+    Returns:
+        pandas DataFrame with positive and negative examples.
+    """
     df_neg = _create_new_anchors_pairs(df)
     df_neg = _remove_duplicated_pairs(df, df_neg)
     df_neg['x_start'] = df_neg['x'] - r
@@ -333,7 +348,8 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, r: i
     df_neg['label'] = 0
     df_neg = df_neg[['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end', 'cell_type', 'label']]
     # randomy sample negative examples WITHOUT REPEATS to get the desired neg_pos_retio
-    df_neg = df_neg.sample(n=round(int(neg_pos_ratio * df_len)), random_state=random_state, replace=False)
+    if neg_pos_ratio:
+        df_neg = df_neg.sample(n=round(int(neg_pos_ratio * df_len)), random_state=random_state, replace=False)
     # merge positive and negative examples
     df = pd.concat([df, df_neg], axis=0)
     # sort by chr and region
@@ -547,7 +563,7 @@ def _calculate_weighted_mean(distribution: list):
     return sum([distribution[i]*weights[i] for i in range(len(distribution))]) / sum(weights)
 
 
-def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str) -> pd.DataFrame:
+def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, organism: str) -> pd.DataFrame:
     """
     POLARS
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
@@ -555,27 +571,33 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
     Args:
         main_df: pandas DataFrame with chromatin loops.
         bigWig_obj: pyBigWig object with experiment peaks
+        experiment: name of the experiment.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with added columns of bigWig data statistics in both regions of each loop
     """
     bigWig_obj = pyBigWig.open(bigWig_path)
     regions = ['x', 'y']
+
+    if organism == 'human':
+        main_df['chr'] = main_df['chr'].apply(lambda x: 'chr'+x)
+
     main_df = pl.from_pandas(main_df)
     for region in regions:
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: _calculate_weighted_mean(bigWig_obj.values('chr'+x[0], x[1], x[2])), return_dtype=pl.Float32
+            lambda x: _calculate_weighted_mean(bigWig_obj.values(x[0], x[1], x[2])), return_dtype=pl.Float32
             ).rename({'apply':f'{region}_{experiment}_weighted_mean'}))
         
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: bigWig_obj.stats('chr'+x[0], x[1], x[2], type='mean')[0], return_dtype=pl.Float32
+            lambda x: bigWig_obj.stats(x[0], x[1], x[2], type='mean')[0], return_dtype=pl.Float32
             ).rename({'apply':f'{region}_{experiment}_mean'}))
     
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: bigWig_obj.stats('chr'+x[0], x[1], x[2], type='max')[0], return_dtype=pl.Float32
+            lambda x: bigWig_obj.stats(x[0], x[1], x[2], type='max')[0], return_dtype=pl.Float32
             ).rename({'apply':f'{region}_{experiment}_max'}))
         
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: bigWig_obj.stats('chr'+x[0], x[1], x[2], type='min')[0], return_dtype=pl.Float32
+            lambda x: bigWig_obj.stats(x[0], x[1], x[2], type='min')[0], return_dtype=pl.Float32
             ).rename({'apply':f'{region}_{experiment}_min'}))
         
     main_df = main_df.to_pandas()
@@ -584,7 +606,8 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
 
 def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
                     bigWig_data_dict: dict,
-                    experiment: str) -> pd.DataFrame:
+                    experiment: str,
+                    organism: str='human') -> pd.DataFrame:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop,
@@ -592,6 +615,8 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         bigWig_data_dict: dictionary with cell types as keys and pyBigWig objects as values.
+        experiment: name of the experiment.
+        organism: name of the organism.
     Returns:
         dictionary:
             keys: cell types 
@@ -605,7 +630,7 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
         print(f'...for {bigWig_name} cell...')
         for main_name, main_df in main_dfs_dict.items():
             if main_name == bigWig_name:
-                main_df = _add_bigWig_data_single_df(main_df, bigWig_path, experiment)
+                main_df = _add_bigWig_data_single_df(main_df, bigWig_path, experiment, organism)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
@@ -873,9 +898,10 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> p
     # add rows with missing ids 
     motifs_list = list(main_df_new.columns)[columns_no:]
     to_add = main_df[~main_df['id'].isin(main_df_new['id'])]
-    for m in motifs_list:
-        to_add.loc[:, m] = pd.Series([0]*len(main_df), dtype='int16')
-    main_df_new = pd.concat([main_df_new, to_add], ignore_index=True)
+    if len(to_add):
+        for m in motifs_list:
+            to_add.loc[:, m] = pd.Series([0]*len(main_df), dtype='int16')
+        main_df_new = pd.concat([main_df_new, to_add], ignore_index=True)
     main_df_new = _sort_df(main_df_new, 'x_start')
     main_df_new = main_df_new.loc[:, main_df_new.columns != 'id']
 
