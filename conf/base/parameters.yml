@@ -3,7 +3,7 @@ random_state: 42
 # negative sampling types
 n1: 
   type: anchors_from_other_cell_types
-  human_neg_pos_ratio: None
+  human_neg_pos_ratio: 0
   human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n1/n1_anchors_with_open_chromtin.fasta
 n2:
   type: new_pairs_of_anchors
