@@ -2,21 +2,21 @@
 n1: 
   type: anchors_from_other_cell_types
   neg_pos_ratio: None
-  path_fasta_anchors_with_open_chromtin: data/02_intermediate/n1/n1_anchors_with_open_chromtin.fasta
+  path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n1/n1_anchors_with_open_chromtin.fasta
 n2:
   type: new_pairs_of_anchors
   neg_pos_ratio: 5
-  path_fasta_anchors_with_open_chromtin: data/02_intermediate/n2/n2_anchors_with_open_chromtin.fasta
+  path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n2/n2_anchors_with_open_chromtin.fasta
 
 n3:
   type: open_chromatin_regions
   neg_pos_ratio: 5
-  path_fasta_anchors_with_open_chromtin: data/02_intermediate/n3/n3_anchors_with_open_chromtin.fasta
+  path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n3/n3_anchors_with_open_chromtin.fasta
 
 n4:
   type: new_pairs_and_open_chromatin
   neg_pos_ratio: 5
-  path_fasta_anchors_with_open_chromtin: data/02_intermediate/n4/n4_anchors_with_open_chromtin.fasta
+  path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n4/n4_anchors_with_open_chromtin.fasta
 
 
 radius: 2500
@@ -27,8 +27,8 @@ CTCF_ChIP-seq_bigWig: CTCF_ChIP_seq_bigWig
 DNase-seq_peaks: DNase_seq_peaks
 DNase-seq_bigWig: DNase_seq_bigWig
 # file paths
-path_hg19_simplified: data/02_intermediate/reference_genomes_simp/hg19.fasta
-path_motifs_JASPAR_vertebrates: data/01_raw/motifs_JASPAR/JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt
+path_hg19_simplified: data/02_intermediate/Homo_sapiens/reference_genomes_simp/hg19.fasta
+path_motifs_JASPAR_vertebrates: data/01_raw/Homo_sapiens/motifs_JASPAR/JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt
 # list of cell types to use
 cell_types_to_use:
   - GM12878
