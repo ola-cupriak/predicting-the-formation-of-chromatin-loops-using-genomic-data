@@ -2,7 +2,6 @@
 This is a boilerplate pipeline 'model_training'
 generated using Kedro 0.18.7
 """
-
 from kedro.pipeline import Pipeline, node, pipeline
 from .nodes import optimize_parameters
 from .nodes import read_data
@@ -13,8 +12,6 @@ from kedro.framework.project import settings
 
 
 
-
-
 def create_pipeline(mtype: str, **kwargs) -> Pipeline:
     namespace = mtype
 
@@ -22,8 +19,12 @@ def create_pipeline(mtype: str, **kwargs) -> Pipeline:
     conf_loader = ConfigLoader(conf_source=conf_path)
     parameters = conf_loader["parameters"]
     neg_sampling_type = parameters["neg_sampling_type"]
-    
-    input_data = neg_sampling_type+".concatenated_combined_functional_genomics_data"
+
+    organism = parameters["organism"]
+    if organism == "human":
+        input_data = neg_sampling_type+".concatenated_combined_functional_genomics_data"
+    elif organism == "fly":
+        input_data = neg_sampling_type+".FLY_concatenated_combined_functional_genomics_data"
     pipeline_template = pipeline([
         node(
             func=read_data,
