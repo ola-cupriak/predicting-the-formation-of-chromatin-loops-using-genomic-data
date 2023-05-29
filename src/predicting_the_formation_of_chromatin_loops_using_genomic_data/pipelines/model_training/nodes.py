@@ -18,7 +18,7 @@ import xgboost as xgb
 
 
 def read_data(df: pd.DataFrame, cell_types: list, type: str, 
-              features_include_only: list = [], features_exclude: list = []
+              features_include_only: list = None, features_exclude: list = None
               ) -> Dict[str, pd.DataFrame]:
     """Reads the data from the data frame and returns the data frame with the
     selected cell types, removes the columns that are not needed for the model.
@@ -32,6 +32,9 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
         Dictionary with DataFrames with the selected cell types 
         and dropped columns that are not needed for the models.
     """
+    features_include_only = features_include_only or []
+    features_exclude = features_exclude or []
+
     if features_include_only and features_exclude:
         print('Warning! Both parameters features_include_only and features_exclude are given. Only the features_include_only parameter will be used.')
 
@@ -66,7 +69,7 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
 def split_data(dfs_dict: Dict[str, pd.DataFrame], 
                 type: str, 
                 test_size: float = 0.2, 
-                stratify: list = [], 
+                stratify: list = None, 
                 random_state: int = None
                 ) -> Dict[str, Tuple[pd.DataFrame, pd.DataFrame]]:
     """
@@ -79,7 +82,7 @@ def split_data(dfs_dict: Dict[str, pd.DataFrame],
     Returns:
         A dictionary with tuples with the training and test data frames.
     """
-    
+    stratify = stratify or []
     for cell_type, df in dfs_dict.items():
         if type == 'within':
             dfs_dict[cell_type] = train_test_split(df, test_size=test_size, stratify=df.loc[:, stratify], random_state=random_state)
@@ -117,7 +120,7 @@ def save_split_idxes(dfs_dict: Dict[str, pd.DataFrame],
     return idx_dict
 
 
-def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> LogisticRegression:
+def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> LogisticRegression:
     """
     Trains a logistic regression model on the training data and returns the trained model.
     Args:
@@ -127,13 +130,14 @@ def _train_logistic_regression(X_train: pd.DataFrame, y_train: pd.DataFrame, par
     Returns:
         The trained model.
     """
+    params = params or {}
     model = LogisticRegression(**params)  
     model.fit(X_train, y_train)
 
     return model
 
 
-def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> RandomForestClassifier():
+def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> RandomForestClassifier:
     """
     Trains a random forest model on the training data and returns the trained model.
     Args:
@@ -143,13 +147,14 @@ def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
     Returns:
         The trained model.
     """
+    params = params or {}
     model = RandomForestClassifier(**params)  
     model.fit(X_train, y_train)
 
     return model
 
 
-def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> xgb.XGBClassifier():
+def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> xgb.XGBClassifier:
     """
     Trains a XGBoost model on the training data and returns the trained model.
     Args:
@@ -159,13 +164,14 @@ def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = 
     Returns:
         The trained model.
     """
+    params = params or {}
     model = xgb.XGBClassifier(objective='binary:logistic', **params)
     model.fit(X_train, y_train)
 
     return model
 
 
-def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> lgb.LGBMClassifier():
+def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> lgb.LGBMClassifier:
     """
     Trains a LightGBM model on the training data and returns the trained model.
     Args:
@@ -175,13 +181,14 @@ def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict =
     Returns:
         The trained model.
     """
+    params = params or {}
     model = lgb.LGBMClassifier(**params)
     model.fit(X_train, y_train)
 
     return model
 
 
-def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = {}) -> tree.DecisionTreeClassifier():
+def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> tree.DecisionTreeClassifier:
     """
     Trains a decision tree model on the training data and returns the trained model.
     Args:
@@ -191,6 +198,7 @@ def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
     Returns:
         The trained model.
     """
+    params = params or {}
     model = tree.DecisionTreeClassifier(**params)
     model.fit(X_train, y_train)
 
@@ -200,7 +208,7 @@ def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
 def _train_model(df_dict: Dict[str, pd.DataFrame], 
                 mtype: str,
                 model_type: str = 'log_reg', 
-                params: dict = {}) -> Dict[str, Any]:
+                params: dict = None) -> Dict[str, Any]:
     """
     Train choosen model on the training data.
     Args:
@@ -211,6 +219,8 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
     Returns:
         A dictionary with the trained models.
     """
+    params = params or {}
+
     if mtype=='within':
         cell_types = list(df_dict.keys())
     else:
@@ -365,23 +375,24 @@ def _get_feature_importances(models_dict: dict, model_type: str) -> Tuple[dict, 
 
 def optimize_parameters(df_dict: Dict[str, pd.DataFrame], 
                         model_type: str = 'log_reg', 
-                        params: dict = {},
+                        params: dict = None,
                         optimize: bool = True,
                         run: bool = True,
                         test_size: float = 0.2,
                         validation_size = 0.3,
-                        stratify: list = [],
+                        stratify: list = None,
                         random_state: int = None,
                         optim_time: int = None,
                         n_trials: int = 10,
                         eval_metric: Callable = metrics.roc_auc_score,
                         direction: str = "maximize",
                         ) -> Tuple[dict, dict]:
+    stratify = stratify or []
+    params = params or {}
+
     if not run:
         return {'empty_model': ''}, {'empty_model': go.Figure()}
     
-    if not params: 
-        params = {}
     params_dict = {k: params for k in df_dict.keys()}
     if not optimize:
         return params_dict, {'empty_model': go.Figure()}
@@ -456,7 +467,7 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
 def train_and_eval(df_dict: Dict[str, pd.DataFrame],
                     mtype: str,  
                     model_type: str = 'log_reg', 
-                    params: dict = {}, 
+                    params: dict = None, 
                     run: bool = True,
                     run_name: str = None,
                     neg_sampling_type: str = None,
@@ -474,6 +485,8 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
         A tuple with dictionaries with the trained models, the evaluation metrics, the confusion matrices,
         the feature importances and the feature importances plot.
     """
+    params = params or {}
+
     if not run:
         return {'empty_model': ''}, {'empty_model': ''}, {'empty_model': plt.figure()}, {'empty_model': pd.DataFrame()}, {'empty_model': plt.figure()}
     
