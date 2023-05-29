@@ -29,7 +29,9 @@ def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
     """
     df.loc[df['chr'] == 'X', 'chr'] = '100'
     df.loc[df['chr'] == 'Y', 'chr'] = '200'
-    df['chr'] = df['chr'].astype(int)
+    try:
+        df['chr'] = df['chr'].astype(int)
+    except: pass
     df = df.sort_values(by=['chr', region_name])
     df.loc[df['chr'] == 100, 'chr'] = 'X'
     df.loc[df['chr'] == 200, 'chr'] = 'Y'
@@ -41,7 +43,7 @@ def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
 def read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
                 dataset_name: str, r: int,
-                cells_to_use: list=[]) -> Dict[str, pd.DataFrame]:
+                cells_to_use: list=None) -> Dict[str, pd.DataFrame]:
     """
     Load and modify the dataframes with chromatin loops anotations.
     Args:
@@ -55,6 +57,7 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
             keys: cell types 
             values: pandas DataFrames with chromatin loops anotations.
     """
+    cells_to_use = cells_to_use or []
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
@@ -253,9 +256,9 @@ def _create_pairs_each_with_each_single_df(df_pos, df_open_chromatin, cell_type,
 
 
 def _x_and_y_anchors2one_col(df: pd.DataFrame, 
-                             x_cols2use: list=['chr', 'x_start', 'x_end'], 
-                             y_cols2use: list=['chr', 'y_start', 'y_end'], 
-                             new_cols: list=['chr', 'start', 'end'], 
+                             x_cols2use: list=None, 
+                             y_cols2use: list=None, 
+                             new_cols: list=None, 
                              sortby:str='start') -> pd.DataFrame:
     """
     Combines the columns describing x regions and the columns describing y regions 
@@ -266,6 +269,10 @@ def _x_and_y_anchors2one_col(df: pd.DataFrame,
     Returns:
         pandas DataFrame with one set of columns describing all regions.
     """
+    x_cols2use = x_cols2use or ['chr', 'x_start', 'x_end']
+    y_cols2use = y_cols2use or ['chr', 'y_start', 'y_end']
+    new_cols = new_cols or ['chr', 'start', 'end']
+
     df_part1 = df[x_cols2use]
     df_part2 = df[y_cols2use]
     # rename columns
@@ -376,9 +383,11 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame], mtype: str, peaks_dict: Dict[s
             df_len = len(cell_df)
             dfs_dict[name] = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state, df_len)
         elif mtype == 'open_chromatin_regions':
+            assert peaks_dict != None, "peaks_dict should be provided for this type of negative sampling"
             cell_df['label'] = 1
             dfs_dict[name] = _create_pairs_each_with_each_single_df(cell_df, peaks_dict[name], name, r, neg_pos_ratio, random_state)
         else:
+            assert peaks_dict != None, "peaks_dict should be provided for this type of negative sampling"
             cell_df['label'] = 1
             df_len = len(cell_df)
             with_neg = _create_pairs_each_with_each_single_df(cell_df, peaks_dict[name], name, r, neg_pos_ratio/2, random_state)
@@ -512,7 +521,7 @@ def count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], peaks
     return main_dfs_dict
 
 
-def get_triangle_kernel(kerlen: int) -> list:
+def _get_triangle_kernel(kerlen: int) -> list:
     """
     Get a triangle kernel of length kerlen.
     Args:
@@ -527,7 +536,7 @@ def get_triangle_kernel(kerlen: int) -> list:
     return kernel1d
 
 
-def calculate_weighted_mean(distribution: list):
+def _calculate_weighted_mean(distribution: list):
     """
     Calculate weighted mean of the distribution.
     Args:
@@ -535,7 +544,7 @@ def calculate_weighted_mean(distribution: list):
     Returns:
         weighted mean of the distribution.
     """
-    weights = get_triangle_kernel(len(distribution))
+    weights = _get_triangle_kernel(len(distribution))
     return sum([distribution[i]*weights[i] for i in range(len(distribution))]) / sum(weights)
 
 
@@ -555,7 +564,7 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
     main_df = pl.from_pandas(main_df)
     for region in regions:
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: calculate_weighted_mean(bigWig_obj.values('chr'+x[0], x[1], x[2])), return_dtype=pl.Float32
+            lambda x: _calculate_weighted_mean(bigWig_obj.values('chr'+x[0], x[1], x[2])), return_dtype=pl.Float32
             ).rename({'apply':f'{region}_{experiment}_weighted_mean'}))
         
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
@@ -685,7 +694,7 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str)
     return path_to_save
 
 
-def _modify_output(line: str, i: int):
+def _modify_fimo_output(line: str, i: int):
     """
     Modifies each line of output of the FIMO tool.
     Saves motif IDs and corresponding names to a file.
@@ -742,7 +751,7 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
         with open('data/temp/temp2.csv', 'w') as f2:
             pass
         for i, line in tqdm(enumerate(f)):
-            lines.append(_modify_output(line, i))
+            lines.append(_modify_fimo_output(line, i))
             n_lines = i
             if i % 1000000 == 0:
                 print(i)
@@ -962,7 +971,7 @@ def remove_overlapping(main_dfs_dict: dict):
     return main_dfs_dict
 
 
-def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.DataFrame:
+def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=None) -> pd.DataFrame:
     '''
     Concatenates dataframes from dictionary.
     Args:   
@@ -971,6 +980,7 @@ def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.DataF
     Returns:
         pandas DataFrame with concatenated dataframes from dictionary.
     '''
+    cells_to_use = cells_to_use or []
     print('Concatenating dataframes from dictionary...')
     # check if all keys_to_concat are in main_dfs_dict
     if cells_to_use:
