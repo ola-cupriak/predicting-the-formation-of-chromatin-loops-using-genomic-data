@@ -152,7 +152,9 @@ def read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
     keys_dict = {".".join(key.split(".")[:-1]): key for key in cells2names_dataset_dict}
     bigWig_data_dict = dict()
     for name, bigWig_path in input_dict.items():
-        cell_type = cells2names_dataset_dict[keys_dict[name]]
+        try:
+            cell_type = cells2names_dataset_dict[keys_dict[name]]
+        except: continue
         if cells_to_use and cell_type not in cells_to_use:
             continue
         bigWig_data_dict[cell_type] = bigWig_path
@@ -970,6 +972,28 @@ def _remove_overlapping_single_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _check_and_drop_nan_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Checks if there are any rows with NaN values in the dataframe.
+    Args:
+        df: pandas DataFrame.
+    Returns:
+        pandas DataFrame without rows with NaN values.
+    """
+    print('\nChecking for NaN values in the dataframe...')
+    if df.isnull().values.any():
+        before = len(df)
+        columns_with_na = df.columns[df.isna().any()].tolist()
+        print(f'There are NaN values in the dataframe in columns: {columns_with_na}. Dropping rows with NaN values...')
+        df = df.dropna()
+        after = len(df)
+        print(f'Done! {before - after} rows were dropped.')
+    else:
+        print('There are no NaN values in the dataframe.')
+
+    return df
+
+
 def remove_overlapping(main_dfs_dict: dict):
     """
     Remove negative examples that overlap with positive examples,
@@ -991,6 +1015,7 @@ def remove_overlapping(main_dfs_dict: dict):
         len_before = len(main_df)
         main_df = _remove_overlapping_single_df(main_df)
         print(f'...{len_before - len(main_df)} examples were removed.')
+        main_df = _check_and_drop_nan_rows(main_df)
         main_dfs_dict[main_name] = main_df
     print('Done!')
 
