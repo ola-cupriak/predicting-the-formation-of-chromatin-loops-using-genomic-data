@@ -870,443 +870,226 @@ n4.FLY_concatenated_combined_functional_genomics_data:
 
 # Model training
 
-# # datasets split
-# within.split_data_idxes:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/within_splits
-#       <<: *save_partitioned_pandas_parquet
-
-# across.split_data_idxes:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/across_splits
-#       <<: *save_partitioned_pandas_parquet
-
-# # parameters
-# within.logistic_regression_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/within/within_logistic_regression_params
-#       <<: *save_partitioned_yaml
-
-# across.logistic_regression_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/across/across_logistic_regression_params
-#       <<: *save_partitioned_yaml
-
-# within.random_forest_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/within/within_random_forest_params
-#       <<: *save_partitioned_yaml
-
-# across.random_forest_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/across/across_random_forest_params
-#       <<: *save_partitioned_yaml
-
-# within.lightgbm_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/within/within_lightgbm_params
-#       <<: *save_partitioned_yaml
-
-# across.lightgbm_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/across/across_lightgbm_params
-#       <<: *save_partitioned_yaml
-
-# within.xgboost_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/within/within_xgboost_params
-#       <<: *save_partitioned_yaml
-
-# across.xgboost_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/across/across_xgboost_params
-#       <<: *save_partitioned_yaml
-
-# within.decision_tree_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/within/within_decision_tree_params
-#       <<: *save_partitioned_yaml
-
-# across.decision_tree_params:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/05_model_input/Homo_sapiens/across/across_decision_tree_params
-#       <<: *save_partitioned_yaml
-
-# # optimalization plots
-
-# within.logistic_regression_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/within/within_logistic_regression_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# across.logistic_regression_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/across/across_logistic_regression_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# within.random_forest_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/within/within_random_forest_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# across.random_forest_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/across/across_random_forest_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# within.lightgbm_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/within/within_lightgbm_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# across.lightgbm_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/across/across_lightgbm_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# within.xgboost_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/within/within_xgboost_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# across.xgboost_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/across/across_xgboost_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# within.decision_tree_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/within/within_decision_tree_optimalization
-#       <<: *save_partitioned_plotly_json
-
-# across.decision_tree_optimalization_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/08_reporting/Homo_sapiens/across/across_decision_tree_optimalization
-#       <<: *save_partitioned_plotly_json
-
-
-# # models
-# within.logistic_regression_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/within/within_logistic_regression_models
-#       <<: *save_partitioned_pickle
-
-# across.logistic_regression_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/across/across_logistic_regression_models
-#       <<: *save_partitioned_pickle
-
-# within.random_forest_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/within/within_random_forest_models
-#       <<: *save_partitioned_pickle
-
-# across.random_forest_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/across/across_random_forest_models
-#       <<: *save_partitioned_pickle
-
-# within.lightgbm_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/within/within_lightgbm_models
-#       <<: *save_partitioned_pickle
-
-# across.lightgbm_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/across/across_lightgbm_models
-#       <<: *save_partitioned_pickle
-
-# within.xgboost_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/within/within_xgboost_models
-#       <<: *save_partitioned_pickle
-
-# across.xgboost_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/across/across_xgboost_models
-#       <<: *save_partitioned_pickle
-
-# within.decision_tree_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/within/within_decision_tree_models
-#       <<: *save_partitioned_pickle
-
-# across.decision_tree_models:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/06_models/Homo_sapiens/across/across_decision_tree_models
-#       <<: *save_partitioned_pickle
-
-# # metrics
-# within.logistic_regression_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_logistic_regression_metrics
-#       <<: *save_partitioned_yaml
-
-# across.logistic_regression_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_logistic_regression_metrics
-#       <<: *save_partitioned_yaml
-
-# within.random_forest_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_random_forest_metrics
-#       <<: *save_partitioned_yaml
-
-# across.random_forest_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_random_forest_metrics
-#       <<: *save_partitioned_yaml
-
-# within.lightgbm_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_lightgbm_metrics
-#       <<: *save_partitioned_yaml
-
-# across.lightgbm_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_metrics
-#       <<: *save_partitioned_yaml
-
-# within.xgboost_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_xgboost_metrics
-#       <<: *save_partitioned_yaml
-
-# across.xgboost_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_xgboost_metrics
-#       <<: *save_partitioned_yaml
-
-# within.decision_tree_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_decision_tree_metrics
-#       <<: *save_partitioned_yaml
-
-# across.decision_tree_metrics:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_decision_tree_metrics
-#       <<: *save_partitioned_yaml
-
-# within.logistic_regression_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_logistic_regression_metrics
-#       <<: *save_partitioned_plt_plot
-
-# across.logistic_regression_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_logistic_regression_metrics
-#       <<: *save_partitioned_plt_plot
-
-# within.random_forest_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_random_forest_metrics
-#       <<: *save_partitioned_plt_plot
-
-# across.random_forest_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_random_forest_metrics
-#       <<: *save_partitioned_plt_plot
-
-# within.lightgbm_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_lightgbm_metrics
-#       <<: *save_partitioned_plt_plot
-
-# across.lightgbm_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_metrics
-#       <<: *save_partitioned_plt_plot
-
-# within.xgboost_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_xgboost_metrics
-#       <<: *save_partitioned_plt_plot
-
-# across.xgboost_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_xgboost_metrics
-#       <<: *save_partitioned_plt_plot
-
-# within.decision_tree_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_decision_tree_metrics
-#       <<: *save_partitioned_plt_plot
-
-# across.decision_tree_confusionmatrix:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_decision_tree_metrics
-#       <<: *save_partitioned_plt_plot
-
-# #feature importance 
-# within.logistic_regression_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_logistic_regression_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# across.logistic_regression_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_logistic_regression_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# within.random_forest_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_random_forest_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# across.random_forest_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_random_forest_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# within.lightgbm_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_lightgbm_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# across.lightgbm_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# within.xgboost_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_xgboost_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# across.xgboost_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_xgboost_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# within.decision_tree_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_decision_tree_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# across.decision_tree_feature_importance_plot:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_decision_tree_feature_importance
-#       <<: *save_partitioned_plt_plot
-
-# within.logistic_regression_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_logistic_regression_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# across.logistic_regression_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_logistic_regression_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# within.random_forest_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_random_forest_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# across.random_forest_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_random_forest_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# within.lightgbm_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_lightgbm_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# across.lightgbm_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# within.xgboost_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_xgboost_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# across.xgboost_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_xgboost_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# within.decision_tree_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/within/within_decision_tree_feature_importance
-#       <<: *save_partitioned_pandas_parquet
-
-# across.decision_tree_feature_importance_df:
-#   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-#   data_set:
-#       path: data/07_model_output/Homo_sapiens/across/across_decision_tree_feature_importance
-#       <<: *save_partitioned_pandas_parquet
+# datasets split
+within.FLY_split_data_idxes:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/D_melanogaster/within_splits
+      <<: *save_partitioned_pandas_parquet
+
+# parameters
+within.FLY_logistic_regression_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/D_melanogaster/within/within_logistic_regression_params
+      <<: *save_partitioned_yaml
+
+within.FLY_random_forest_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/D_melanogaster/within/within_random_forest_params
+      <<: *save_partitioned_yaml
+
+within.FLY_lightgbm_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/D_melanogaster/within/within_lightgbm_params
+      <<: *save_partitioned_yaml
+
+within.FLY_xgboost_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/D_melanogaster/within/within_xgboost_params
+      <<: *save_partitioned_yaml
+
+within.FLY_decision_tree_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/05_model_input/D_melanogaster/within/within_decision_tree_params
+      <<: *save_partitioned_yaml
+
+# optimalization plots
+
+within.FLY_logistic_regression_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/D_melanogaster/within/within_logistic_regression_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.FLY_random_forest_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/D_melanogaster/within/within_random_forest_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.FLY_lightgbm_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/D_melanogaster/within/within_lightgbm_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.FLY_xgboost_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/D_melanogaster/within/within_xgboost_optimalization
+      <<: *save_partitioned_plotly_json
+
+within.FLY_decision_tree_optimalization_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/08_reporting/D_melanogaster/within/within_decision_tree_optimalization
+      <<: *save_partitioned_plotly_json
+
+# models
+within.FLY_logistic_regression_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/D_melanogaster/within/within_logistic_regression_models
+      <<: *save_partitioned_pickle
+
+within.FLY_random_forest_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/D_melanogaster/within/within_random_forest_models
+      <<: *save_partitioned_pickle
+
+within.FLY_lightgbm_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/D_melanogaster/within/within_lightgbm_models
+      <<: *save_partitioned_pickle
+
+within.FLY_xgboost_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/D_melanogaster/within/within_xgboost_models
+      <<: *save_partitioned_pickle
+
+within.FLY_decision_tree_models:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/06_models/D_melanogaster/within/within_decision_tree_models
+      <<: *save_partitioned_pickle
+
+# metrics
+within.FLY_logistic_regression_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_metrics
+      <<: *save_partitioned_yaml
+
+within.FLY_random_forest_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_random_forest_metrics
+      <<: *save_partitioned_yaml
+
+within.FLY_lightgbm_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_lightgbm_metrics
+      <<: *save_partitioned_yaml
+
+within.FLY_xgboost_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_xgboost_metrics
+      <<: *save_partitioned_yaml
+
+within.FLY_decision_tree_metrics:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_decision_tree_metrics
+      <<: *save_partitioned_yaml
+
+within.FLY_logistic_regression_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_metrics
+      <<: *save_partitioned_plt_plot
+
+within.FLY_random_forest_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_random_forest_metrics
+      <<: *save_partitioned_plt_plot
+
+within.FLY_lightgbm_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_lightgbm_metrics
+      <<: *save_partitioned_plt_plot
+
+within.FLY_xgboost_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_xgboost_metrics
+      <<: *save_partitioned_plt_plot
+
+within.FLY_decision_tree_confusionmatrix:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_decision_tree_metrics
+      <<: *save_partitioned_plt_plot
+
+#feature importance 
+within.FLY_logistic_regression_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.FLY_random_forest_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_random_forest_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.FLY_lightgbm_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_lightgbm_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.FLY_xgboost_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_xgboost_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.FLY_decision_tree_feature_importance_plot:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_decision_tree_feature_importance
+      <<: *save_partitioned_plt_plot
+
+within.FLY_logistic_regression_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.FLY_random_forest_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_random_forest_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.FLY_lightgbm_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_lightgbm_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.FLY_xgboost_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_xgboost_feature_importance
+      <<: *save_partitioned_pandas_parquet
+
+within.FLY_decision_tree_feature_importance_df:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+      path: data/07_model_output/D_melanogaster/within/within_decision_tree_feature_importance
+      <<: *save_partitioned_pandas_parquet
 
