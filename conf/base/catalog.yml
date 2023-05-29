@@ -10,7 +10,6 @@ _save_partitioned_pandas_csv: &save_partitioned_pandas_csv
   type: PartitionedDataSet
   dataset: 
     <<: *save_pandas_csv
-  filename_suffix: ".txt"
 
 _save_plt_plot: &save_plt_plot
   type: matplotlib.MatplotlibWriter
@@ -678,32 +677,32 @@ FLY_cells2names:
   filepath: data/01_raw/D_melanogaster/cells2names.yml
 
 FLY_HiC_loops_annoatations:
-  path: data/D_melanogaster/01_raw/HiC_loops_annotations
+  path: data/01_raw/D_melanogaster/HiC_loops_annotations
   <<: *save_partitioned_pandas_csv
 
-FLY_DNAse_seq_4-6h_bigWig:
+FLY_DNase_seq_4-6h_bigWig:
   type: PartitionedDataSet
   path: data/D_melanogaster/01_raw/DNase_seq_4-6h_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filename_suffix: ".bw"
+  filename_suffix: ".bigwig"
 
-FLY_DNAse_seq_4-8h_bigWig:
+FLY_DNase_seq_4-8h_bigWig:
   type: PartitionedDataSet
   path: data/D_melanogaster/01_raw/DNase_seq_4-8h_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filename_suffix: ".bw"
+  filename_suffix: ".bigwig"
 
-FLY_DNAse_seq_8-10h_bigWig:
+FLY_DNase_seq_8-10h_bigWig:
   type: PartitionedDataSet
   path: data/D_melanogaster/01_raw/DNase_seq_8-10h_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filename_suffix: ".bw"
+  filename_suffix: ".bigwig"
 
-FLY_DNAse_seq_10-12h_bigWig:
+FLY_DNase_seq_10-12h_bigWig:
   type: PartitionedDataSet
   path: data/D_melanogaster/01_raw/DNase_seq_10-12h_bigWig
   dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
-  filename_suffix: ".bw"
+  filename_suffix: ".bigwig"
 
 FLY_Beaf-32_ChIP_seq_bigWig:
   type: PartitionedDataSet
