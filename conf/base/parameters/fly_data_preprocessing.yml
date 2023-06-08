@@ -1,4 +1,5 @@
 fly_radius: 150
+fly_resolution: 20
 # datasets names 
 fly_HiC_data: HiC_loops_annotations
 Beaf-32_ChIP_seq_bigWig: Beaf-32_ChIP_seq_bigWig

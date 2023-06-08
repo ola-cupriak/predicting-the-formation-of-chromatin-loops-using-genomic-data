@@ -108,7 +108,8 @@ def fly_read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
 
 def fly_add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
                     bigWig_data_dict: dict,
-                    experiment: str) -> pd.DataFrame:
+                    experiment: str,
+                    res: int) -> pd.DataFrame:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop,
@@ -116,12 +117,14 @@ def fly_add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         bigWig_data_dict: dictionary with cell types as keys and pyBigWig objects as values.
+        experiment: name of the experiment
+        res: resolution
     Returns:
         dictionary:
             keys: cell types 
             values: pandas DataFrames with added columns of bigWig data statistics in both regions of each loop
     """
-    return add_bigWig_data(main_dfs_dict, bigWig_data_dict, experiment, organism='fly')
+    return add_bigWig_data(main_dfs_dict, bigWig_data_dict, experiment, res=res, organism='fly')
 
 
 def fly_all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:

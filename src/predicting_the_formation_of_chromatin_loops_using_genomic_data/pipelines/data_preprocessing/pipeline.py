@@ -101,13 +101,13 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             ),
             node(
                 func=add_bigWig_data,
-                inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "readed_DNase_seq_bigWig", "params:DNase-seq_bigWig"],
+                inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "readed_DNase_seq_bigWig", "params:DNase-seq_bigWig", "params:resolution"],
                 outputs="HiC_loops_anotations_with_DNase_seq_bigWig_data",
                 name="add_DNase_seq_bigWig_data_node",
             ),
             node(
                 func=add_bigWig_data,
-                inputs=["HiC_loops_anotations_with_DNase_seq_bigWig_data", "readed_CTCF_ChIP_seq_bigWig", "params:CTCF_ChIP-seq_bigWig"],
+                inputs=["HiC_loops_anotations_with_DNase_seq_bigWig_data", "readed_CTCF_ChIP_seq_bigWig", "params:CTCF_ChIP-seq_bigWig", "params:resolution"],
                 outputs="HiC_loops_anotations_with_CTCF_ChIP_seq_bigWig_data",
                 name="add_CTCF_ChIP_seq_bigWig_data_node",
             ),
@@ -144,6 +144,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
         parameters=[
             "params:HiC_data",
             "params:radius", 
+            "params:resolution",
             "params:random_state",
             "params:cell_types_to_use",
             "params:DNase-seq_peaks",

@@ -565,9 +565,88 @@ def _calculate_weighted_mean(distribution: list):
     return sum([distribution[i]*weights[i] for i in range(len(distribution))]) / sum(weights)
 
 
-def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, organism: str) -> pd.DataFrame:
+def _replace_nans_with_zeros(distribution: list) -> list:
     """
-    POLARS
+    Replace NaNs with zeros in the distribution.
+    Args:
+        distribution: list with values of the distribution.
+    Returns:
+        list with zeros instead of NaNs.
+    """
+    return [0 if np.isnan(x) else x for x in distribution]
+
+
+def _get_stats_single_row(bigwig_obj, chromosome, start, end, res) -> tuple:
+    """
+    Get statistics of the distribution.
+    Args:
+        distribution: list with values of the distribution.
+    Returns:
+        tuple with mean, weighted mean, minimum and maximum of the distribution.
+    """
+    distribution = bigwig_obj.values(chromosome, start, end)
+    distribution = _replace_nans_with_zeros(distribution)
+    mean = sum(distribution) / len(distribution)
+    weighted_mean = _calculate_weighted_mean(distribution)
+    # add resolution to minimum and maximum
+    assert len(distribution) % res == 0, 'Length of the region is not divisible by resolution'
+    n = len(distribution) // res
+    means = []
+    for i in range(n):
+        means.append(sum(distribution[i*res:(i+1)*res]) / res)
+    maximum = max(means)
+    minimum = min(means)
+
+    return mean, weighted_mean, minimum, maximum
+
+
+def _get_stats_all_anchors(main_df: pl.DataFrame, bigWig_obj, res: int) -> pd.DataFrame:
+    """
+    Get statistics of the distribution for all anchors.
+    Args:
+        main_df: polars DataFrame with anchors.
+        bigWig_obj: pyBigWig object with bigwig file.
+        res: resolution
+    Returns:
+        polars DataFrame with mean, weighted mean, minimum and maximum of the distribution for all anchors.
+    """
+    df_x = main_df.select(['chr', 'x_start', 'x_end'])
+    df_y = main_df.select(['chr', 'y_start', 'y_end'])
+    df_y = df_y.rename({'y_start': 'x_start', 'y_end': 'x_end'})
+    # polars concat
+    df = pl.concat([df_x, df_y])
+    df = df.unique(subset=['chr', 'x_start', 'x_end'])
+    df = df.with_columns(df.select(['chr', 'x_start', 'x_end']).apply(
+            lambda x: _get_stats_single_row(bigWig_obj, x[0], x[1], x[2], res)
+            ).rename({'column_0':'mean',
+                    'column_1':'weighted_mean',
+                    'column_2':'min',
+                    'column_3':'max'}))
+    
+    return df
+
+
+def _regions_mean_of_means(main_df: pd.DataFrame, experiment: str) -> float:
+    """
+    Calculate mean of means of the experiment in both regions of each chromatin loop.
+    Args:
+        main_df: pandas DataFrame with chromatin loops.
+        experiment: name of the experiment.
+    Returns:
+        mean of means of the experiment in both regions of each chromatin loop.
+    """
+    df_x = main_df.loc[:,['chr', 'x', f'x_{experiment}_mean']]
+    df_y = main_df.loc[:,['chr', 'y', f'y_{experiment}_mean']]
+    df_y.rename(columns={'y': 'x', f'y_{experiment}_mean': f'x_{experiment}_mean'}, inplace=True)
+    df = pd.concat([df_x, df_y], axis=0)
+    df = df.drop_duplicates(subset=['chr', 'x'])
+    mean = df[f'x_{experiment}_mean'].mean()
+    
+    return mean
+
+
+def _add_bigWig_data_single_df_old(main_df: pd.DataFrame, bigWig_path, experiment: str, organism: str, res: int) -> pd.DataFrame:
+    """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop.
     Args:
@@ -575,6 +654,7 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
         bigWig_obj: pyBigWig object with experiment peaks
         experiment: name of the experiment.
         organism: name of the organism.
+        res: resolution
     Returns:
         pandas DataFrame with added columns of bigWig data statistics in both regions of each loop
     """
@@ -585,31 +665,90 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
         main_df['chr'] = main_df['chr'].apply(lambda x: 'chr'+x)
 
     main_df = pl.from_pandas(main_df)
-    for region in regions:
+    for region in regions:        
         main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: _calculate_weighted_mean(bigWig_obj.values(x[0], x[1], x[2])), return_dtype=pl.Float32
-            ).rename({'apply':f'{region}_{experiment}_weighted_mean'}))
-        
-        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: bigWig_obj.stats(x[0], x[1], x[2], type='mean')[0], return_dtype=pl.Float32
-            ).rename({'apply':f'{region}_{experiment}_mean'}))
-    
-        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: bigWig_obj.stats(x[0], x[1], x[2], type='max')[0], return_dtype=pl.Float32
-            ).rename({'apply':f'{region}_{experiment}_max'}))
-        
-        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: bigWig_obj.stats(x[0], x[1], x[2], type='min')[0], return_dtype=pl.Float32
-            ).rename({'apply':f'{region}_{experiment}_min'}))
+            lambda x: _get_stats_single_row(bigWig_obj, x[0], x[1], x[2], res)
+            ).rename({'column_0':f'{region}_{experiment}_mean',
+                    'column_1':f'{region}_{experiment}_weighted_mean',
+                    'column_2':f'{region}_{experiment}_min',
+                    'column_3':f'{region}_{experiment}_max'}))
+
+        main_df = main_df.with_columns(pl.col(f'{region}_{experiment}_mean').cast(pl.Float32),
+                            pl.col(f'{region}_{experiment}_weighted_mean').cast(pl.Float32),
+                            pl.col(f'{region}_{experiment}_min').cast(pl.Float32),
+                            pl.col(f'{region}_{experiment}_max').cast(pl.Float32))
         
     main_df = main_df.to_pandas()
+    mean = _regions_mean_of_means(main_df, experiment)
+    # divide all created columns by mean of means
+    for region in regions:
+        main_df[f'{region}_{experiment}_mean'] = main_df[f'{region}_{experiment}_mean'] / mean
+        main_df[f'{region}_{experiment}_weighted_mean'] = main_df[f'{region}_{experiment}_weighted_mean'] / mean
+        main_df[f'{region}_{experiment}_min'] = main_df[f'{region}_{experiment}_min'] / mean
+        main_df[f'{region}_{experiment}_max'] = main_df[f'{region}_{experiment}_max'] / mean
+    
+    if organism == 'human':
+        main_df['chr'] = main_df['chr'].apply(lambda x: x.replace('chr', ''))
+
     return main_df
 
+def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, organism: str, res: int) -> pd.DataFrame:
+    """
+    Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
+    of the bigWig data in both regions of each chromatin loop.
+    Args:
+        main_df: pandas DataFrame with chromatin loops.
+        bigWig_obj: pyBigWig object with experiment peaks
+        experiment: name of the experiment.
+        organism: name of the organism.
+        res: resolution
+    Returns:
+        pandas DataFrame with added columns of bigWig data statistics in both regions of each loop
+    """
+    bigWig_obj = pyBigWig.open(bigWig_path)
+    regions = ['x', 'y']
 
+    if organism == 'human':
+        main_df['chr'] = main_df['chr'].apply(lambda x: 'chr'+x)
+
+    main_df = pl.from_pandas(main_df)
+    df_with_stats = _get_stats_all_anchors(main_df, bigWig_obj, res)
+    for region in regions:
+        if region == 'y':        
+           df_with_stats = df_with_stats.rename({'x_start':'y_start', 'x_end':'y_end'})
+
+        main_df = main_df.join(df_with_stats, on=['chr', f'{region}_start', f'{region}_end'], how='left')
+        main_df = main_df.rename({'mean':f'{region}_{experiment}_mean',
+                                'weighted_mean':f'{region}_{experiment}_weighted_mean',
+                                'min':f'{region}_{experiment}_min',
+                                'max':f'{region}_{experiment}_max'})
+             
+        main_df = main_df.with_columns(pl.col(f'{region}_{experiment}_mean').cast(pl.Float32),
+                            pl.col(f'{region}_{experiment}_weighted_mean').cast(pl.Float32),
+                            pl.col(f'{region}_{experiment}_min').cast(pl.Float32),
+                            pl.col(f'{region}_{experiment}_max').cast(pl.Float32))
+        
+    main_df = main_df.to_pandas()
+    mean = _regions_mean_of_means(main_df, experiment)
+    # divide all created columns by mean of means
+    for region in regions:
+        main_df[f'{region}_{experiment}_mean'] = main_df[f'{region}_{experiment}_mean'] / mean
+        main_df[f'{region}_{experiment}_weighted_mean'] = main_df[f'{region}_{experiment}_weighted_mean'] / mean
+        main_df[f'{region}_{experiment}_min'] = main_df[f'{region}_{experiment}_min'] / mean
+        main_df[f'{region}_{experiment}_max'] = main_df[f'{region}_{experiment}_max'] / mean
+    
+    if organism == 'human':
+        main_df['chr'] = main_df['chr'].apply(lambda x: x.replace('chr', ''))
+
+    return main_df
+    
+    
 def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
                     bigWig_data_dict: dict,
                     experiment: str,
-                    organism: str='human') -> pd.DataFrame:
+                    res: int=20,
+                    organism: str='human',
+                    ) -> pd.DataFrame:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop,
@@ -619,6 +758,7 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
         bigWig_data_dict: dictionary with cell types as keys and pyBigWig objects as values.
         experiment: name of the experiment.
         organism: name of the organism.
+        res: resolution 
     Returns:
         dictionary:
             keys: cell types 
@@ -632,7 +772,7 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
         print(f'...for {bigWig_name} cell...')
         for main_name, main_df in main_dfs_dict.items():
             if main_name == bigWig_name:
-                main_df = _add_bigWig_data_single_df(main_df, bigWig_path, experiment, organism)
+                main_df = _add_bigWig_data_single_df(main_df, bigWig_path, experiment, organism, res)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
