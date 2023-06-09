@@ -501,7 +501,7 @@ def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFr
         assert len(main_df) == main_len_before, 'Length of the main_df changed after merging'
 
     to_change_dtype = [f'x_{experiment}_distance', f'y_{experiment}_distance']
-    main_df.loc[:,to_change_dtype] = main_df.loc[:,to_change_dtype].astype('int16')
+    main_df.loc[:,to_change_dtype] = main_df.loc[:,to_change_dtype].astype('int32')
 
     return main_df
 
@@ -532,6 +532,8 @@ def count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], peaks
             if main_name == peaks_name:
                 main_df = _count_peaks_single_df(main_df, peaks_df, experiment)
                 main_df = _find_the_closest_peaks_single_df(main_df, peaks_df, experiment)
+                assert len(main_df[main_df[f'x_{experiment}_distance']<0])==0, f'Negative distances found in column x_{experiment}_distance for cell {main_name}'
+                assert len(main_df[main_df[f'y_{experiment}_distance']<0])==0, f'Negative distances found in column y_{experiment}_distance for cell {main_name}'
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
