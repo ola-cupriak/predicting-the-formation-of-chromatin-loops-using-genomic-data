@@ -453,6 +453,7 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
         second_reg = 'y' if region == 'x' else 'x'
         peak_counts = main_df.loc[:,['chr', f'{region}_start', f'{region}_end', f'{second_reg}', 'cell_type']]
         peak_counts = _get_overlapping_regions(peak_counts, peaks_df, names=['chr', 'start', 'end', 'second_reg', 'cell_type', 'count'], count=True)
+        peak_counts['chr'] = peak_counts['chr'].astype('str')
         peak_counts.rename(columns={'count': f'{region}_{experiment}_counts',
                                     'start': f'{region}_start',
                                     'end': f'{region}_end',
@@ -488,6 +489,7 @@ def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFr
         distances = _sort_df(distances, region)
         distances = distances.loc[:,['chr', f'{region}', f'{region}', f'{second_reg}', 'cell_type']]
         distances = _find_the_closest_peak(distances, peaks_df)
+        distances['chr'] = distances['chr'].astype('str')
         distances.rename(columns={'distance': f'{region}_{experiment}_distance',
                                     'centre': f'{region}',
                                     'second_reg': f'{second_reg}'
