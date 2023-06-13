@@ -363,7 +363,13 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str,
     return df
 
 
-def add_labels(dfs_dict: Dict[str, pd.DataFrame], mtype: str, peaks_dict: Dict[str, pd.DataFrame], r, neg_pos_ratio: float, random_state: int) -> None:
+def add_labels(dfs_dict: Dict[str, pd.DataFrame], 
+               mtype: str, 
+               peaks_dict: Dict[str, pd.DataFrame], 
+               r: int, 
+               neg_pos_ratio: float, 
+               random_state: int
+               ) -> Dict[str, pd.DataFrame]:
     """
     Add labels to the dataframes depending on the cell type and type of model to train.
     Within model: 1 if cell type is the same as the cell type of the loop, 0 otherwise.
@@ -373,7 +379,9 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame], mtype: str, peaks_dict: Dict[s
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
         type: type of model to train, either 'within' or 'across'.
         peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
-        r
+        r: radius of the region around the anchor.
+        neg_pos_ratio: ratio of negative to positive examples.
+        random_state: random state.
     Returns:
         dictionary:
             keys: cell types
