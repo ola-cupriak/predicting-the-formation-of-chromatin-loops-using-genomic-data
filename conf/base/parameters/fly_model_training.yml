@@ -1,9 +1,9 @@
-fly_run_name: across.n3.all_data/norm+res.without_opt
+fly_run_name: fly.n2.all_data.opt
 
 fly_stratify:
   - label
 
-fly_sampling_type: n3
+fly_neg_sampling_type: n2
 
 fly_features_include_only: # list
 
@@ -170,66 +170,68 @@ fly_rf:
 fly_lgbm:
   type: LightGBM # DO NOT CHANGE
   run: True 
-  optimize: False 
+  optimize: True 
   cv: 5
   optim_time:
   n_trials: 20
   params:
-    # num_leaves:
-    #   type: int
-    #   low: 10
-    #   high: 300
-    # max_depth:
-    #   type: int
-    #   low: -1
-    #   high: 20
-    # min_child_samples:
-    #   type: int
-    #   low: 10
-    #   high: 200
-    #   step: 10
-    # max_bin:
-    #   type: int
-    #   low: 200
-    #   high: 300
-    #   step: 10
-    # learning_rate:
-    #   type: float
-    #   low: 0.01
-    #   high: 0.3
-    #   step: 0.01
-    # n_estimators:
-    #   type: categorical
-    #   choices:
-    #     - 100
-    # reg_alpha:
-    #   type: int
-    #   low: 0
-    #   high: 100
-    #   step: 5
-    # reg_lambda:
-    #   type: int
-    #   low: 0
-    #   high: 100
-    #   step: 5
-    # min_split_gain:
-    #   type: int
-    #   low: 0
-    #   high: 15
-    # subsample:
-    #   type: float
-    #   low: 0.3
-    #   high: 1
-    #   step: 0.1
-    # subsample_freq:
-    #   type: categorical
-    #   choices:
-    #     - 1
-    # colsample_bytree:
-    #   type: float
-    #   low: 0.3
-    #   high: 1
-    #   step: 0.1
+    num_leaves:
+      type: int
+      low: 10
+      high: 300
+    max_depth:
+      type: int
+      low: -1
+      high: 20
+    min_child_samples:
+      type: int
+      low: 10
+      high: 200
+      step: 10
+    max_bin:
+      type: int
+      low: 200
+      high: 300
+      step: 10
+    learning_rate:
+      type: float
+      low: 0.01
+      high: 0.3
+      step: 0.01
+    n_estimators:
+      type: categorical
+      choices:
+        - 100
+        - 1000
+        - 10000
+    reg_alpha:
+      type: int
+      low: 0
+      high: 100
+      step: 5
+    reg_lambda:
+      type: int
+      low: 0
+      high: 100
+      step: 5
+    min_split_gain:
+      type: int
+      low: 0
+      high: 15
+    subsample:
+      type: float
+      low: 0.3
+      high: 1
+      step: 0.1
+    subsample_freq:
+      type: categorical
+      choices:
+        - 1
+    colsample_bytree:
+      type: float
+      low: 0.3
+      high: 1
+      step: 0.1
     
 # XGBoost parameters
 fly_xgb:
