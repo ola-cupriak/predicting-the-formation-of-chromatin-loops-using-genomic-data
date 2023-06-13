@@ -221,6 +221,16 @@ def _choose_model(model_type: str,
                   X_train,
                   y_train,
                   params: dict = None) -> Callable:
+    """
+    Trains a model on the training data and returns the trained model.
+    Args:
+        model_type: Type of model to be trained.
+        X_train: Data frame with the training data.
+        y_train: Data frame with the training labels.
+        params: Dictionary with the parameters for the model.
+    Returns:
+        The trained model.
+    """
     params  = params or {}
 
     if model_type == 'logistic_regression':
@@ -439,7 +449,20 @@ def _get_feature_importances(models_dict: dict, model_type: str) -> Tuple[dict, 
     return feature_importances_dict, feature_importances_plot_dict
 
 
-def _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, params: dict = None):
+def _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, params: dict = None) -> float:
+    """
+    Trains the model, makes predictions and evaluates the model.
+    Args:
+        model_type: The type of model to be trained.
+        X_train: The features for the training set.
+        y_train: The target for the training set.
+        X_val: The features for the validation set.
+        y_val: The target for the validation set.
+        eval_metric: The evaluation metric.
+        params: The parameters for the model.
+    Returns:
+        The validation score.
+    """
     params = params or {}
     model = _choose_model(model_type, X_train, y_train, params)
     valid_preds = model.predict(X_val)
@@ -448,8 +471,19 @@ def _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, 
     return valid_score
 
 
-def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None):
-    
+def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None) -> float:
+    """
+    Performs cross validation for the given model type.
+    Args:
+        model_type: The type of model to be trained.
+        X: The features.
+        y: The target.
+        eval_metric: The evaluation metric.
+        folds: The number of folds for the cross validation.
+        params: The parameters for the model.
+    Returns:
+        The mean cross validation score.
+    """
     if model_type == 'logistic_regression':
         model = LogisticRegression(**params)
     elif model_type == 'random_forest':
@@ -462,8 +496,13 @@ def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None):
         model = tree.DecisionTreeClassifier(**params)
     else:
         raise ValueError(f'Invalid model type: {model_type}')
-    
-    cv_scores = cross_val_score(model, X, y, cv=folds, scoring=eval_metric)
+
+    def score_func(y_true, proba):
+        return eval_metric(y_true, proba[:, 1])
+
+    auc = metrics.make_scorer(score_func, needs_proba=True)
+    cv_scores = cross_val_score(model, X, y, cv=folds, scoring=auc)
+
     return cv_scores.mean()
 
 
