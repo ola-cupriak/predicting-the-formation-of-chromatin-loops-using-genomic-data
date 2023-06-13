@@ -448,7 +448,7 @@ def _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, 
     return valid_score
 
 
-def _cross_val(model_type, X, y, eval_metric, folds: int, random_state: int, params: dict = None):
+def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None):
     
     if model_type == 'logistic_regression':
         model = LogisticRegression(**params)
@@ -463,7 +463,7 @@ def _cross_val(model_type, X, y, eval_metric, folds: int, random_state: int, par
     else:
         raise ValueError(f'Invalid model type: {model_type}')
     
-    cv_scores = cross_val_score(model, X, y, cv=folds, scoring=eval_metric, random_state=random_state)
+    cv_scores = cross_val_score(model, X, y, cv=folds, scoring=eval_metric)
     return cv_scores.mean()
 
 
@@ -500,7 +500,7 @@ def _optimize_parameters(data: list,
         
         if cross_val:
             X, y = data
-            valid_score = _cross_val(model_type, X, y, eval_metric, folds=cross_val, random_state=random_state, params=params_to_opt)
+            valid_score = _cross_val(model_type, X, y, eval_metric, folds=cross_val, params=params_to_opt)
         else:
             X_train, y_train, X_val, y_val = data
             valid_score = _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, params_to_opt)
@@ -527,7 +527,7 @@ def _optimize_parameters(data: list,
     # check if the best parameters are better than the default ones
     if cross_val:
         X, y = data
-        valid_score_default = _cross_val(model_type, X, y, eval_metric, folds=cross_val, random_state=random_state)
+        valid_score_default = _cross_val(model_type, X, y, eval_metric, folds=cross_val)
     else:
         X_train, y_train, X_val, y_val = data
         valid_score_default = _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric)
