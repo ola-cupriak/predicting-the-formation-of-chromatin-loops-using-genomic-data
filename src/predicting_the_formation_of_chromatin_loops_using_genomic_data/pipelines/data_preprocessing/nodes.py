@@ -18,24 +18,28 @@ warnings.simplefilter(action="ignore")
 
 
 
-def _sort_df(df: pd.DataFrame, region_name: str) -> pd.DataFrame:
+def _sort_df(df: pd.DataFrame, region_name: str, organism: str='human') -> pd.DataFrame:
     """
     Sort the dataframe by chromosome and position.
     Args:
         df: pandas DataFrame.
         region_name: name of the column with regions.
+        organism: name of the organism.
     Returns:
         sorted pandas DataFrame.
     """
-    df.loc[df['chr'] == 'X', 'chr'] = '100'
-    df.loc[df['chr'] == 'Y', 'chr'] = '200'
-    try:
-        df['chr'] = df['chr'].astype(int)
-    except: pass
-    df = df.sort_values(by=['chr', region_name])
-    df.loc[df['chr'] == 100, 'chr'] = 'X'
-    df.loc[df['chr'] == 200, 'chr'] = 'Y'
-    df['chr'] = df['chr'].astype('string')
+    if organism == 'human':
+        df.loc[df['chr'] == 'X', 'chr'] = '100'
+        df.loc[df['chr'] == 'Y', 'chr'] = '200'
+        try:
+            df['chr'] = df['chr'].astype(int)
+        except: pass
+        df = df.sort_values(by=['chr', region_name])
+        df.loc[df['chr'] == 100, 'chr'] = 'X'
+        df.loc[df['chr'] == 200, 'chr'] = 'Y'
+        df['chr'] = df['chr'].astype('string')
+    else:
+        df = df.sort_values(by=['chr', region_name])
 
     return df
 
@@ -94,7 +98,8 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
 def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
                 cells2names: Dict[str, dict],
                 dataset_name: str,
-                cells_to_use: list) -> Dict[str, pd.DataFrame]:
+                cells_to_use: list,
+                organism: str='human') -> Dict[str, pd.DataFrame]:
     """
     Load dataframes with DNase-seq/ChIP-seq peaks and modify the chromosome columns.
     Args:
@@ -102,6 +107,7 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
         cells_to_use: list of cell types to use.
+        organism: name of the organism.
     Returns:
         dictionary:
             keys: cell types 
@@ -123,7 +129,7 @@ def read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
 
         df = df.with_columns(pl.lit(cell_type).cast(pl.Utf8).alias('cell_type'))
         df = df.to_pandas()
-        df = _sort_df(df, 'start')
+        df = _sort_df(df, 'start', organism=organism)
 
         new_dfs_dict[cell_type] = df
 
@@ -257,13 +263,19 @@ def _x_and_y_anchors2one_col(df: pd.DataFrame,
                              x_cols2use: list=None, 
                              y_cols2use: list=None, 
                              new_cols: list=None, 
-                             sortby:str='start') -> pd.DataFrame:
+                             sortby:str='start',
+                             organism:str='human') -> pd.DataFrame:
     """
     Combines the columns describing x regions and the columns describing y regions 
     into one set of columns describing all regions.
     (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
     Args:
         df: DataFrame with columns describing x regions and columns describing y regions.
+        x_cols2use: columns describing x regions.
+        y_cols2use: columns describing y regions.
+        new_cols: new column names.
+        sortby: sort by this column.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with one set of columns describing all regions.
     """
@@ -281,7 +293,7 @@ def _x_and_y_anchors2one_col(df: pd.DataFrame,
     # remove duplicate rows
     anchors_df = anchors_df.drop_duplicates()
     # sort by chr and region
-    anchors_df = _sort_df(anchors_df, sortby)
+    anchors_df = _sort_df(anchors_df, sortby, organism=organism)
     # reset index
     anchors_df = anchors_df.reset_index(drop=True)
     anchors_df = anchors_df[new_cols]
@@ -289,15 +301,16 @@ def _x_and_y_anchors2one_col(df: pd.DataFrame,
     return anchors_df
 
 
-def _create_new_anchors_pairs(df: pd.DataFrame) -> pd.DataFrame:
+def _create_new_anchors_pairs(df: pd.DataFrame, organism:str='human') -> pd.DataFrame:
     """
     Join all values from one column (x) with all values from second column (y).
     Args:
         df: pandas DataFrame with columns describing x regions and columns describing y regions.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with new pairs of anchors.
     """
-    df_new_pairs = _x_and_y_anchors2one_col(df, ['chr', 'x'], ['chr', 'y'], ['chr', 'anchor'], 'anchor')
+    df_new_pairs = _x_and_y_anchors2one_col(df, ['chr', 'x'], ['chr', 'y'], ['chr', 'anchor'], 'anchor', organism=organism)
     df_new_pairs = pl.from_pandas(df_new_pairs)
     df_new_pairs = df_new_pairs.join(df_new_pairs, how='outer', on='chr', suffix='_y').filter(pl.col('anchor') < pl.col('anchor_y'))
     df_new_pairs = df_new_pairs.rename({'anchor': 'x', 'anchor_y': 'y'})
@@ -326,7 +339,8 @@ def _remove_duplicated_pairs(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> pd.D
 
 def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str, 
                                         r: int, neg_pos_ratio: float, 
-                                        random_state: int, df_len: int) -> pd.DataFrame:
+                                        random_state: int, df_len: int,
+                                        organism:str='human') -> pd.DataFrame:
     """
     Create negative examples by pairing anchors derived from the same chromosome.
     Args:
@@ -336,10 +350,11 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str,
         neg_pos_ratio: ratio of negative to positive examples.
         random_state: random state.
         df_len: length of the positive examples DataFrame.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with positive and negative examples.
     """
-    df_neg = _create_new_anchors_pairs(df)
+    df_neg = _create_new_anchors_pairs(df, organism=organism)
     df_neg = _remove_duplicated_pairs(df, df_neg)
     df_neg['x_start'] = df_neg['x'] - r
     df_neg['x_end'] = df_neg['x'] + r
@@ -355,7 +370,7 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str,
     # merge positive and negative examples
     df = pd.concat([df, df_neg], axis=0)
     # sort by chr and region
-    df = _sort_df(df, 'x_start')
+    df = _sort_df(df, 'x_start', organism=organism)
     df = df.reset_index(drop=True)
     df = df.astype({'x': 'int32', 'y': 'int32', 'x_start': 'int32', 'x_end': 'int32', 
                     'y_start': 'int32', 'y_end': 'int32', 'label': 'int16'})
@@ -368,7 +383,8 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame],
                peaks_dict: Dict[str, pd.DataFrame], 
                r: int, 
                neg_pos_ratio: float, 
-               random_state: int
+               random_state: int,
+                organism:str='human'
                ) -> Dict[str, pd.DataFrame]:
     """
     Add labels to the dataframes depending on the cell type and type of model to train.
@@ -377,11 +393,12 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame],
                 do not overlap with any positive example
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-        type: type of model to train, either 'within' or 'across'.
+        mtype: type of model to train, either 'within' or 'across'.
         peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
         r: radius of the region around the anchor.
         neg_pos_ratio: ratio of negative to positive examples.
         random_state: random state.
+        organism: name of the organism.
     Returns:
         dictionary:
             keys: cell types
@@ -393,7 +410,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame],
                     'new_pairs_and_open_chromatin'], f"Negative sampling type should be either 'anchors_from_other_cell_types', 'new_pairs_of_anchors' or 'open_chromatin_regions, but got {type}."
     if mtype == 'anchors_from_other_cell_types':
         df = _concat_dfs(dfs_dict)
-        df = _sort_df(df, 'x')
+        df = _sort_df(df, 'x', organism=organism)
     
     for name, cell_df in dfs_dict.items():
         print('Creating negative examples for cell type', name, '...')
@@ -406,7 +423,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame],
         elif mtype == 'new_pairs_of_anchors':
             cell_df['label'] = 1
             df_len = len(cell_df)
-            dfs_dict[name] = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state, df_len)
+            dfs_dict[name] = _get_negatives_by_new_anchors_pairing(cell_df, name, r, neg_pos_ratio, random_state, df_len, organism=organism)
         elif mtype == 'open_chromatin_regions':
             assert peaks_dict != None, "peaks_dict should be provided for this type of negative sampling"
             cell_df['label'] = 1
@@ -416,7 +433,7 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame],
             cell_df['label'] = 1
             df_len = len(cell_df)
             with_neg = _create_pairs_each_with_each_single_df(cell_df, peaks_dict[name], name, r, neg_pos_ratio/2, random_state)
-            with_neg = _get_negatives_by_new_anchors_pairing(with_neg, name, r, neg_pos_ratio/2, random_state, df_len)
+            with_neg = _get_negatives_by_new_anchors_pairing(with_neg, name, r, neg_pos_ratio/2, random_state, df_len, organism=organism)
             dfs_dict[name] = with_neg
     
     return dfs_dict
@@ -480,13 +497,14 @@ def _count_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experi
     return main_df
 
 
-def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str) -> pd.DataFrame:
+def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFrame, experiment: str, organism:str='human') -> pd.DataFrame:
     """
     Find the distance of the closest peak of the experiment from the center of each anchor from the chromatin loop.
     Args:
         main_df: pandas DataFrame with chromatin loops.
         peaks_df: pandas DataFrame with experiment peaks.
         experiment: name of the experiment.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with added columns of distances of the closest peak of the experiment 
         from the center of each anchor from the chromatin loop.
@@ -494,7 +512,7 @@ def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFr
     for region in ['y', 'x']:
         second_reg = 'y' if region == 'x' else 'x'
         distances = main_df.loc[:,['chr', f'{region}', f'{second_reg}', 'cell_type']]
-        distances = _sort_df(distances, region)
+        distances = _sort_df(distances, region, organism=organism)
         distances = distances.loc[:,['chr', f'{region}', f'{region}', f'{second_reg}', 'cell_type']]
         distances = _find_the_closest_peak(distances, peaks_df)
         distances['chr'] = distances['chr'].astype('str')
@@ -517,7 +535,7 @@ def _find_the_closest_peaks_single_df(main_df: pd.DataFrame, peaks_df: pd.DataFr
 
 
 def count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], peaks_dfs_dict: Dict[str, pd.DataFrame], 
-                experiment: str) -> pd.DataFrame:
+                experiment: str, organism:str='human') -> Dict[str, pd.DataFrame]:
     """
     Count the number of peaks in both regions of each chromatin loop
     and find the distance of the closest peak from the center of each anchor from the chromatin loop,
@@ -526,6 +544,7 @@ def count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], peaks
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         peaks_dfs_dict: dictionary with cell types as keys and pandas DataFrames with experiment peaks as values.
         experiment: name of the experiment.
+        organism: name of the organism.
     Returns:
         dictionary:
             keys: cell types
@@ -541,7 +560,7 @@ def count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], peaks
         for main_name, main_df in main_dfs_dict.items():
             if main_name == peaks_name:
                 main_df = _count_peaks_single_df(main_df, peaks_df, experiment)
-                main_df = _find_the_closest_peaks_single_df(main_df, peaks_df, experiment)
+                main_df = _find_the_closest_peaks_single_df(main_df, peaks_df, experiment, organism=organism)
                 assert len(main_df[main_df[f'x_{experiment}_distance']<0])==0, f'Negative distances found in column x_{experiment}_distance for cell {main_name}'
                 assert len(main_df[main_df[f'y_{experiment}_distance']<0])==0, f'Negative distances found in column y_{experiment}_distance for cell {main_name}'
                 main_dfs_dict[main_name] = main_df
@@ -657,53 +676,6 @@ def _regions_mean_of_means(main_df: pd.DataFrame, experiment: str) -> float:
     return mean
 
 
-def _add_bigWig_data_single_df_old(main_df: pd.DataFrame, bigWig_path, experiment: str, organism: str, res: int) -> pd.DataFrame:
-    """
-    Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
-    of the bigWig data in both regions of each chromatin loop.
-    Args:
-        main_df: pandas DataFrame with chromatin loops.
-        bigWig_obj: pyBigWig object with experiment peaks
-        experiment: name of the experiment.
-        organism: name of the organism.
-        res: resolution
-    Returns:
-        pandas DataFrame with added columns of bigWig data statistics in both regions of each loop
-    """
-    bigWig_obj = pyBigWig.open(bigWig_path)
-    regions = ['x', 'y']
-
-    if organism == 'human':
-        main_df['chr'] = main_df['chr'].apply(lambda x: 'chr'+x)
-
-    main_df = pl.from_pandas(main_df)
-    for region in regions:        
-        main_df = main_df.with_columns(main_df.select(['chr', f'{region}_start', f'{region}_end']).apply(
-            lambda x: _get_stats_single_row(bigWig_obj, x[0], x[1], x[2], res)
-            ).rename({'column_0':f'{region}_{experiment}_mean',
-                    'column_1':f'{region}_{experiment}_weighted_mean',
-                    'column_2':f'{region}_{experiment}_min',
-                    'column_3':f'{region}_{experiment}_max'}))
-
-        main_df = main_df.with_columns(pl.col(f'{region}_{experiment}_mean').cast(pl.Float32),
-                            pl.col(f'{region}_{experiment}_weighted_mean').cast(pl.Float32),
-                            pl.col(f'{region}_{experiment}_min').cast(pl.Float32),
-                            pl.col(f'{region}_{experiment}_max').cast(pl.Float32))
-        
-    main_df = main_df.to_pandas()
-    mean = _regions_mean_of_means(main_df, experiment)
-    # divide all created columns by mean of means
-    for region in regions:
-        main_df[f'{region}_{experiment}_mean'] = main_df[f'{region}_{experiment}_mean'] / mean
-        main_df[f'{region}_{experiment}_weighted_mean'] = main_df[f'{region}_{experiment}_weighted_mean'] / mean
-        main_df[f'{region}_{experiment}_min'] = main_df[f'{region}_{experiment}_min'] / mean
-        main_df[f'{region}_{experiment}_max'] = main_df[f'{region}_{experiment}_max'] / mean
-    
-    if organism == 'human':
-        main_df['chr'] = main_df['chr'].apply(lambda x: x.replace('chr', ''))
-
-    return main_df
-
 def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: str, organism: str, res: int) -> pd.DataFrame:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
@@ -720,8 +692,7 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
     bigWig_obj = pyBigWig.open(bigWig_path)
     regions = ['x', 'y']
 
-    if organism == 'human':
-        main_df['chr'] = main_df['chr'].apply(lambda x: 'chr'+x)
+    main_df['chr'] = main_df['chr'].apply(lambda x: 'chr'+x)
 
     main_df = pl.from_pandas(main_df)
     df_with_stats = _get_stats_all_anchors(main_df, bigWig_obj, res)
@@ -749,8 +720,9 @@ def _add_bigWig_data_single_df(main_df: pd.DataFrame, bigWig_path, experiment: s
         main_df[f'{region}_{experiment}_min'] = main_df[f'{region}_{experiment}_min'] / mean
         main_df[f'{region}_{experiment}_max'] = main_df[f'{region}_{experiment}_max'] / mean
     
-    if organism == 'human':
-        main_df['chr'] = main_df['chr'].apply(lambda x: x.replace('chr', ''))
+    main_df['chr'] = main_df['chr'].apply(lambda x: x.replace('chr', ''))
+
+    assert main_df.isna().any().sum() == 0, 'There are NaN values in the dataframe'
 
     return main_df
     
@@ -760,7 +732,7 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
                     experiment: str,
                     res: int=20,
                     organism: str='human',
-                    ) -> pd.DataFrame:
+                    ) -> Dict[str, pd.DataFrame]:
     """
     Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
     of the bigWig data in both regions of each chromatin loop,
@@ -791,7 +763,7 @@ def add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
     return main_dfs_dict
 
 
-def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame], organism:str='human') -> pd.DataFrame:
     """
     Concatenates all anchors DataFrames from dfs_dict into one DataFrame and 
     combines the columns describing x regions and the columns describing y regions 
@@ -799,6 +771,7 @@ def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with one set of columns describing all regions.
     """
@@ -807,22 +780,25 @@ def all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
         dfs_dict = _dict_partitions(dfs_dict)
 
     df_with_2_regions = _concat_dfs(dfs_dict)
-    anchors_df = _x_and_y_anchors2one_col(df_with_2_regions)
+    anchors_df = _x_and_y_anchors2one_col(df_with_2_regions, organism=organism)
     
     return anchors_df
 
 
-def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+def all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame],
+                     organism: str='human'
+                     ) -> pd.DataFrame:
     """
     Concatenates all peaks DataFrames into one DataFrame.
     Args:
         peaks_dict: dictionary with cell types as keys and pandas DataFrames as values.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with all peaks.
     """
     df = _concat_dfs(peaks_dict)
     # sort by chr and region
-    df = _sort_df(df, 'start')
+    df = _sort_df(df, 'start', organism=organism)
     df = df.reset_index(drop=True)
 
     return df
@@ -854,13 +830,13 @@ def getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str,
         df: pandas DataFrame with coordinates.
         path_simp_genome: path to fasta file with chromosomes.
         path_to_save: path to save fasta file.
+        organism: name of the organism.
     Returns:
         path_to_save: path to fasta file.
     """
     fasta = pybedtools.BedTool(path_simp_genome)
     df_to_search = df
-    if organism == 'human':
-        df_to_search['chr'] = 'chr' + df_to_search['chr'].astype(str)
+    df_to_search['chr'] = 'chr' + df_to_search['chr'].astype(str)
     bed = pybedtools.BedTool.from_dataframe(df_to_search)
     fasta_bed = bed.sequence(fi=fasta, nameOnly=True)
 
@@ -961,46 +937,6 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     assert sum(df.iloc[:, 4:].sum(axis=1)) == len_before, 'Something went wrong with counting motifs'
     
     return df
-    
-    # DIFFERENT APPROACH - NOT WORKING
-    # dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string"}
-    # df = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
-    # #####subprocess.run('rm data/temp/temp.csv', shell=True)
-    # df = df[['chr', 'anchor_start', 'anchor_end', 'motif_id', 'cell_type']]
-    # len_before = len(df)
-    # # Count motif occurences
-    # df.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
-    # motif_cols = list(pd.unique(df['motif_id']))
-    # df = pl.from_pandas(df)
-    # all_columns = ['chr', 'start', 'end', 'cell_type'] + motif_cols
-    # # save to parquet
-    # for motif_id in tqdm(motif_cols):
-    #     df.with_columns([df['motif_id'] == motif_id]).write_parquet(f'data/temp/temp_{motif_id}.parquet')
-
-
-    # df.to_parquet('data/temp/temp2.parquet', engine='pyarrow')
-    # del df
-
-    # df = pd.DataFrame(columns=all_columns)
-
-    # parquet_file = pq.ParquetFile('data/temp/temp2.parquet')
-    # for batch in parquet_file.iter_batches(batch_size=1000000):
-    #     batch_df = batch.to_pandas()
-    #     batch_df = pd.DataFrame(batch_df.groupby(['chr', 'start', 'end', 'cell_type', 'motif_id'], observed=True).size(), columns=['count'])
-    #     batch_df['count'] = batch_df['count'].astype('int16')
-    #     batch_df = batch_df.unstack('motif_id', fill_value=0)
-    #     batch_df.columns = ['_'.join(x) for x in batch_df.columns if x[0]=='count']
-    #     batch_df.reset_index(inplace=True)
-    #     batch_df.rename(columns={name: name.replace('count_', '') for name in batch_df.columns}, inplace=True)
-    #     # add non existing columns with zeros
-    #     for col in all_columns:
-    #         if col not in batch_df.columns:
-    #             batch_df[col] = 0
-    #     df = df.append(batch_df, ignore_index=True)
-    
-    # assert sum(df.iloc[:, 4:].sum(axis=1)) == len_before, 'Something went wrong with counting motifs'
-    
-    # return df
 
 
 def _reverse_names(colnames: list) :
@@ -1022,12 +958,13 @@ def _reverse_names(colnames: list) :
     return to_reverse
 
 
-def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> pd.DataFrame:
+def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame, organism:str='human') -> pd.DataFrame:
     """
     Counts motif occurances in both regions of each chromatin loop.
     Args:
         main_df: pandas DataFrame with chromatin loops.
         motifs_df: pandas DataFrame with motif occurrences found.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with added columns of each motif counts in both regions of each chromatin loop.
     """
@@ -1056,19 +993,20 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame) -> p
         for m in motifs_list:
             to_add.loc[:, m] = pd.Series([0]*len(main_df), dtype='int16')
         main_df_new = pd.concat([main_df_new, to_add], ignore_index=True)
-    main_df_new = _sort_df(main_df_new, 'x_start')
+    main_df_new = _sort_df(main_df_new, 'x_start',organism=organism)
     main_df_new = main_df_new.loc[:, main_df_new.columns != 'id']
 
     return main_df_new
 
 
-def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
+def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame, organism:str='human') -> Dict[str, pd.DataFrame]:
     """
     Counts motif occurances in both regions of each chromatin loop,
     for each dataframe from the main_dfs_dict dictionary.
     Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         motifs_df: dictionary with cell types as keys and pandas DataFrame with motif occurrences found as values.
+        organism: name of the organism.
     Returns:
         dictionary:
             keys: cell types 
@@ -1087,7 +1025,7 @@ def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
         for main_name, main_df in main_dfs_dict.items():
             if main_name == cell_type:
                 motifs_df_group = motifs_df_group.loc[:, motifs_df_group.columns != 'cell_type']
-                main_df = _count_motifs_single_df(main_df, motifs_df_group)
+                main_df = _count_motifs_single_df(main_df, motifs_df_group, organism=organism)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
@@ -1174,12 +1112,13 @@ def remove_overlapping(main_dfs_dict: dict):
     return main_dfs_dict
 
 
-def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=None) -> pd.DataFrame:
+def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=None, organism:str='human') -> pd.DataFrame:
     '''
     Concatenates dataframes from dictionary.
     Args:   
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         cells_to_use: list of cell types to be used. If empty, all cell types from main_dfs_dict will be used.
+        organism: name of the organism.
     Returns:
         pandas DataFrame with concatenated dataframes from dictionary.
     '''
@@ -1202,7 +1141,7 @@ def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=None) -> pd.Dat
             
     assert len(main_df) == expected_len, 'Something went wrong with concatenating dataframes from dictionary - expected length is not equal to actual length.'
 
-    main_df = _sort_df(main_df, 'x_start')
+    main_df = _sort_df(main_df, 'x_start', organism=organism)
 
     print(f'Done!')
 
