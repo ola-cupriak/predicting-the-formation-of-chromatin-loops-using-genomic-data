@@ -1,0 +1,253 @@
+fly_run_name: across.n3.all_data/norm+res.without_opt
+
+fly_stratify:
+  - label
+
+fly_sampling_type: n3
+
+fly_features_include_only: # list
+
+fly_features_exclude: # list
+  # - x_DNase_seq_4-6h_bigWig_weighted_mean
+  # - x_DNase_seq_4-6h_bigWig_mean
+  # - x_DNase_seq_4-6h_bigWig_max
+  # - x_DNase_seq_4-6h_bigWig_min
+  # - y_DNase_seq_4-6h_bigWig_weighted_mean
+  # - y_DNase_seq_4-6h_bigWig_mean
+  # - y_DNase_seq_4-6h_bigWig_max
+  # - y_DNase_seq_4-6h_bigWig_min
+  # - x_DNase_seq_6-8h_bigWig_weighted_mean
+  # - x_DNase_seq_6-8h_bigWig_mean
+  # - x_DNase_seq_6-8h_bigWig_max
+  # - x_DNase_seq_6-8h_bigWig_min
+  # - y_DNase_seq_6-8h_bigWig_weighted_mean
+  # - y_DNase_seq_6-8h_bigWig_mean
+  # - y_DNase_seq_6-8h_bigWig_max
+  # - y_DNase_seq_6-8h_bigWig_min
+  # - x_DNase_seq_8-10h_bigWig_weighted_mean
+  # - x_DNase_seq_8-10h_bigWig_mean
+  # - x_DNase_seq_8-10h_bigWig_max
+  # - x_DNase_seq_8-10h_bigWig_min
+  # - y_DNase_seq_8-10h_bigWig_weighted_mean
+  # - y_DNase_seq_8-10h_bigWig_mean
+  # - y_DNase_seq_8-10h_bigWig_max
+  # - y_DNase_seq_8-10h_bigWig_min
+  # - x_DNase_seq_10-12h_bigWig_weighted_mean
+  # - x_DNase_seq_10-12h_bigWig_mean
+  # - x_DNase_seq_10-12h_bigWig_max
+  # - x_DNase_seq_10-12h_bigWig_min
+  # - y_DNase_seq_10-12h_bigWig_weighted_mean
+  # - y_DNase_seq_10-12h_bigWig_mean
+  # - y_DNase_seq_10-12h_bigWig_max
+  # - y_DNase_seq_10-12h_bigWig_min
+  # - x_Beaf-32_ChIP_seq_bigWig_weighted_mean
+  # - x_Beaf-32_ChIP_seq_bigWig_mean
+  # - x_Beaf-32_ChIP_seq_bigWig_max
+  # - x_Beaf-32_ChIP_seq_bigWig_min
+  # - y_Beaf-32_ChIP_seq_bigWig_weighted_mean
+  # - y_Beaf-32_ChIP_seq_bigWig_mean
+  # - y_Beaf-32_ChIP_seq_bigWig_max
+  # - y_Beaf-32_ChIP_seq_bigWig_min
+  # - x_Cap-H2_ChIP_seq_bigWig_weighted_mean
+  # - x_Cap-H2_ChIP_seq_bigWig_mean
+  # - x_Cap-H2_ChIP_seq_bigWig_max
+  # - x_Cap-H2_ChIP_seq_bigWig_min
+  # - y_Cap-H2_ChIP_seq_bigWig_weighted_mean
+  # - y_Cap-H2_ChIP_seq_bigWig_mean
+  # - y_Cap-H2_ChIP_seq_bigWig_max
+  # - y_Cap-H2_ChIP_seq_bigWig_min
+  # - x_Chromator_ChIP_seq_bigWig_weighted_mean
+  # - x_Chromator_ChIP_seq_bigWig_mean
+  # - x_Chromator_ChIP_seq_bigWig_max
+  # - x_Chromator_ChIP_seq_bigWig_min
+  # - y_Chromator_ChIP_seq_bigWig_weighted_mean
+  # - y_Chromator_ChIP_seq_bigWig_mean
+  # - y_Chromator_ChIP_seq_bigWig_max
+  # - y_Chromator_ChIP_seq_bigWig_min
+  # - x_CP190_ChIP_seq_bigWig_weighted_mean
+  # - x_CP190_ChIP_seq_bigWig_mean
+  # - x_CP190_ChIP_seq_bigWig_max
+  # - x_CP190_ChIP_seq_bigWig_min
+  # - y_CP190_ChIP_seq_bigWig_weighted_mean
+  # - y_CP190_ChIP_seq_bigWig_mean
+  # - y_CP190_ChIP_seq_bigWig_max
+  # - y_CP190_ChIP_seq_bigWig_min
+  # - x_CTCF_ChIP_seq_bigWig_weighted_mean
+  # - x_CTCF_ChIP_seq_bigWig_mean
+  # - x_CTCF_ChIP_seq_bigWig_max
+  # - x_CTCF_ChIP_seq_bigWig_min
+  # - y_CTCF_ChIP_seq_bigWig_weighted_mean
+  # - y_CTCF_ChIP_seq_bigWig_mean
+  # - y_CTCF_ChIP_seq_bigWig_max
+  # - y_CTCF_ChIP_seq_bigWig_min
+  # - x_GAF_ChIP_seq_bigWig_weighted_mean
+  # - x_GAF_ChIP_seq_bigWig_mean
+  # - x_GAF_ChIP_seq_bigWig_max
+  # - x_GAF_ChIP_seq_bigWig_min
+  # - y_GAF_ChIP_seq_bigWig_weighted_mean
+  # - y_GAF_ChIP_seq_bigWig_mean
+  # - y_GAF_ChIP_seq_bigWig_max
+  # - y_GAF_ChIP_seq_bigWig_min
+  # - x_Ibf2_ChIP_seq_bigWig_weighted_mean
+  # - x_Ibf2_ChIP_seq_bigWig_mean
+  # - x_Ibf2_ChIP_seq_bigWig_max
+  # - x_Ibf2_ChIP_seq_bigWig_min
+  # - y_Ibf2_ChIP_seq_bigWig_weighted_mean
+  # - y_Ibf2_ChIP_seq_bigWig_mean
+  # - y_Ibf2_ChIP_seq_bigWig_max
+  # - y_Ibf2_ChIP_seq_bigWig_min
+  # - x_M1BP_ChIP_seq_bigWig_weighted_mean
+  # - x_M1BP_ChIP_seq_bigWig_mean
+  # - x_M1BP_ChIP_seq_bigWig_max
+  # - x_M1BP_ChIP_seq_bigWig_min
+  # - y_M1BP_ChIP_seq_bigWig_weighted_mean
+  # - y_M1BP_ChIP_seq_bigWig_mean
+  # - y_M1BP_ChIP_seq_bigWig_max
+  # - y_M1BP_ChIP_seq_bigWig_min
+  # - x_Pita_ChIP_seq_bigWig_weighted_mean
+  # - x_Pita_ChIP_seq_bigWig_mean
+  # - x_Pita_ChIP_seq_bigWig_max
+  # - x_Pita_ChIP_seq_bigWig_min
+  # - y_Pita_ChIP_seq_bigWig_weighted_mean
+  # - y_Pita_ChIP_seq_bigWig_mean
+  # - y_Pita_ChIP_seq_bigWig_max
+  # - y_Pita_ChIP_seq_bigWig_min
+  # - x_Rad21_ChIP_seq_bigWig_weighted_mean
+  # - x_Rad21_ChIP_seq_bigWig_mean
+  # - x_Rad21_ChIP_seq_bigWig_max
+  # - x_Rad21_ChIP_seq_bigWig_min
+  # - y_Rad21_ChIP_seq_bigWig_weighted_mean
+  # - y_Rad21_ChIP_seq_bigWig_mean
+  # - y_Rad21_ChIP_seq_bigWig_max
+  # - y_Rad21_ChIP_seq_bigWig_min
+  # - x_SuHw_ChIP_seq_bigWig_weighted_mean
+  # - x_SuHw_ChIP_seq_bigWig_mean
+  # - x_SuHw_ChIP_seq_bigWig_max
+  # - x_SuHw_ChIP_seq_bigWig_min
+  # - y_SuHw_ChIP_seq_bigWig_weighted_mean
+  # - y_SuHw_ChIP_seq_bigWig_mean
+  # - y_SuHw_ChIP_seq_bigWig_max
+  # - y_SuHw_ChIP_seq_bigWig_min
+  # - x_ZIPIC_ChIP_seq_bigWig_weighted_mean
+  # - x_ZIPIC_ChIP_seq_bigWig_mean
+  # - x_ZIPIC_ChIP_seq_bigWig_max
+  # - x_ZIPIC_ChIP_seq_bigWig_min
+  # - y_ZIPIC_ChIP_seq_bigWig_weighted_mean
+  # - y_ZIPIC_ChIP_seq_bigWig_mean
+  # - y_ZIPIC_ChIP_seq_bigWig_max
+  # - y_ZIPIC_ChIP_seq_bigWig_min
+  # - x_Zw5_ChIP_seq_bigWig_weighted_mean
+  # - x_Zw5_ChIP_seq_bigWig_mean
+  # - x_Zw5_ChIP_seq_bigWig_max
+  # - x_Zw5_ChIP_seq_bigWig_min
+  # - y_Zw5_ChIP_seq_bigWig_weighted_mean
+  # - y_Zw5_ChIP_seq_bigWig_mean
+  # - y_Zw5_ChIP_seq_bigWig_max
+  # - y_Zw5_ChIP_seq_bigWig_min
+  
+# MODELS SECTION
+# if optimize=True specify parameters grid to search, otherwise specify set parameter values
+
+# Logistic regression parameters
+fly_log_reg:
+  type: logistic_regression # DO NOT CHANGE
+  run: False
+  optimize: False 
+  cv: 5
+  optim_time:
+  n_trials: 
+  params:
+# Random forest parameters
+fly_rf:
+  type: random_forest # DO NOT CHANGE
+  run: True 
+  optimize: False 
+  cv: 5
+  optim_time:
+  n_trials: 
+  params:
+# LightGBM parameters
+fly_lgbm:
+  type: LightGBM # DO NOT CHANGE
+  run: True 
+  optimize: False 
+  cv: 5
+  optim_time:
+  n_trials: 20
+  params:
+    # num_leaves:
+    #   type: int
+    #   low: 10
+    #   high: 300
+    # max_depth:
+    #   type: int
+    #   low: -1
+    #   high: 20
+    # min_child_samples:
+    #   type: int
+    #   low: 10
+    #   high: 200
+    #   step: 10
+    # max_bin:
+    #   type: int
+    #   low: 200
+    #   high: 300
+    #   step: 10
+    # learning_rate:
+    #   type: float
+    #   low: 0.01
+    #   high: 0.3
+    #   step: 0.01
+    # n_estimators:
+    #   type: categorical
+    #   choices:
+    #     - 100
+    # reg_alpha:
+    #   type: int
+    #   low: 0
+    #   high: 100
+    #   step: 5
+    # reg_lambda:
+    #   type: int
+    #   low: 0
+    #   high: 100
+    #   step: 5
+    # min_split_gain:
+    #   type: int
+    #   low: 0
+    #   high: 15
+    # subsample:
+    #   type: float
+    #   low: 0.3
+    #   high: 1
+    #   step: 0.1
+    # subsample_freq:
+    #   type: categorical
+    #   choices:
+    #     - 1
+    # colsample_bytree:
+    #   type: float
+    #   low: 0.3
+    #   high: 1
+    #   step: 0.1
+    
+# XGBoost parameters
+fly_xgb:
+  type: XGBoost # DO NOT CHANGE
+  run: False 
+  optimize: False 
+  cv: 5
+  optim_time:
+  n_trials: 
+  params:
+    tree_method: hist
+    n_estimators: 1000
+# Decision tree parameters
+fly_dt:
+  type: decision_tree # DO NOT CHANGE
+  run: True 
+  optimize: False 
+  cv: 5
+  optim_time:
+  n_trials: 
+  params:
