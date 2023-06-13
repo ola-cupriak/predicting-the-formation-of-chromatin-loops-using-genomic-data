@@ -1019,7 +1019,7 @@ FLY_decision_tree_confusionmatrix:
 FLY_logistic_regression_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    path: data/07_model_output/D_melanogaster/logistic_regression_feature_importance.png
+    filepath: data/07_model_output/D_melanogaster/logistic_regression_feature_importance.png
     <<: *save_plt_plot
 
 FLY_random_forest_feature_importance_plot:
