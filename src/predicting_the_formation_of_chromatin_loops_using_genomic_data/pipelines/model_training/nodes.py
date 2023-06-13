@@ -8,38 +8,26 @@ import pandas as pd
 import plotly.graph_objects as go
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
 from sklearn import tree
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics  
 from typing import Any, Dict, List, Tuple, Callable
 import xgboost as xgb
+import random
 
 
-
-def read_data(df: pd.DataFrame, cell_types: list, type: str, 
-              features_include_only: list = None, features_exclude: list = None
-              ) -> Dict[str, pd.DataFrame]:
-    """Reads the data from the data frame and returns the data frame with the
-    selected cell types, removes the columns that are not needed for the model.
+def _filter_features(df: pd.DataFrame, features_include_only: list, features_exclude: list) -> pd.DataFrame:
+    """Filters the features in the data frame.
     Args:
-        df: Data frame with concatenated data for model training.
-        cell_types: List of cell types to be used for model training.
-        type: The type of the model to be trained. Either 'within' or 'across'.
+        df: Data frame with the data to be filtered.
         features_include_only: List of columns to be included in the data frame.
         features_exclude: List of columns to be excluded from the data frame.
     Returns:
-        Dictionary with DataFrames with the selected cell types 
-        and dropped columns that are not needed for the models.
+        Data frame with the filtered features.
     """
-    features_include_only = features_include_only or []
-    features_exclude = features_exclude or []
-
     if features_include_only and features_exclude:
         print('Warning! Both parameters features_include_only and features_exclude are given. Only the features_include_only parameter will be used.')
-
-    df = df[df['cell_type'].isin(cell_types)]
-    df = df.drop(['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end'], axis=1)
     if features_include_only:
         if 'label' not in features_include_only:
             features_include_only.append('label')
@@ -52,18 +40,42 @@ def read_data(df: pd.DataFrame, cell_types: list, type: str,
         assert len(set(df.columns).intersection(set(features_exclude))) == len(features_exclude), print('The features_exclude parameter contains columns that are not in the data frame!')
         df = df.drop(features_exclude, axis=1)
     
-    if type == 'within':
+    return df
+
+
+def read_data(df: pd.DataFrame, cell_types: list, mtype: str, 
+              features_include_only: list = None, features_exclude: list = None
+              ) -> Dict[str, pd.DataFrame]:
+    """Reads the data from the data frame and returns the data frame with the
+    selected cell types, removes the columns that are not needed for the model.
+    Args:
+        df: Data frame with concatenated data for model training.
+        cell_types: List of cell types to be used for model training.
+        mtype: The type of the model to be trained. Either 'within' or 'across'.
+        features_include_only: List of columns to be included in the data frame.
+        features_exclude: List of columns to be excluded from the data frame.
+    Returns:
+        Dictionary with DataFrames with the selected cell types 
+        and dropped columns that are not needed for the models.
+    """
+    features_include_only = features_include_only or []
+    features_exclude = features_exclude or []
+
+    df = df[df['cell_type'].isin(cell_types)]
+    df = df.drop(['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end'], axis=1)
+    
+    df = _filter_features(df, features_include_only, features_exclude)
+    
+    if mtype == 'within':
         df = df.groupby('cell_type')
         return {cell_type: df_cell for cell_type, df_cell in df}
-    elif type == 'across':
+    elif mtype == 'across':
         new_df = pd.DataFrame()
         for cell_type in pd.unique(df['cell_type']):
             df_cell_pos = df[(df['cell_type'] == cell_type)&(df['label'] == 1)].sample(frac=0.5, random_state=42, replace=False)
             df_cell_neg = df[(df['cell_type'] == cell_type)&(df['label'] == 0)].sample(frac=0.5, random_state=42, replace=False)
             new_df = pd.concat([new_df, df_cell_pos, df_cell_neg])  
         return {'df': new_df}
-
-
 
 
 def split_data(dfs_dict: Dict[str, pd.DataFrame], 
@@ -205,6 +217,28 @@ def _train_decision_tree(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
     return model
 
 
+def _choose_model(model_type: str,
+                  X_train,
+                  y_train,
+                  params: dict = None) -> Callable:
+    params  = params or {}
+
+    if model_type == 'logistic_regression':
+        model = _train_logistic_regression(X_train, y_train, params)
+    elif model_type == 'random_forest':
+        model = _train_random_forest(X_train, y_train, params)
+    elif model_type == 'XGBoost':
+        model = _train_xgboost(X_train, y_train, params)
+    elif model_type == 'LightGBM':
+        model = _train_lightgbm(X_train, y_train, params)
+    elif model_type == 'decision_tree':
+        model = _train_decision_tree(X_train, y_train, params)
+    else:
+        raise ValueError(f'Invalid model type: {model_type}')
+    
+    return model
+
+
 def _train_model(df_dict: Dict[str, pd.DataFrame], 
                 mtype: str,
                 model_type: str = 'log_reg', 
@@ -241,18 +275,7 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
         X_train = df_train.drop(['label', 'cell_type'], axis=1)
         y_train = df_train['label']
 
-        if model_type == 'logistic_regression':
-            model = _train_logistic_regression(X_train, y_train, cell_params)
-        elif model_type == 'random_forest':
-            model = _train_random_forest(X_train, y_train, cell_params)
-        elif model_type == 'XGBoost':
-            model = _train_xgboost(X_train, y_train, cell_params)
-        elif model_type == 'LightGBM':
-            model = _train_lightgbm(X_train, y_train, cell_params)
-        elif model_type == 'decision_tree':
-            model = _train_decision_tree(X_train, y_train, cell_params)
-        else:
-            raise ValueError(f'Invalid model type: {model_type}')
+        model = _choose_model(model_type, X_train, y_train, cell_params)
 
         model_dict[cell_type] = model
 
@@ -275,10 +298,53 @@ def _make_prediction(df_test: pd.DataFrame, model) -> np.array:
     return y_pred
 
 
+def _generate_metrics(y_test: pd.DataFrame, y_pred: np.array, cell_type: str, model_type:str) -> dict:
+    """
+    Generates metrics for the predictions.
+    Args:
+        y_test: Data frame with the test labels.
+        y_pred: Numpy array with the predictions.
+        cell_type: The cell type for which the metrics are generated.
+        model_type: The type of model for which the metrics are generated.
+    Returns:
+        A dictionary with the metrics (accuracy, precision, recall, f1, auc, MCC).
+    """
+    metrics_dict = {
+            f'{cell_type}/{model_type}/accuracy': metrics.accuracy_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/precision': metrics.precision_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/recall': metrics.recall_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/f1': metrics.f1_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred),
+            f'{cell_type}/{model_type}/MCC': metrics.matthews_corrcoef(y_test, y_pred),
+        }
+    metrics_dict = {k: round(v, 3) for k, v in metrics_dict.items()}
+    metrics_dict = {k: float(str(v)) for k, v in metrics_dict.items()}
+    
+    return metrics_dict
+
+
+def _generate_confusion_matrix(y_test: pd.DataFrame, y_pred: np.array, cell_type: str, model_type:str):
+    """
+    Generates confusion matrix for the predictions.
+    Args:
+        y_test: Data frame with the test labels.
+        y_pred: Numpy array with the predictions.
+        cell_type: The cell type for which the metrics are generated.
+        model_type: The type of model for which the metrics are generated.
+    Returns:
+        A confusion matrix plot.
+    """
+    disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
+    disp.ax_.set_title(f'Confusion matrix for {cell_type} cell for {model_type} model')
+
+    return disp.figure_
+
+
 def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], mtype: str, model_type: str
                     ) -> Tuple[dict, dict]:
     """
     Evaluates the model on the test data.
+    Log the AUC to MLflow.
     Args:
         model: The trained model.
         df_test: Data frame with the test data.
@@ -302,34 +368,61 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], mtype: s
         y_test = df_test['label']
         y_pred = _make_prediction(df_test, model)
     
-        metrics_dict = {
-            f'{cell_type}/{model_type}/accuracy': metrics.accuracy_score(y_test, y_pred),
-            f'{cell_type}/{model_type}/precision': metrics.precision_score(y_test, y_pred),
-            f'{cell_type}/{model_type}/recall': metrics.recall_score(y_test, y_pred),
-            f'{cell_type}/{model_type}/f1': metrics.f1_score(y_test, y_pred),
-            f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred),
-            f'{cell_type}/{model_type}/MCC': metrics.matthews_corrcoef(y_test, y_pred),
-        }
-        metrics_dict = {k: round(v, 3) for k, v in metrics_dict.items()}
-
-        disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
-        disp.ax_.set_title(f'Confusion matrix for {cell_type} cell for {model_type} model')
-        matrices_dict[cell_type] = disp.figure_
-
         mlflow.log_metrics({f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
-        metrics_dict = {k: float(str(v)) for k, v in metrics_dict.items()}
-        metrics_dict_all[cell_type] = metrics_dict
+
+        matrices_dict[cell_type] = _generate_confusion_matrix(y_test, y_pred, cell_type, model_type)
+        metrics_dict_all[cell_type] = _generate_metrics(y_test, y_pred, cell_type, model_type)
     
     matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
 
     return metrics_dict_all, matrices_dict
 
 
-def _get_feature_importances(models_dict: dict, model_type: str) -> Tuple[dict, dict]:
+def _get_feature_importance_single_cell(model, cell_type: str, model_type: str) -> Tuple[dict, dict]:
     """
-    Get the feature importances for the trained model.
+    Get the feature importances for the trained model for a single cell type.
     Args:
         model: The trained model.
+        model_type: The type of model.
+    Returns:
+        A pandas data frame with the feature importances and a plot with the feature importances.
+    """
+    if isinstance(model, xgb.XGBClassifier):
+        importances = model.feature_importances_
+        idxs = np.argsort(importances)
+        importances = importances[idxs]
+        names = np.array(model.get_booster().feature_names)[idxs]
+    elif isinstance(model, lgb.LGBMClassifier):
+        importances = model.feature_importances_
+        idxs = np.argsort(importances)
+        importances = importances[idxs]
+        names = np.array(model.booster_.feature_name())[idxs]
+    elif isinstance(model, LogisticRegression):
+        importances = model.coef_[0]
+        idxs = np.argsort(importances)
+        importances = importances[idxs]
+        names = model.feature_names_in_[idxs]
+    elif isinstance(model, RandomForestClassifier) or isinstance(model, tree.DecisionTreeClassifier):
+        importances = model.feature_importances_
+        idxs = np.argsort(importances)
+        importances = importances[idxs]
+        names = model.feature_names_in_[idxs]
+
+    importances = pd.Series(importances, index=names)
+    fig, ax = plt.subplots()
+    importances[-20:].plot.bar(ax=ax)
+    ax.set_title(f"Top20 feature importances for {cell_type} cell for {model_type} model")
+    ax.set_ylabel("Feature importance")
+    fig.tight_layout()
+
+    return importances, fig
+
+
+def _get_feature_importances(models_dict: dict, model_type: str) -> Tuple[dict, dict]:
+    """
+    Get the feature importances for the trained models for all cell types.
+    Args:
+        models_dict: The dictionary with the trained models for all cell types.
         model_type: The type of model.
     Returns:
         A tuple with two dictionaries - fiest with the feature importances DataFrame 
@@ -339,41 +432,117 @@ def _get_feature_importances(models_dict: dict, model_type: str) -> Tuple[dict, 
     feature_importances_dict = {}
 
     for cell_type, model in models_dict.items():
-        if isinstance(model, xgb.XGBClassifier):
-            importances = model.feature_importances_
-            idxs = np.argsort(importances)
-            importances = importances[idxs]
-            names = np.array(model.get_booster().feature_names)[idxs]
-        elif isinstance(model, lgb.LGBMClassifier):
-            importances = model.feature_importances_
-            idxs = np.argsort(importances)
-            importances = importances[idxs]
-            names = np.array(model.booster_.feature_name())[idxs]
-        elif isinstance(model, LogisticRegression):
-            importances = model.coef_[0]
-            idxs = np.argsort(importances)
-            importances = importances[idxs]
-            names = model.feature_names_in_[idxs]
-        elif isinstance(model, RandomForestClassifier) or isinstance(model, tree.DecisionTreeClassifier):
-            importances = model.feature_importances_
-            idxs = np.argsort(importances)
-            importances = importances[idxs]
-            names = model.feature_names_in_[idxs]
-
-        importances = pd.Series(importances, index=names)
-        fig, ax = plt.subplots()
-        importances[-20:].plot.bar(ax=ax)
-        ax.set_title(f"Top20 feature importances for {cell_type} cell for {model_type} model")
-        ax.set_ylabel("Feature importance")
-        fig.tight_layout()
-
+        importances, fig = _get_feature_importance_single_cell(model, cell_type, model_type)
         feature_importances_plot_dict[cell_type] = fig
         feature_importances_dict[cell_type] = pd.DataFrame(importances, columns=['importance'])
 
     return feature_importances_dict, feature_importances_plot_dict
 
 
+def _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, params: dict = None):
+    params = params or {}
+    model = _choose_model(model_type, X_train, y_train, params)
+    valid_preds = model.predict(X_val)
+    valid_score = eval_metric(y_val, valid_preds)
+
+    return valid_score
+
+
+def _cross_val(model_type, X, y, eval_metric, folds: int, random_state: int, params: dict = None):
+    
+    if model_type == 'logistic_regression':
+        model = LogisticRegression(**params)
+    elif model_type == 'random_forest':
+        model = RandomForestClassifier(**params)
+    elif model_type == 'XGBoost':
+        model = xgb.XGBClassifier(**params)
+    elif model_type == 'LightGBM':
+        model = lgb.LGBMClassifier(**params)
+    elif model_type == 'decision_tree':
+        model = tree.DecisionTreeClassifier(**params)
+    else:
+        raise ValueError(f'Invalid model type: {model_type}')
+    
+    cv_scores = cross_val_score(model, X, y, cv=folds, scoring=eval_metric, random_state=random_state)
+    return cv_scores.mean()
+
+
+def _optimize_parameters(data: list,
+                        model_type: str, params: dict,
+                        optim_time, n_trials, eval_metric, 
+                        direction, random_state,
+                        cross_val: int = 0) -> tuple:
+    """
+    Optimize the hyperparameters for a single model.
+    Args:
+        data: list of datasets for training and validation.
+        model_type: The type of model.
+        params: The parameters to be optimized.
+        optim_time: The time for optimization.
+        n_trials: The number of trials.
+        eval_metric: The metric to be used for evaluation.
+        direction: The direction of optimization.
+        random_state: The random state.
+        cross_val: The number of folds for cross validation (default: 0 - no cross validation).
+    Returns:
+        A dictionary with the best parameters.
+        A plot with the optimization history.
+    """
+    def objective(trial):
+        params_to_opt = {}
+        for name, val_dict in params.items():
+            if val_dict['type'] == 'categorical':
+                params_to_opt[name] = trial.suggest_categorical(name, val_dict['choices'])
+            elif val_dict['type'] == 'int':
+                params_to_opt[name] = trial.suggest_int(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
+            elif val_dict['type'] == 'float':
+                params_to_opt[name] = trial.suggest_float(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
+        
+        if cross_val:
+            X, y = data
+            valid_score = _cross_val(model_type, X, y, eval_metric, folds=cross_val, random_state=random_state, params=params_to_opt)
+        else:
+            X_train, y_train, X_val, y_val = data
+            valid_score = _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric, params_to_opt)
+
+        return valid_score
+
+    if random_state:
+        sampler = optuna.samplers.TPESampler(seed=random_state)
+    else:
+        sampler = optuna.samplers.TPESampler()
+    study = optuna.create_study(direction=direction, sampler=sampler)
+
+    if n_trials and optim_time:
+        study.optimize(objective, n_trials=n_trials, timeout=optim_time)
+    elif optim_time:
+        study.optimize(objective, timeout=optim_time)
+    elif n_trials:
+        study.optimize(objective, n_trials=n_trials)
+    else:
+        raise ValueError("You have to specify either n_trials or optim_time")
+
+    best_params = study.best_params
+
+    # check if the best parameters are better than the default ones
+    if cross_val:
+        X, y = data
+        valid_score_default = _cross_val(model_type, X, y, eval_metric, folds=cross_val, random_state=random_state)
+    else:
+        X_train, y_train, X_val, y_val = data
+        valid_score_default = _train_predic_eval(model_type, X_train, y_train, X_val, y_val, eval_metric)
+
+    if valid_score_default > study.best_value:
+        print(f"Default parameters are better than the optimized ones. Default score: {valid_score_default}, optimized score: {study.best_value}. Using default parameters.")
+        best_params = {}
+    
+    fig = optuna.visualization.plot_optimization_history(study)
+
+    return best_params, fig
+
+
 def optimize_parameters(df_dict: Dict[str, pd.DataFrame], 
+                        mtype: str, # DODAC DO PIPELINE!!!!
                         model_type: str = 'log_reg', 
                         params: dict = None,
                         optimize: bool = True,
@@ -386,81 +555,67 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
                         n_trials: int = 10,
                         eval_metric: Callable = metrics.roc_auc_score,
                         direction: str = "maximize",
-                        ) -> Tuple[dict, dict]:
+                        ) -> tuple:
+    """
+    Optimize the hyperparameters for the models for all cell types.
+    Args:
+        df_dict: The dictionary with the data for all cell types.
+        mtype: The type of model (within or across).
+        model_type: The type of model.
+        params: The parameters to be optimized.
+        optimize: Whether to optimize the parameters.
+        run: Whether to run the optimization.
+        test_size: The size of the test set.
+        validation_size: The size of the validation set.
+        stratify: The column to be used for stratification.
+        random_state: The random state.
+        optim_time: The time for optimization.
+        n_trials: The number of trials.
+        eval_metric: The metric to be used for evaluation.
+        direction: The direction of optimization.
+    Returns:
+        A dictionary with the best parameters.
+        A optimization history plot.
+    """
+    random.seed(random_state)
     stratify = stratify or []
     params = params or {}
 
     if not run:
-        return {'empty_model': ''}, {'empty_model': go.Figure()}
+        return {}, go.Figure()
     
-    params_dict = {k: params for k in df_dict.keys()}
     if not optimize:
-        return params_dict, {'empty_model': go.Figure()}
+        return params, go.Figure()
+    
+    print(f'Optimizing parameters of {model_type}...')
 
-    plot_dict = {}
-    validation_size = validation_size/(1-test_size)
-    for cell_type, (cell_df, _) in df_dict.items():
-        print(f'Optimizing parameters of {model_type} for {cell_type} cell...')
-        df_train, df_val = train_test_split(cell_df, test_size=validation_size, stratify=cell_df.loc[:, stratify], random_state=random_state)
-        X_train = df_train.drop(['label', 'cell_type'], axis=1)
-        y_train = df_train['label']
-        X_val = df_val.drop(['label', 'cell_type'], axis=1)
-        y_val = df_val['label']
-        
-        del(df_train)
-        del(df_val)
+    # Choose cell type to validate on
+    if mtype == 'within':
+        cell_types = list(df_dict.keys())
+        validation_size = validation_size/(1-test_size)
+        cell = random.choice(cell_types)
+        print(f'Optimisation on data for cell {cell}.')
+        df_train, df_val = train_test_split(df_dict[cell], test_size=validation_size, stratify=df_dict[cell].loc[:, stratify], random_state=random_state)
+    elif mtype == 'across':
+        cell_types = pd.unique(df_dict['df']['cell_type'])
+        cell = random.choice(cell_types)
+        print(f'Data for cell {cell} as validation data during optimisation.')
+        df_train = df_dict['df'][df_dict['df']['cell_type'] != cell]
+        df_val = df_dict['df'][df_dict['df']['cell_type'] == cell]
+    
+    X_train = df_train.drop(['label', 'cell_type'], axis=1)
+    y_train = df_train['label']
+    X_val = df_val.drop(['label', 'cell_type'], axis=1)
+    y_val = df_val['label']
+    del(df_train)
+    del(df_val)
 
-        def objective(trial):
-            cell_params = params_dict[cell_type]
-            params_to_opt = {}
-            for name, val_dict in cell_params.items():
-                if val_dict['type'] == 'categorical':
-                    params_to_opt[name] = trial.suggest_categorical(name, val_dict['choices'])
-                elif val_dict['type'] == 'int':
-                    params_to_opt[name] = trial.suggest_int(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
-                elif val_dict['type'] == 'float':
-                    params_to_opt[name] = trial.suggest_float(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
+    best_params, fig = _optimize_parameters([X_train, y_train, X_val, y_val], 
+                                            model_type, params, 
+                                            optim_time, n_trials, 
+                                            eval_metric, direction, random_state, cross_val=0)
 
-            
-            if model_type == 'logistic_regression':
-                model = _train_logistic_regression(X_train, y_train, params_to_opt)
-            elif model_type == 'random_forest':
-                model = _train_random_forest(X_train, y_train, params_to_opt)
-            elif model_type == 'decision_tree':
-                model = _train_decision_tree(X_train, y_train, params_to_opt)
-            elif model_type == 'LightGBM':
-                model = _train_lightgbm(X_train, y_train, params_to_opt)
-            elif model_type == 'XGBoost':
-                model = _train_xgboost(X_train, y_train, params_to_opt)
-            else:
-                raise ValueError(f"Wrong model type: {model_type}")
-            
-            valid_preds = model.predict(X_val)
-            valid_score = eval_metric(y_val, valid_preds)
-
-            return valid_score
-
-        if random_state:
-            sampler = optuna.samplers.TPESampler(seed=random_state)
-        else:
-            sampler = optuna.samplers.TPESampler()
-        study = optuna.create_study(direction=direction, sampler=sampler)
-
-        if n_trials and optim_time:
-            study.optimize(objective, n_trials=n_trials, timeout=optim_time)
-        elif optim_time:
-            study.optimize(objective, timeout=optim_time)
-        elif n_trials:
-            study.optimize(objective, n_trials=n_trials)
-        else:
-            raise ValueError("You have to specify either n_trials or optim_time")
-
-        best_params = study.best_params
-
-        params_dict[cell_type] = best_params
-        fig = optuna.visualization.plot_optimization_history(study)
-        plot_dict[cell_type] = fig
-    return params_dict, plot_dict
+    return best_params, fig
 
 
 
