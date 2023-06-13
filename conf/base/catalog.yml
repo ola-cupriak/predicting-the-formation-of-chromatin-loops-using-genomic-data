@@ -860,226 +860,219 @@ n4.FLY_concatenated_combined_functional_genomics_data:
 
 # Model training
 
-# datasets split
-within.FLY_split_data_idxes:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/05_model_input/D_melanogaster/within_splits
-      <<: *save_partitioned_pandas_parquet
-
 # parameters
-within.FLY_logistic_regression_params:
+FLY_logistic_regression_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/D_melanogaster/within/within_logistic_regression_params
-      <<: *save_partitioned_yaml
+      type: yaml.YAMLDataSet
+      filepath: data/05_model_input/D_melanogaster/logistic_regression_params.yml
 
-within.FLY_random_forest_params:
+FLY_random_forest_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/D_melanogaster/within/within_random_forest_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/D_melanogaster/random_forest_params.yml
 
-within.FLY_lightgbm_params:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/05_model_input/D_melanogaster/within/within_lightgbm_params
-      <<: *save_partitioned_yaml
 
-within.FLY_xgboost_params:
+FLY_lightgbm_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/D_melanogaster/within/within_xgboost_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/D_melanogaster/lightgbm_params.yml
 
-within.FLY_decision_tree_params:
+FLY_xgboost_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/D_melanogaster/within/within_decision_tree_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/D_melanogaster/xgboost_params.yml
+
+FLY_decision_tree_params:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/D_melanogaster/decision_tree_params.yml
 
 # optimalization plots
-
-within.FLY_logistic_regression_optimalization_plot:
+FLY_logistic_regression_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/D_melanogaster/within/within_logistic_regression_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/D_melanogaster/logistic_regression_optimalization.json
 
-within.FLY_random_forest_optimalization_plot:
+FLY_random_forest_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/D_melanogaster/within/within_random_forest_optimalization
-      <<: *save_partitioned_plotly_json
-
-within.FLY_lightgbm_optimalization_plot:
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/D_melanogaster/random_forest_optimalization.json
+      
+FLY_lightgbm_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/D_melanogaster/within/within_lightgbm_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/D_melanogaster/lightgbm_optimalization.json
 
-within.FLY_xgboost_optimalization_plot:
+FLY_xgboost_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/D_melanogaster/within/within_xgboost_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/D_melanogaster/xgboost_optimalization.json
 
-within.FLY_decision_tree_optimalization_plot:
+FLY_decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/D_melanogaster/within/within_decision_tree_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/D_melanogaster/decision_tree_optimalization.json
 
 # models
-within.FLY_logistic_regression_models:
+FLY_logistic_regression_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/06_models/D_melanogaster/within/within_logistic_regression_models
-      <<: *save_partitioned_pickle
+    type: pickle.PickleDataSet
+    filepath: data/06_models/D_melanogaster/logistic_regression_models.pkl
 
-within.FLY_random_forest_models:
+FLY_random_forest_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/06_models/D_melanogaster/within/within_random_forest_models
-      <<: *save_partitioned_pickle
+    type: pickle.PickleDataSet
+    filepath: data/06_models/D_melanogaster/random_forest_models.pkl
 
-within.FLY_lightgbm_models:
+FLY_lightgbm_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/06_models/D_melanogaster/within/within_lightgbm_models
-      <<: *save_partitioned_pickle
+    type: pickle.PickleDataSet
+    filepath: data/06_models/D_melanogaster/lightgbm_models.pkl
 
-within.FLY_xgboost_models:
+FLY_xgboost_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/06_models/D_melanogaster/within/within_xgboost_models
-      <<: *save_partitioned_pickle
+    type: pickle.PickleDataSet
+    filepath: data/06_models/D_melanogaster/xgboost_models.pkl
 
-within.FLY_decision_tree_models:
+FLY_decision_tree_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/06_models/D_melanogaster/within/within_decision_tree_models
-      <<: *save_partitioned_pickle
+    type: pickle.PickleDataSet
+    filepath: data/06_models/D_melanogaster/decision_tree_models.pkl
 
 # metrics
-within.FLY_logistic_regression_metrics:
+FLY_logistic_regression_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_metrics
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/07_model_output/D_melanogaster/logistic_regression_metrics.yml
 
-within.FLY_random_forest_metrics:
+FLY_random_forest_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_random_forest_metrics
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/07_model_output/D_melanogaster/random_forest_metrics.yml
 
-within.FLY_lightgbm_metrics:
+FLY_lightgbm_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_lightgbm_metrics
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/07_model_output/D_melanogaster/lightgbm_metrics.yml
 
-within.FLY_xgboost_metrics:
+FLY_xgboost_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_xgboost_metrics
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/07_model_output/D_melanogaster/xgboost_metrics.yml
 
-within.FLY_decision_tree_metrics:
+FLY_decision_tree_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_decision_tree_metrics
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/07_model_output/D_melanogaster/decision_tree_metrics.yml
 
-within.FLY_logistic_regression_confusionmatrix:
+FLY_logistic_regression_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_metrics
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/logistic_regression_confusion_matrix.png
+    <<: *save_plt_plot
 
-within.FLY_random_forest_confusionmatrix:
+FLY_random_forest_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_random_forest_metrics
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/random_forest_confusion_matrix.png
+    <<: *save_plt_plot
 
-within.FLY_lightgbm_confusionmatrix:
+FLY_lightgbm_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_lightgbm_metrics
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/lightgbm_confusion_matrix.png
+    <<: *save_plt_plot
 
-within.FLY_xgboost_confusionmatrix:
+FLY_xgboost_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_xgboost_metrics
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/xgboost_confusion_matrix.png
+    <<: *save_plt_plot
 
-within.FLY_decision_tree_confusionmatrix:
+FLY_decision_tree_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_decision_tree_metrics
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/decision_tree_confusion_matrix.png
+    <<: *save_plt_plot
 
 #feature importance 
-within.FLY_logistic_regression_feature_importance_plot:
+FLY_logistic_regression_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_feature_importance
-      <<: *save_partitioned_plt_plot
+    path: data/07_model_output/D_melanogaster/logistic_regression_feature_importance.png
+    <<: *save_plt_plot
 
-within.FLY_random_forest_feature_importance_plot:
+FLY_random_forest_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_random_forest_feature_importance
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/random_forest_feature_importance.png
+    <<: *save_plt_plot
 
-within.FLY_lightgbm_feature_importance_plot:
+FLY_lightgbm_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_lightgbm_feature_importance
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/lightgbm_feature_importance.png
+    <<: *save_plt_plot
 
-within.FLY_xgboost_feature_importance_plot:
+FLY_xgboost_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_xgboost_feature_importance
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/xgboost_feature_importance.png
+    <<: *save_plt_plot
 
-within.FLY_decision_tree_feature_importance_plot:
+FLY_decision_tree_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_decision_tree_feature_importance
-      <<: *save_partitioned_plt_plot
+    filepath: data/07_model_output/D_melanogaster/decision_tree_feature_importance.png
+    <<: *save_plt_plot
 
-within.FLY_logistic_regression_feature_importance_df:
+FLY_logistic_regression_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_logistic_regression_feature_importance
-      <<: *save_partitioned_pandas_parquet
+    filepath: data/07_model_output/D_melanogaster/logistic_regression_feature_importance.parquet
+    <<: *save_pandas_parquet
 
-within.FLY_random_forest_feature_importance_df:
+FLY_random_forest_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_random_forest_feature_importance
-      <<: *save_partitioned_pandas_parquet
+    filepath: data/07_model_output/D_melanogaster/random_forest_feature_importance.parquet
+    <<: *save_pandas_parquet
 
-within.FLY_lightgbm_feature_importance_df:
+FLY_lightgbm_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_lightgbm_feature_importance
-      <<: *save_partitioned_pandas_parquet
+    filepath: data/07_model_output/D_melanogaster/lightgbm_feature_importance.parquet
+    <<: *save_pandas_parquet
 
-within.FLY_xgboost_feature_importance_df:
+FLY_xgboost_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_xgboost_feature_importance
-      <<: *save_partitioned_pandas_parquet
+    filepath: data/07_model_output/D_melanogaster/xgboost_feature_importance.parquet
+    <<: *save_pandas_parquet
 
-within.FLY_decision_tree_feature_importance_df:
+FLY_decision_tree_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/07_model_output/D_melanogaster/within/within_decision_tree_feature_importance
-      <<: *save_partitioned_pandas_parquet
+    filepath: data/07_model_output/D_melanogaster/decision_tree_feature_importance.parquet
+    <<: *save_pandas_parquet
 
