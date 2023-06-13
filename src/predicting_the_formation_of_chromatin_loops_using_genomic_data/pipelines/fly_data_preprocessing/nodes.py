@@ -2,6 +2,7 @@ import pandas as pd
 import polars as pl
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import add_labels
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import read_peaks, count_peaks_and_distances
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import read_bigWig, add_bigWig_data
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import all_anchors2one_df, getfasta_bedfile
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import find_motifs, count_motifs
@@ -34,6 +35,7 @@ def _prepare_fly_loops_data(df: pd.DataFrame, r: int) -> pd.DataFrame:
     df = df = df.sort_values(by=['chr', 'x'])
     
     return df
+
 
 def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
@@ -68,7 +70,13 @@ def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]],
     return new_dfs_dict
 
 
-def fly_add_labels(dfs_dict: Dict[str, pd.DataFrame], mtype: str, r, neg_pos_ratio: float, random_state: int, peaks_dict: Dict[str, pd.DataFrame]=None) -> None:
+def fly_add_labels(dfs_dict: Dict[str, pd.DataFrame], 
+                mtype: str, 
+                peaks_dict: Dict[str, pd.DataFrame], 
+                r: int, 
+                neg_pos_ratio: float, 
+                random_state: int
+                ) -> Dict[str, pd.DataFrame]:
     """
     Add labels to the dataframes depending on the cell type and type of model to train.
     Within model: 1 if cell type is the same as the cell type of the loop, 0 otherwise.
@@ -78,13 +86,34 @@ def fly_add_labels(dfs_dict: Dict[str, pd.DataFrame], mtype: str, r, neg_pos_rat
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
         type: type of model to train, either 'within' or 'across'.
         peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
-        r
+        r: radius of the region around the anchor.
+        neg_pos_ratio: ratio of negative to positive examples.
+        random_state: random state. 
     Returns:
         dictionary:
             keys: cell types
             values: pandas DataFrames with labels added.
     """
     return add_labels(dfs_dict, mtype, peaks_dict, r, neg_pos_ratio, random_state)
+
+
+def fly_read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
+                cells2names: Dict[str, dict],
+                dataset_name: str,
+                cells_to_use: list) -> Dict[str, pd.DataFrame]:
+    """
+    Load dataframes with experiment peaks saved in bed file and modify the chromosome columns.
+    Args:
+        partitioned_input: dictionary with partition ids as keys and load functions as values.
+        cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
+        dataset_name: name of the dataset to select from cells2names.
+        cells_to_use: list of cell types to use.
+    Returns:
+        dictionary:
+            keys: cell types 
+            values: pandas DataFrames with DNase-seq/ChIP-seq peaks.
+    """
+    return read_peaks(partitioned_input, cells2names, dataset_name, cells_to_use)
 
 
 def fly_read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
@@ -104,6 +133,26 @@ def fly_read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
             values: paths to DNase-seq/CTCF ChIP-seq bigWig files.
     """
     return read_bigWig(partitioned_input, cells2names, dataset_name, cells_to_use)
+
+
+def fly_count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], 
+                                  peaks_dfs_dict: Dict[str, pd.DataFrame], 
+                                  experiment: str) -> pd.DataFrame:
+    """
+    Count the number of peaks in both regions of each chromatin loop
+    and find the distance of the closest peak from the center of each anchor from the chromatin loop,
+    for each dataframe from the main_dfs_dict dictionary.
+    Args:
+        main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
+        peaks_dfs_dict: dictionary with cell types as keys and pandas DataFrames with experiment peaks as values.
+        experiment: name of the experiment.
+    Returns:
+        dictionary:
+            keys: cell types
+            values: pandas DataFrame with added columns of numbers of experiment peaks in both regions of each chromatin loop
+                    and columns of distances of the closest peak of the experiment from the center of each anchor from the chromatin loop.
+    """
+    return count_peaks_and_distances(main_dfs_dict, peaks_dfs_dict, experiment)
 
 
 def fly_add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],

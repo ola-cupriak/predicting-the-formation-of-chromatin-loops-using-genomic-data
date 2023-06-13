@@ -4,7 +4,7 @@ generated using Kedro 0.18.6
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import fly_read_hic, fly_read_bigWig
+from .nodes import fly_read_hic, fly_read_bigWig, fly_read_peaks
 from .nodes import fly_add_labels
 from .nodes import fly_add_bigWig_data
 from .nodes import fly_all_anchors2one_df
@@ -24,6 +24,18 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
                 inputs=["FLY_HiC_loops_annoatations", "FLY_cells2names", "params:fly_HiC_data", "params:fly_radius", "params:fly_cell_types_to_use"],
                 outputs="FLY_readed_HiC_loops_anotations",
                 name="FLY_read_HiC_loops_anotations_node",
+            ),
+            node(
+                func=fly_read_peaks,
+                inputs=["FLY_CNS_L3_ATAC_seq_peaks", "FLY_cells2names", "params:CNS_L3_ATAC_seq_peaks", "params:fly_cell_types_to_use"],
+                outputs="FLY_readed_CNS_L3_ATAC_seq_peaks",
+                name="FLY_read_CNS_L3_ATAC_seq_peaks_node",
+            ),
+            node(
+                func=fly_read_bigWig,
+                inputs=["FLY_CNS_L3_ATAC_seq_bigWig", "FLY_cells2names", "params:CNS_L3_ATAC_seq_bigWig", "params:fly_cell_types_to_use"],
+                outputs="FLY_readed_CNS_L3_ATAC_seq_bigWig",
+                name="FLY_read_CNS_L3_ATAC_seq_bigWig_node",
             ),
             node(
                 func=fly_read_bigWig,
@@ -129,7 +141,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             ),
             node(
                 func=fly_add_labels,
-                inputs=["FLY_readed_HiC_loops_anotations", "params:type", 
+                inputs=["FLY_readed_HiC_loops_anotations", "params:type", "readed_CNS_L3_ATAC_seq_peaks", 
                         "params:fly_radius", "params:fly_neg_pos_ratio", "params:random_state"],
                 outputs="FLY_positive_and_negative_HiC_loops_anotations",
                 name="FLY_add_positive_and_negative_HiC_loops_anotations_node",

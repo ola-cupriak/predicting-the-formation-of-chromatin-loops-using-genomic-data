@@ -60,6 +60,21 @@ _save_partitioned_plotly_json: &save_partitioned_plotly_json
     type: plotly.JSONDataSet
   filename_suffix: ".json"
 
+_save_partitioned_path: &save_partitioned_path
+  type: PartitionedDataSet
+  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
+
+_save_partitioned_bed_file: &save_partitioned_bed_file
+  type: PartitionedDataSet
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      delimiter: "\t"
+      usecols: [0, 1, 2]
+      names: ['chr', 'start', 'end']
+      dtype: {'chr': 'string', 'start': 'int32', 'end': 'int32'}
+  filename_suffix: ".bed"
+
 # Homo_sapiens 
 hg19_simplified:
   type: kedro.extras.datasets.biosequence.BioSequenceDataSet
@@ -77,38 +92,22 @@ HiC_loops_annoatations:
   <<: *save_partitioned_pandas_csv
 
 DNAse_seq_peaks:
-  type: PartitionedDataSet
+  <<: *save_partitioned_bed_file
   path: data/01_raw/Homo_sapiens/DNase_seq_peaks
-  dataset: 
-    type: pandas.CSVDataSet
-    load_args:
-      delimiter: "\t"
-      usecols: [0, 1, 2]
-      names: ['chr', 'start', 'end']
-      dtype: {'chr': 'string', 'start': 'int32', 'end': 'int32'}
-  filename_suffix: ".bed"
+
 
 DNAse_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/Homo_sapiens/DNase_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
 
 CTCF_ChIP_seq_peaks:
-  type: PartitionedDataSet
+  <<: *save_partitioned_bed_file
   path: data/01_raw/Homo_sapiens/CTCF_ChIP_seq_peaks
-  dataset: 
-    type: pandas.CSVDataSet
-    load_args:
-      delimiter: "\t"
-      usecols: [0, 1, 2]
-      names: ['chr', 'start', 'end']
-  filename_suffix: ".bed"
 
 CTCF_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/Homo_sapiens/CTCF_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigWig"
 
 n1.positive_and_negative_HiC_loops_anotations:
@@ -360,7 +359,6 @@ across.decision_tree_optimalization_plot:
   data_set:
       path: data/08_reporting/Homo_sapiens/across/across_decision_tree_optimalization
       <<: *save_partitioned_plotly_json
-
 
 # models
 within.logistic_regression_models:
@@ -681,106 +679,98 @@ FLY_HiC_loops_annoatations:
   <<: *save_partitioned_pandas_csv
 
 FLY_DNase_seq_4-6h_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/DNase_seq_4-6h_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigwig"
 
 FLY_DNase_seq_6-8h_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/DNase_seq_6-8h_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigwig"
 
 FLY_DNase_seq_8-10h_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/DNase_seq_8-10h_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigwig"
 
 FLY_DNase_seq_10-12h_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/DNase_seq_10-12h_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bigwig"
 
 FLY_Beaf-32_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Beaf-32_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_Cap-H2_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Cap-H2_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_Chromator_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path  
   path: data/01_raw/D_melanogaster/Chromator_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_CP190_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/CP190_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_CTCF_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/CTCF_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_GAF_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/GAF_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_Ibf2_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Ibf2_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_M1BP_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/M1BP_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_Pita_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Pita_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_Rad21_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Rad21_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_SuHw_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/SuHw_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_ZIPIC_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/ZIPIC_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
 
 FLY_Zw5_ChIP_seq_bigWig:
-  type: PartitionedDataSet
+  <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Zw5_ChIP_seq_bigWig
-  dataset: predicting_the_formation_of_chromatin_loops_using_genomic_data.extras.datasets.path_dataset.PathDataSet
   filename_suffix: ".bw"
+
+FLY_CNS_L3_ATAC_seq_bigWig:
+  <<: *save_partitioned_path
+  path: data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_bigWig
+  filename_suffix: ".bw"
+
+FLY_CNS_L3_ATAC_seq_peaks:
+  <<: *save_partitioned_bed_file
+  path: data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_peaks
 
 ############# dodac Chipseq z motywami ##############
 
