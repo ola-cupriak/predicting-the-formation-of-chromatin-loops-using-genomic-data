@@ -901,13 +901,11 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
     print(f'Finding motifs took {time.time() - start} seconds')
     # Read output
     lines = []
-    n_lines = 0
     with open('data/temp/temp.csv', 'r') as f:
         with open('data/temp/temp2.csv', 'w') as f2:
             pass
         for i, line in tqdm(enumerate(f)):
             lines.append(_modify_fimo_output(line, i))
-            n_lines = i
             if i % 1000000 == 0:
                 print(i)
                 # Save modified output to temporary file
@@ -1143,6 +1141,7 @@ def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=None, organism:
 
     main_df = _sort_df(main_df, 'x_start', organism=organism)
 
-    print(f'Done!')
+    # print size of the dataframe
+    print(f'Done! Shape of the dataframe: {main_df.shape}')
 
     return main_df
