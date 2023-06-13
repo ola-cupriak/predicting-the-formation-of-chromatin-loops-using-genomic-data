@@ -8,7 +8,8 @@ from .nodes import fly_read_hic, fly_read_bigWig, fly_read_peaks
 from .nodes import fly_add_labels
 from .nodes import fly_add_bigWig_data
 from .nodes import fly_all_anchors2one_df
-from .nodes import fly_get_regions_with_names
+from .nodes import fly_all_peaks2one_df
+from .nodes import fly_get_overlaps_with_names
 from .nodes import fly_getfasta_bedfile
 from .nodes import fly_find_motifs, fly_count_motifs
 from .nodes import fly_remove_overlapping
@@ -28,13 +29,13 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             node(
                 func=fly_read_peaks,
                 inputs=["FLY_CNS_L3_ATAC_seq_peaks", "FLY_cells2names", "params:CNS_L3_ATAC_seq_peaks", "params:fly_cell_types_to_use"],
-                outputs="FLY_readed_CNS_L3_ATAC_seq_peaks",
+                outputs="readed_CNS_L3_ATAC_seq_peaks",
                 name="FLY_read_CNS_L3_ATAC_seq_peaks_node",
             ),
             node(
                 func=fly_read_bigWig,
                 inputs=["FLY_CNS_L3_ATAC_seq_bigWig", "FLY_cells2names", "params:CNS_L3_ATAC_seq_bigWig", "params:fly_cell_types_to_use"],
-                outputs="FLY_readed_CNS_L3_ATAC_seq_bigWig",
+                outputs="readed_CNS_L3_ATAC_seq_bigWig",
                 name="FLY_read_CNS_L3_ATAC_seq_bigWig_node",
             ),
             node(
@@ -153,14 +154,20 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
                 name="FLY_merged_HiC_loops_anotations",
             ),
             node(
-                func=fly_get_regions_with_names,
-                inputs=["FLY_merged_HiC_loops_anotations"],
-                outputs="FLY_overlaps_HiC_loops_DNase_seq_named",
-                name="FLY_find_overlaps_HiC_loops_DNase_seq_node",
+                func=fly_all_peaks2one_df,
+                inputs=["readed_CNS_L3_ATAC_seq_peaks"],
+                outputs="merged_CNS_L3_ATAC_seq_peaks",
+                name="merge_CNS_L3_ATAC_seq_peaks_to_one_df_node",
+            ),
+            node(
+                func=fly_get_overlaps_with_names,
+                inputs=["FLY_merged_HiC_loops_anotations", "merged_CNS_L3_ATAC_seq_peaks"],
+                outputs="overlaps_HiC_loops_ATAC_seq_named",
+                name="find_overlaps_HiC_loops_ATAC_seq_node",
             ),
             node(
                 func=fly_getfasta_bedfile,
-                inputs=["FLY_overlaps_HiC_loops_DNase_seq_named", "params:path_dm6_simplified", "params:fly_path_fasta_anchors_with_open_chromtin"],
+                inputs=["overlaps_HiC_loops_ATAC_seq_named", "params:path_dm6_simplified", "params:fly_path_fasta_anchors_with_open_chromtin"],
                 outputs="FLY_fly_path_fasta_anchors_with_open_chromtin",
                 name="FLY_getfasta_anchors_with_open_chromtin_node",
             ),
@@ -314,6 +321,8 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             "FLY_SuHw_ChIP_seq_bigWig",
             "FLY_ZIPIC_ChIP_seq_bigWig",
             "FLY_Zw5_ChIP_seq_bigWig", 
+            "FLY_CNS_L3_ATAC_seq_bigWig",
+            "FLY_CNS_L3_ATAC_seq_peaks",    
         ],
         parameters=[
             "params:fly_HiC_data",
@@ -338,6 +347,8 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             "params:SuHw_ChIP_seq_bigWig",
             "params:ZIPIC_ChIP_seq_bigWig",
             "params:Zw5_ChIP_seq_bigWig",
+            "params:CNS_L3_ATAC_seq_bigWig",
+            "params:CNS_L3_ATAC_seq_peaks",
             "params:path_dm6_simplified", 
             "params:path_motifs_JASPAR_insects",
         ],
