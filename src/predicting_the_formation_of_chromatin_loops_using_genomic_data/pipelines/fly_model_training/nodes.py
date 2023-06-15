@@ -6,7 +6,7 @@ import optuna
 import pandas as pd
 import plotly.graph_objects as go
 from sklearn import metrics  
-from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import LeaveOneOut, KFold
 from typing import Any, Dict, List, Tuple, Callable
 from tqdm import tqdm
 import random
@@ -43,11 +43,13 @@ def fly_read_data(df: pd.DataFrame,
     return df
 
 
-def _train_and_pred_with_LOOCV(df: pd.DataFrame, 
+def _train_and_pred_with_CV(df: pd.DataFrame, 
                                 model_type: str = 'log_reg', 
-                                params: dict = None) -> Dict[str, Any]:
+                                params: dict = None,
+                                cv: int = 5) -> Dict[str, Any]:
     """
-    Train choosen model with LOOCV and return the true and predicted labels.
+    Train choosen model with k-fold cross-validation 
+    and return the true and predicted labels.
     Args:
         df: pandas DataFrame with the data for model training.
         model_type: The type of model to be trained.
@@ -59,9 +61,9 @@ def _train_and_pred_with_LOOCV(df: pd.DataFrame,
 
     true_and_pred = {'true': [], 'pred': []}
 
-    loocv = LeaveOneOut()
-    print(f'Performing LOOCV for {model_type} model...')
-    for train_index, test_index in tqdm(loocv.split(df)):
+    kfoldcv = KFold(n_splits=cv, shuffle=True, random_state=42)
+    print(f'Performing {str(cv)}-fold CV for {model_type} model...')
+    for train_index, test_index in tqdm(kfoldcv.split(df)):
     
         X_train, X_test = df.iloc[train_index], df.iloc[test_index]
         X_train, X_test = X_train.drop(['label', 'cell_type'], axis=1), X_test.drop(['label', 'cell_type'], axis=1)
@@ -70,18 +72,18 @@ def _train_and_pred_with_LOOCV(df: pd.DataFrame,
         model = _choose_model(model_type, X_train, y_train, params)
         
         pred = model.predict(X_test)
-        true_and_pred['true'].append(y_test)
-        true_and_pred['pred'].append(pred)
+        true_and_pred['true'] += list(y_test)
+        true_and_pred['pred'] += list(pred)
 
     true_and_pred = pd.DataFrame(true_and_pred)
     return true_and_pred
  
 
-def _evaluate_LOOCV(true_and_pred: pd.DataFrame,
+def _evaluate_CV(true_and_pred: pd.DataFrame,
                     model_type: str
                     ) -> Dict[str, Any]:
     """
-    Evaluate the LOOCV results and return the metrics.
+    Evaluate the CV results and return the metrics.
     Logs the AUC to MLflow.
     Args:
         true_and_pred: pandas DataFrame with the true and predicted labels.
@@ -95,10 +97,10 @@ def _evaluate_LOOCV(true_and_pred: pd.DataFrame,
 
     mlflow.log_metrics({f'fly_CNS_L3/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
     
-    metrics = _generate_metrics(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
+    metrics_dict = _generate_metrics(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
     confusion_matrix = _generate_confusion_matrix(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
     
-    return metrics, confusion_matrix
+    return metrics_dict, confusion_matrix
 
 
 def fly_optimize_parameters(df: pd.DataFrame, 
@@ -157,6 +159,7 @@ def fly_train_and_eval(df: pd.DataFrame,
                     model_type: str = 'log_reg', 
                     params: dict = None, 
                     run: bool = True,
+                    cv: int = 5,
                     run_name: str = None,
                     neg_sampling_type: str = None,
                     ) -> Tuple[dict, dict, dict, dict, dict]:
@@ -167,7 +170,9 @@ def fly_train_and_eval(df: pd.DataFrame,
         model_type: The type of model to be trained.
         params: A dictionary with the model parameters.
         run: If True, the model will be trained and evaluated with MLFlow.
+        cv: Number of folds for cross-validation.
         run_name: The name of the run.
+        neg_sampling_type: The type of negative sampling.
     Returns:
         A tuple with traind model, dictionary with the evaluation metrics, the confusion matrix,
         the feature importances and the feature importances plot.
@@ -181,8 +186,8 @@ def fly_train_and_eval(df: pd.DataFrame,
         mlflow.set_tag("mlflow.runName", run_name)
 
     print(f'Evaluating {model_type} model...')
-    true_and_pred = _train_and_pred_with_LOOCV(df, model_type, params)
-    metrics, confusion_matrix = _evaluate_LOOCV(true_and_pred, model_type)
+    true_and_pred = _train_and_pred_with_CV(df, model_type, params, cv)
+    metrics, confusion_matrix = _evaluate_CV(true_and_pred, model_type)
 
     print(f'Training {model_type} model on full data...')
     X = df.drop(['label', 'cell_type'], axis=1)
