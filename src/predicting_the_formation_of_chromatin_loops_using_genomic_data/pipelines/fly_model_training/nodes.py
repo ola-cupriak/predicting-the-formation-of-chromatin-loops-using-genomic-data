@@ -195,5 +195,6 @@ def fly_train_and_eval(df: pd.DataFrame,
     model = _choose_model(model_type, X, y, params)
 
     feature_importances, feature_importances_plot = _get_feature_importance_single_cell(model, cell_type='fly_CNS_L3', model_type=model_type)
+    feature_importances = pd.DataFrame(feature_importances, columns=['importances']).reset_index().rename({'index': 'feature'}, axis=1)
 
     return model, metrics, confusion_matrix, feature_importances, feature_importances_plot
