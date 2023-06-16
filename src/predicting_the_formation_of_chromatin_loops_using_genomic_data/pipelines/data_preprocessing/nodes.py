@@ -615,7 +615,11 @@ def _get_stats_single_row(bigwig_obj, chromosome, start, end, res) -> tuple:
     Returns:
         tuple with mean, weighted mean, minimum and maximum of the distribution.
     """
-    distribution = bigwig_obj.values(chromosome, start, end)
+    try:
+        distribution = bigwig_obj.values(chromosome, start, end)
+    except:
+        chromosome = chromosome.split('chr')[-1]
+        distribution = bigwig_obj.values(chromosome, start, end)
     distribution = _replace_nans_with_zeros(distribution)
     mean = sum(distribution) / len(distribution)
     weighted_mean = _calculate_weighted_mean(distribution)
@@ -1123,10 +1127,7 @@ def concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=None, organism:
     cells_to_use = cells_to_use or []
     print('Concatenating dataframes from dictionary...')
     # check if all keys_to_concat are in main_dfs_dict
-    if cells_to_use:
-        assert set(cells_to_use) == set(main_dfs_dict.keys()), 'Something went wrong when filtering out the cell types to be used. Check data_preprocessing.yml file.'
-    else:
-        cells_to_use = list(cells_to_use.keys())
+    assert set(cells_to_use) == set(main_dfs_dict.keys()), 'Something went wrong when filtering out the cell types to be used. Check data_preprocessing.yml file.'
 
     expected_len = sum([len(main_dfs_dict[key]) for key in cells_to_use])
 
