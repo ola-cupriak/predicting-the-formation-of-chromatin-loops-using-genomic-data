@@ -19,12 +19,10 @@ DNase_seq_4-6h_bigWig: DNase_seq_4-6h_bigWig
 DNase_seq_6-8h_bigWig: DNase_seq_6-8h_bigWig
 DNase_seq_8-10h_bigWig: DNase_seq_8-10h_bigWig
 DNase_seq_10-12h_bigWig: DNase_seq_10-12h_bigWig
+ATAC_seq_clustered_bigWig: ATAC_seq_clustered_bigWig
 CNS_L3_ATAC_seq_bigWig: CNS_L3_ATAC_seq_bigWig
 CNS_L3_ATAC_seq_peaks: CNS_L3_ATAC_seq_peaks
 
 # file paths
 path_dm6_simplified: data/02_intermediate/D_melanogaster/reference_genomes_simp/dm6.fasta
 path_motifs_JASPAR_insects: data/01_raw/D_melanogaster/motifs_JASPAR/JASPAR2022_CORE_insects_non-redundant_pfms_jaspar.txt
-# list of cell types to use
-fly_cell_types_to_use:
-  - neuronal

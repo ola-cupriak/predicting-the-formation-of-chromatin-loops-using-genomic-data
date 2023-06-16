@@ -43,3 +43,30 @@ reference_genomes:
   dm6.fa: dm6
 HiC_loops_annotations:
   loops_D_mel_annotated_in.tsv: neuronal
+CNS_L3_ATAC_seq_bigWig:
+  bulk_coverage.bw: neuronal
+CNS_L3_ATAC_seq_peaks:
+  bulk_peaks.bed: neuronal
+ATAC_seq_clustered_bigWig:
+  filtered_cluster_1.bw: neuronal1
+  filtered_cluster_2.bw: NPC1
+  filtered_cluster_3.bw: neuronal2
+  filtered_cluster_4.bw: NPC2
+  filtered_cluster_5.bw: neuronal3
+  filtered_cluster_6.bw: neuronal4
+  filtered_cluster_7.bw: neuronal5
+  filtered_cluster_8.bw: neuronal6
+  filtered_cluster_9.bw: neuronal7
+  filtered_cluster_10.bw: NPC3
+  filtered_cluster_11.bw: neuronal8
+  filtered_cluster_12.bw: NPC4
+  filtered_cluster_13.bw: neuronal9
+  filtered_cluster_14.bw: NPC5
+  filtered_cluster_15.bw: NPC6
+  filtered_cluster_16.bw: neuronal10
+  filtered_cluster_17.bw: glia
+  filtered_cluster_18.bw: NPC7
+  filtered_cluster_19.bw: neuronal11
+
+
+

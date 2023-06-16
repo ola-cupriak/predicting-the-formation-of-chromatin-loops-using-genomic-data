@@ -772,7 +772,10 @@ FLY_CNS_L3_ATAC_seq_peaks:
   <<: *save_partitioned_bed_file
   path: data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_peaks
 
-############# dodac Chipseq z motywami ##############
+FLY_ATAC_seq_clustered_bigWig:
+  <<: *save_partitioned_path
+  path: data/01_raw/D_melanogaster/ATAC_seq_clustered_bigWig
+  filename_suffix: ".bw"
 
 n2.FLY_positive_and_negative_HiC_loops_anotations:
   path: data/02_intermediate/D_melanogaster/n2/n2_positive_and_negative_HiC_looplist
