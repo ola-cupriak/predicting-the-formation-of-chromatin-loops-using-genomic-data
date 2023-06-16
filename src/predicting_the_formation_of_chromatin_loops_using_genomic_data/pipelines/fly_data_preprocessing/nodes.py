@@ -39,8 +39,7 @@ def _prepare_fly_loops_data(df: pd.DataFrame, r: int) -> pd.DataFrame:
 
 def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
                 cells2names: Dict[str, dict],
-                dataset_name: str, r: int,
-                cells_to_use: list=[]) -> Dict[str, pd.DataFrame]:
+                dataset_name: str, r: int) -> Dict[str, pd.DataFrame]:
     """
     Load and modify the dataframes with chromatin loops anotations for fly.
     Args:
@@ -48,7 +47,6 @@ def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
         r: radius of the region.
-        cells_to_use: list of cell types to use.
     Returns:
         dictionary:
             keys: cell types 
@@ -56,12 +54,9 @@ def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]],
     """
     dfs_dict = _dict_partitions(partitioned_input)
     cells2names_dataset_dict = cells2names[dataset_name]
-    assert set(cells_to_use).issubset(set(cells2names_dataset_dict.values())), f"Cell types: {set(cells_to_use)-set(cells2names_dataset_dict.values())} are not in the dataset. Please check data_preprocessing.yml file."
     new_dfs_dict = dict()
     for name, df in dfs_dict.items():
         cell_type = cells2names_dataset_dict[name]
-        if cells_to_use and cell_type not in cells_to_use:
-            continue
         df = _prepare_fly_loops_data(df, r)
         # set dtypes
         df['cell_type'] = cell_type
@@ -72,40 +67,36 @@ def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]],
 
 def fly_read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
                 cells2names: Dict[str, dict],
-                dataset_name: str,
-                cells_to_use: list) -> Dict[str, pd.DataFrame]:
+                dataset_name: str) -> Dict[str, pd.DataFrame]:
     """
     Load dataframes with experiment peaks saved in bed file and modify the chromosome columns.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
-        cells_to_use: list of cell types to use.
     Returns:
         dictionary:
             keys: cell types 
             values: pandas DataFrames with DNase-seq/ChIP-seq peaks.
     """
-    return read_peaks(partitioned_input, cells2names, dataset_name, cells_to_use, organism='fly')
+    return read_peaks(partitioned_input, cells2names, dataset_name, cells_to_use=[], organism='fly')
 
 
 def fly_read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
                 cells2names: Dict[str, dict],
-                dataset_name: str,
-                cells_to_use: list) -> Dict[str, pd.DataFrame]:
+                dataset_name: str) -> Dict[str, pd.DataFrame]:
     """
     Create a dictionary with paths to DNase-seq/CTCF ChIP-seq bigWig files for each cell type.
     Args:
         partitioned_input: dictionary with partition ids as keys and load functions as values.
         cells2names: dictionary, template: {'dataset_name': {'file_name': 'cell_type'}}
         dataset_name: name of the dataset to select from cells2names.
-        cells_to_use: list of cell types to use.
     Returns:
         dictionary:
             keys: cell types 
             values: paths to DNase-seq/CTCF ChIP-seq bigWig files.
     """
-    return read_bigWig(partitioned_input, cells2names, dataset_name, cells_to_use)
+    return read_bigWig(partitioned_input, cells2names, dataset_name, cells_to_use=[])
 
 
 def fly_add_labels(dfs_dict: Dict[str, pd.DataFrame], 
@@ -173,7 +164,15 @@ def fly_add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
             keys: cell types 
             values: pandas DataFrames with added columns of bigWig data statistics in both regions of each loop
     """
-    return add_bigWig_data(main_dfs_dict, bigWig_data_dict, experiment, res=res, organism='fly')
+    if len(bigWig_data_dict) > 1:
+        assert len(main_dfs_dict) == 1, 'The fly pipeline is only suitable for 1 type of cell.'
+        cell_name = list(main_dfs_dict.keys())[0]
+        for name, path in bigWig_data_dict.items():
+            new_experiment = f'{name}_{experiment}'
+            main_dfs_dict = add_bigWig_data(main_dfs_dict, {cell_name: path}, new_experiment, res=res, organism='fly')
+        return main_dfs_dict
+    else:
+        return add_bigWig_data(main_dfs_dict, bigWig_data_dict, experiment, res=res, organism='fly')
 
 
 def fly_all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -267,7 +266,7 @@ def fly_remove_overlapping(main_dfs_dict: dict):
     return remove_overlapping(main_dfs_dict)
 
 
-def fly_concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.DataFrame:
+def fly_concat_dfs_from_dict(main_dfs_dict: dict) -> pd.DataFrame:
     '''
     Concatenates dataframes from dictionary.
     Args:   
@@ -276,4 +275,5 @@ def fly_concat_dfs_from_dict(main_dfs_dict: dict, cells_to_use: list=[]) -> pd.D
     Returns:
         pandas DataFrame with concatenated dataframes from dictionary.
     '''
+    cells_to_use = list(main_dfs_dict.keys())
     return concat_dfs_from_dict(main_dfs_dict, cells_to_use, organism='fly')
