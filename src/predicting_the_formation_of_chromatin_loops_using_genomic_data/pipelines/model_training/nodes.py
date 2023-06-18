@@ -43,8 +43,9 @@ def _filter_features(df: pd.DataFrame, features_include_only: list, features_exc
     return df
 
 
-def read_data(df: pd.DataFrame, cell_types: list, mtype: str, 
-              features_include_only: list = None, features_exclude: list = None
+def read_data(df: pd.DataFrame, cell_types: list, mtype: str, random_state: int = None,
+              features_include_only: list = None, features_exclude: list = None,
+              data_fraction: float = 1
               ) -> Dict[str, pd.DataFrame]:
     """Reads the data from the data frame and returns the data frame with the
     selected cell types, removes the columns that are not needed for the model.
@@ -52,8 +53,10 @@ def read_data(df: pd.DataFrame, cell_types: list, mtype: str,
         df: Data frame with concatenated data for model training.
         cell_types: List of cell types to be used for model training.
         mtype: The type of the model to be trained. Either 'within' or 'across'.
+        random_state: The seed to be used for random number generation.
         features_include_only: List of columns to be included in the data frame.
         features_exclude: List of columns to be excluded from the data frame.
+        data_fraction: The fraction of the data to be used for model training.
     Returns:
         Dictionary with DataFrames with the selected cell types 
         and dropped columns that are not needed for the models.
@@ -72,8 +75,8 @@ def read_data(df: pd.DataFrame, cell_types: list, mtype: str,
     elif mtype == 'across':
         new_df = pd.DataFrame()
         for cell_type in pd.unique(df['cell_type']):
-            df_cell_pos = df[(df['cell_type'] == cell_type)&(df['label'] == 1)].sample(frac=0.5, random_state=42, replace=False)
-            df_cell_neg = df[(df['cell_type'] == cell_type)&(df['label'] == 0)].sample(frac=0.5, random_state=42, replace=False)
+            df_cell_pos = df[(df['cell_type'] == cell_type)&(df['label'] == 1)].sample(frac=data_fraction, random_state=random_state, replace=False)
+            df_cell_neg = df[(df['cell_type'] == cell_type)&(df['label'] == 0)].sample(frac=data_fraction, random_state=random_state, replace=False)
             new_df = pd.concat([new_df, df_cell_pos, df_cell_neg])  
         return {'df': new_df}
 
@@ -278,9 +281,10 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
             df_train = df_dict['df'][df_dict['df']['cell_type'] != cell_type]
 
         print(f'Training {model_type} for {cell_type}...')
-        cell_params = params[cell_type]
-        if not cell_params:
-            cell_params = {}
+        cell_params = params
+        # cell_params = params[cell_type]
+        # if not cell_params:
+        #     cell_params = {}
     
         X_train = df_train.drop(['label', 'cell_type'], axis=1)
         y_train = df_train['label']
@@ -383,6 +387,9 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], mtype: s
         matrices_dict[cell_type] = _generate_confusion_matrix(y_test, y_pred, cell_type, model_type)
         metrics_dict_all[cell_type] = _generate_metrics(y_test, y_pred, cell_type, model_type)
     
+    # log mean auc for all cells
+    mlflow.log_metrics({f'all_cells/{model_type}/auc': np.mean([v[f'{k}/{model_type}/auc'] for k, v in metrics_dict_all.items()])})
+
     matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
 
     return metrics_dict_all, matrices_dict
@@ -581,7 +588,7 @@ def _optimize_parameters(data: list,
 
 
 def optimize_parameters(df_dict: Dict[str, pd.DataFrame], 
-                        mtype: str, # DODAC DO PIPELINE!!!!
+                        mtype: str,
                         model_type: str = 'log_reg', 
                         params: dict = None,
                         optimize: bool = True,
@@ -687,7 +694,7 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
     if run_name:
         mlflow.set_tag("mlflow.runName", run_name)
 
-    params = _dict_partitions(params)
+    #params = _dict_partitions(params)
 
     model_dict = _train_model(df_dict, mtype, model_type, params)
     metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, mtype, model_type)
