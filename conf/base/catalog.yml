@@ -241,124 +241,131 @@ across.split_data_idxes:
 within.logistic_regression_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/within/within_logistic_regression_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/within/within_logistic_regression_params.yml
+      
 
 across.logistic_regression_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/across/across_logistic_regression_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/across/across_logistic_regression_params.yml
+      
 
 within.random_forest_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/within/within_random_forest_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/within/within_random_forest_params.yml
+      
 
 across.random_forest_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/across/across_random_forest_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/across/across_random_forest_params.yml
+      
 
 within.lightgbm_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/within/within_lightgbm_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/within/within_lightgbm_params.yml
+      
 
 across.lightgbm_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/across/across_lightgbm_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/across/across_lightgbm_params.yml
+      
 
 within.xgboost_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/within/within_xgboost_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/within/within_xgboost_params.yml
+      
 
 across.xgboost_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/across/across_xgboost_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/across/across_xgboost_params.yml
+      
 
 within.decision_tree_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/within/within_decision_tree_params
-      <<: *save_partitioned_yaml
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/within/within_decision_tree_params.yml
 
 across.decision_tree_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/05_model_input/Homo_sapiens/across/across_decision_tree_params
-      <<: *save_partitioned_yaml
-
+    type: yaml.YAMLDataSet
+    filepath: data/05_model_input/Homo_sapiens/across/across_decision_tree_params.yml
+      
 # optimalization plots
-
 within.logistic_regression_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/within/within_logistic_regression_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/within/within_logistic_regression_optimalization.json
 
 across.logistic_regression_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/across/across_logistic_regression_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/across/across_logistic_regression_optimalization.json
 
 within.random_forest_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/within/within_random_forest_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/within/within_random_forest_optimalization.json
 
 across.random_forest_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/across/across_random_forest_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/across/across_random_forest_optimalization.json
 
 within.lightgbm_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/within/within_lightgbm_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/within/within_lightgbm_optimalization.json
 
 across.lightgbm_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/across/across_lightgbm_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/across/across_lightgbm_optimalization.json
 
 within.xgboost_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/within/within_xgboost_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/within/within_xgboost_optimalization.json
 
 across.xgboost_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/across/across_xgboost_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/across/across_xgboost_optimalization.json
 
 within.decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/within/within_decision_tree_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/within/within_decision_tree_optimalization.json
 
 across.decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-      path: data/08_reporting/Homo_sapiens/across/across_decision_tree_optimalization
-      <<: *save_partitioned_plotly_json
+    type: plotly.JSONDataSet
+    filepath: data/08_reporting/Homo_sapiens/across/across_decision_tree_optimalization.json
 
 # models
 within.logistic_regression_models:
