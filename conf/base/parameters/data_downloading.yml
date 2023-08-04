@@ -76,14 +76,6 @@ to_download:
       neuronal: http://chorogenome.ie-freiburg.mpg.de/data/zw5.bw
     M1BP_ChIP_seq_bigWig:
       neuronal: http://chorogenome.ie-freiburg.mpg.de/data/M1BP.bw
-    DNase_seq_4-6h_bigWig:
-      neuronal: http://furlonglab.embl.de/labData/publications/2020/reddington-et-al_2020_dev_cell/wigs/neuronal_4-6h.bigwig
-    DNase_seq_6-8h_bigWig:
-      neuronal: http://furlonglab.embl.de/labData/publications/2020/reddington-et-al_2020_dev_cell/wigs/neuronal_6-8h.bigwig
-    DNase_seq_8-10h_bigWig:
-      neuronal: http://furlonglab.embl.de/labData/publications/2020/reddington-et-al_2020_dev_cell/wigs/neuronal_8-10h.bigwig
-    DNase_seq_10-12h_bigWig:
-      neuronal: http://furlonglab.embl.de/labData/publications/2020/reddington-et-al_2020_dev_cell/wigs/neuronal_10-12h.bigwig
 
 dm3todm6_mapping:
   Beaf-32_ChIP_seq_bigWig:
@@ -111,12 +103,4 @@ dm3todm6_mapping:
   Zw5_ChIP_seq_bigWig:
     - neuronal
   M1BP_ChIP_seq_bigWig:
-    - neuronal
-  DNase_seq_4-6h_bigWig:
-    - neuronal
-  DNase_seq_6-8h_bigWig:
-    - neuronal
-  DNase_seq_8-10h_bigWig:
-    - neuronal
-  DNase_seq_10-12h_bigWig:
     - neuronal
