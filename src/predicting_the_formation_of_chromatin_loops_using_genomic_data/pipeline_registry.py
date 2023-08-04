@@ -20,11 +20,9 @@ def register_pipelines() -> Dict[str, Pipeline]:
     data_preprocessing_n1_pipeline = data_preprocessing.create_pipeline(neg_sampling_type='n1')
     data_preprocessing_n2_pipeline = data_preprocessing.create_pipeline(neg_sampling_type='n2')
     data_preprocessing_n3_pipeline = data_preprocessing.create_pipeline(neg_sampling_type='n3')
-    data_preprocessing_n4_pipeline = data_preprocessing.create_pipeline(neg_sampling_type='n4')
 
     fly_data_preprocessing_n2_pipeline = fly_data_preprocessing.create_pipeline(neg_sampling_type='n2')
     fly_data_preprocessing_n3_pipeline = fly_data_preprocessing.create_pipeline(neg_sampling_type='n3')
-    fly_data_preprocessing_n4_pipeline = fly_data_preprocessing.create_pipeline(neg_sampling_type='n4')
 
     model_training_within_pipeline = model_training.create_pipeline(mtype='within')
     model_training_across_pipeline = model_training.create_pipeline(mtype='across')
@@ -37,10 +35,8 @@ def register_pipelines() -> Dict[str, Pipeline]:
         "data_preprocessing_n1": data_preprocessing_n1_pipeline,
         "data_preprocessing_n2": data_preprocessing_n2_pipeline,
         "data_preprocessing_n3": data_preprocessing_n3_pipeline,
-        "data_preprocessing_n4": data_preprocessing_n4_pipeline,
         "fly_data_preprocessing_n2": fly_data_preprocessing_n2_pipeline,
         "fly_data_preprocessing_n3": fly_data_preprocessing_n3_pipeline,
-        "fly_data_preprocessing_n4": fly_data_preprocessing_n4_pipeline,
         "model_training_across_cells": model_training_across_pipeline,
         "model_training_within_cells": model_training_within_pipeline, 
         "fly_model_training": fly_model_training_pipeline,   

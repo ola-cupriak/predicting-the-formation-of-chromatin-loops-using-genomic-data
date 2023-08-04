@@ -17,9 +17,3 @@ n3:
   fly_neg_pos_ratio: 5
   human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n3/n3_anchors_with_open_chromtin.fasta
   fly_path_fasta_anchors_with_open_chromtin: data/02_intermediate/D_melanogaster/n3/n3_anchors_with_open_chromtin.fasta
-n4:
-  type: new_pairs_and_open_chromatin
-  human_neg_pos_ratio: 5
-  fly_neg_pos_ratio: 5
-  human_path_fasta_anchors_with_open_chromtin: data/02_intermediate/Homo_sapiens/n4/n4_anchors_with_open_chromtin.fasta
-  fly_path_fasta_anchors_with_open_chromtin: data/02_intermediate/D_melanogaster/n4/n4_anchors_with_open_chromtin.fasta
