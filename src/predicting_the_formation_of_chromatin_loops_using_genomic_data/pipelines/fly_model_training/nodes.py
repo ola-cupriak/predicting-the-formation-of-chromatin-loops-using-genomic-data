@@ -6,7 +6,7 @@ import optuna
 import pandas as pd
 import plotly.graph_objects as go
 from sklearn import metrics  
-from sklearn.model_selection import LeaveOneOut, KFold
+from sklearn.model_selection import LeaveOneOut, StratifiedKFold
 from typing import Any, Dict, List, Tuple, Callable
 from tqdm import tqdm
 import random
@@ -61,12 +61,15 @@ def _train_and_pred_with_CV(df: pd.DataFrame,
 
     true_and_pred = {'true': [], 'pred': []}
 
-    kfoldcv = KFold(n_splits=cv, shuffle=True, random_state=42)
+    kfoldcv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     print(f'Performing {str(cv)}-fold CV for {model_type} model...')
-    for train_index, test_index in tqdm(kfoldcv.split(df)):
-    
-        X_train, X_test = df.iloc[train_index], df.iloc[test_index]
-        X_train, X_test = X_train.drop(['label', 'cell_type'], axis=1), X_test.drop(['label', 'cell_type'], axis=1)
+
+    X = df.drop(['label', 'cell_type'], axis=1)
+    y = df['label']
+
+    for train_index, test_index in tqdm(kfoldcv.split(X, y)):
+
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = df.iloc[train_index]['label'], df.iloc[test_index]['label']
 
         model = _choose_model(model_type, X_train, y_train, params)
@@ -78,6 +81,28 @@ def _train_and_pred_with_CV(df: pd.DataFrame,
     true_and_pred = pd.DataFrame(true_and_pred)
     return true_and_pred
  
+def _generate_ROC_curve(y_test: np.array,
+                        y_pred: np.array,
+                        cell_type: str,
+                        model_type: str
+                        ) -> go.Figure:
+    from sklearn.metrics import RocCurveDisplay
+
+    fig = RocCurveDisplay.from_predictions(
+        y_test,
+        y_pred,
+        name=f"ROC curve",
+        color="darkorange",
+    )
+    plt.plot([0, 1], [0, 1], "k--", label="chance level (AUC = 0.5)")
+    plt.axis("square")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC curve for {cell_type} {model_type} model") 
+    plt.legend()
+    
+    return fig.figure_
+
 
 def _evaluate_CV(true_and_pred: pd.DataFrame,
                     model_type: str
@@ -96,11 +121,13 @@ def _evaluate_CV(true_and_pred: pd.DataFrame,
     y_pred = np.array(true_and_pred['pred'])
 
     mlflow.log_metrics({f'fly_CNS_L3/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
+    mlflow.log_metrics({f'fly_CNS_L3/{model_type}/acc': metrics.accuracy_score(y_test, y_pred)})
     
     metrics_dict = _generate_metrics(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
     confusion_matrix = _generate_confusion_matrix(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
+    roc_curve = _generate_ROC_curve(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
     
-    return metrics_dict, confusion_matrix
+    return metrics_dict, confusion_matrix, roc_curve
 
 
 def fly_optimize_parameters(df: pd.DataFrame, 
@@ -187,7 +214,7 @@ def fly_train_and_eval(df: pd.DataFrame,
 
     print(f'Evaluating {model_type} model...')
     true_and_pred = _train_and_pred_with_CV(df, model_type, params, cv)
-    metrics, confusion_matrix = _evaluate_CV(true_and_pred, model_type)
+    metrics, confusion_matrix, roc_curve = _evaluate_CV(true_and_pred, model_type)
 
     print(f'Training {model_type} model on full data...')
     X = df.drop(['label', 'cell_type'], axis=1)
@@ -197,4 +224,4 @@ def fly_train_and_eval(df: pd.DataFrame,
     feature_importances, feature_importances_plot = _get_feature_importance_single_cell(model, cell_type='fly_CNS_L3', model_type=model_type)
     feature_importances = pd.DataFrame(feature_importances, columns=['importances']).reset_index().rename({'index': 'feature'}, axis=1)
 
-    return model, metrics, confusion_matrix, feature_importances, feature_importances_plot
+    return model, metrics, confusion_matrix, roc_curve, feature_importances, feature_importances_plot
