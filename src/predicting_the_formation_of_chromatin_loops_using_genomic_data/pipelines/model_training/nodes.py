@@ -383,12 +383,14 @@ def _evaluate_model(model_dict: dict, df_dict: Dict[str, pd.DataFrame], mtype: s
         y_pred = _make_prediction(df_test, model)
     
         mlflow.log_metrics({f'{cell_type}/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
+        mlflow.log_metrics({f'{cell_type}/{model_type}/acc': metrics.accuracy_score(y_test, y_pred)})
 
         matrices_dict[cell_type] = _generate_confusion_matrix(y_test, y_pred, cell_type, model_type)
         metrics_dict_all[cell_type] = _generate_metrics(y_test, y_pred, cell_type, model_type)
     
     # log mean auc for all cells
     mlflow.log_metrics({f'all_cells/{model_type}/auc': np.mean([v[f'{k}/{model_type}/auc'] for k, v in metrics_dict_all.items()])})
+    mlflow.log_metrics({f'all_cells/{model_type}/acc': np.mean([v[f'{k}/{model_type}/accuracy'] for k, v in metrics_dict_all.items()])})
 
     matrices_dict = {k+'_confusionmatrix': v for k, v in matrices_dict.items()}
 
