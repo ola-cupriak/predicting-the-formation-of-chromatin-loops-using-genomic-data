@@ -261,10 +261,11 @@ def _train_model(df_dict: Dict[str, pd.DataFrame],
             df_train = df_dict['df'][df_dict['df']['cell_type'] != cell_type]
 
         print(f'Training {model_type} for {cell_type}...')
-        cell_params = params
-        # cell_params = params[cell_type]
-        # if not cell_params:
-        #     cell_params = {}
+        
+        if cell_type in params.keys():
+            cell_params = params[cell_type]
+        else:
+            cell_params = {}
     
         X_train = df_train.drop(['label', 'cell_type'], axis=1)
         y_train = df_train['label']
@@ -285,7 +286,6 @@ def _make_prediction(df_test: pd.DataFrame, model) -> np.array:
     Returns:
         A numpy array with the predictions.
     """
-
     X_test = df_test.drop(['label', 'cell_type'], axis=1)
     y_pred = model.predict(X_test)
 
@@ -609,34 +609,34 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
         return params, go.Figure()
     
     print(f'Optimizing parameters of {model_type}...')
+    params_opt_dict = {}
+    optim_fig_dict = {}
+    for cell in df_dict.keys():
+        print(f'Optimizing parameters for cell {cell}...')
+        # Choose cell type to validate on
+        if mtype == 'within':
+            validation_size_within = validation_size/(1-test_size)
+            df_train, df_val = train_test_split(df_dict[cell][0], test_size=validation_size_within, stratify=df_dict[cell].loc[:, stratify], random_state=random_state)
+        elif mtype == 'across':
+            df_train = df_dict['df'][df_dict['df']['cell_type'] != cell]
+            df_train, df_val = train_test_split(df_train, test_size=validation_size, stratify=df_dict[cell].loc[:, stratify], random_state=random_state)
+        
+        X_train = df_train.drop(['label', 'cell_type'], axis=1)
+        y_train = df_train['label']
+        X_val = df_val.drop(['label', 'cell_type'], axis=1)
+        y_val = df_val['label']
+        del(df_train)
+        del(df_val)
 
-    # Choose cell type to validate on
-    if mtype == 'within':
-        cell_types = list(df_dict.keys())
-        validation_size = validation_size/(1-test_size)
-        cell = random.choice(cell_types)
-        print(f'Optimisation on data for cell {cell}.')
-        df_train, df_val = train_test_split(df_dict[cell], test_size=validation_size, stratify=df_dict[cell].loc[:, stratify], random_state=random_state)
-    elif mtype == 'across':
-        cell_types = pd.unique(df_dict['df']['cell_type'])
-        cell = random.choice(cell_types)
-        print(f'Data for cell {cell} as validation data during optimisation.')
-        df_train = df_dict['df'][df_dict['df']['cell_type'] != cell]
-        df_val = df_dict['df'][df_dict['df']['cell_type'] == cell]
-    
-    X_train = df_train.drop(['label', 'cell_type'], axis=1)
-    y_train = df_train['label']
-    X_val = df_val.drop(['label', 'cell_type'], axis=1)
-    y_val = df_val['label']
-    del(df_train)
-    del(df_val)
+        best_params, fig = _optimize_parameters([X_train, y_train, X_val, y_val], 
+                                                model_type, params, 
+                                                optim_time, n_trials, 
+                                                eval_metric, direction, random_state, cross_val=0)
+        
+        params_opt_dict[cell] = best_params
+        optim_fig_dict[cell] = fig
 
-    best_params, fig = _optimize_parameters([X_train, y_train, X_val, y_val], 
-                                            model_type, params, 
-                                            optim_time, n_trials, 
-                                            eval_metric, direction, random_state, cross_val=0)
-
-    return best_params, fig
+    return params_opt_dict, optim_fig_dict
 
 
 
@@ -668,8 +668,6 @@ def train_and_eval(df_dict: Dict[str, pd.DataFrame],
     
     if run_name:
         mlflow.set_tag("mlflow.runName", run_name)
-
-    #params = _dict_partitions(params)
 
     model_dict = _train_model(df_dict, mtype, model_type, params)
     metrics_dict_all, matrices_dict = _evaluate_model(model_dict, df_dict, mtype, model_type)

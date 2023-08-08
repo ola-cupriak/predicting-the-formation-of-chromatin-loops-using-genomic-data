@@ -23,6 +23,15 @@ _save_partitioned_plt_plot: &save_partitioned_plt_plot
     <<: *save_plt_plot
   filename_suffix: ".png"
 
+_save_plotly_plot: &save_plotly_plot
+  type: plotly.JSONDataSet
+
+_save_partitioned_plotly_plot: &save_partitioned_plotly_plot
+  type: PartitionedDataSet
+  dataset:
+    <<: *save_plotly_plot
+  filename_suffix: ".json"
+
 _save_pandas_parquet: &save_pandas_parquet
   type: pandas.ParquetDataSet
   load_args:
@@ -295,50 +304,50 @@ across.decision_tree_params:
 within.logistic_regression_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/within/within_logistic_regression_optimalization.json
+      path: data/08_reporting/Homo_sapiens/within/within_logistic_regression_optimalization
+      <<: *save_partitioned_plotly_plot
 
 across.logistic_regression_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/across/across_logistic_regression_optimalization.json
+      path: data/08_reporting/Homo_sapiens/across/across_logistic_regression_optimalization
+      <<: *save_partitioned_plotly_plot
 
 within.random_forest_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/within/within_random_forest_optimalization.json
+      path: data/08_reporting/Homo_sapiens/within/within_random_forest_optimalization
+      <<: *save_partitioned_plotly_plot
 
 across.random_forest_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/across/across_random_forest_optimalization.json
+      path: data/08_reporting/Homo_sapiens/across/across_random_forest_optimalization
+      <<: *save_partitioned_plotly_plot
 
 within.lightgbm_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/within/within_lightgbm_optimalization.json
+      path: data/08_reporting/Homo_sapiens/within/within_lightgbm_optimalization
+      <<: *save_partitioned_plotly_plot
 
 across.lightgbm_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/across/across_lightgbm_optimalization.json
+      path: data/08_reporting/Homo_sapiens/across/across_lightgbm_optimalization
+      <<: *save_partitioned_plotly_plot
 
 within.decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/within/within_decision_tree_optimalization.json
+      path: data/08_reporting/Homo_sapiens/within/within_decision_tree_optimalization
+      <<: *save_partitioned_plotly_plot
 
 across.decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/across/across_decision_tree_optimalization.json
+      path: data/08_reporting/Homo_sapiens/across/across_decision_tree_optimalization
+      <<: *save_partitioned_plotly_plot
 
 # models
 within.logistic_regression_models:
