@@ -278,21 +278,6 @@ across.lightgbm_params:
   data_set:
     type: yaml.YAMLDataSet
     filepath: data/05_model_input/Homo_sapiens/across/across_lightgbm_params.yml
-      
-
-within.xgboost_params:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: yaml.YAMLDataSet
-    filepath: data/05_model_input/Homo_sapiens/within/within_xgboost_params.yml
-      
-
-across.xgboost_params:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: yaml.YAMLDataSet
-    filepath: data/05_model_input/Homo_sapiens/across/across_xgboost_params.yml
-      
 
 within.decision_tree_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
@@ -343,18 +328,6 @@ across.lightgbm_optimalization_plot:
     type: plotly.JSONDataSet
     filepath: data/08_reporting/Homo_sapiens/across/across_lightgbm_optimalization.json
 
-within.xgboost_optimalization_plot:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/within/within_xgboost_optimalization.json
-
-across.xgboost_optimalization_plot:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/Homo_sapiens/across/across_xgboost_optimalization.json
-
 within.decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -402,18 +375,6 @@ across.lightgbm_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/06_models/Homo_sapiens/across/across_lightgbm_models
-      <<: *save_partitioned_pickle
-
-within.xgboost_models:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/06_models/Homo_sapiens/within/within_xgboost_models
-      <<: *save_partitioned_pickle
-
-across.xgboost_models:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/06_models/Homo_sapiens/across/across_xgboost_models
       <<: *save_partitioned_pickle
 
 within.decision_tree_models:
@@ -465,18 +426,6 @@ across.lightgbm_metrics:
       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_metrics
       <<: *save_partitioned_yaml
 
-within.xgboost_metrics:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/within/within_xgboost_metrics
-      <<: *save_partitioned_yaml
-
-across.xgboost_metrics:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/across/across_xgboost_metrics
-      <<: *save_partitioned_yaml
-
 within.decision_tree_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -523,18 +472,6 @@ across.lightgbm_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_metrics
-      <<: *save_partitioned_plt_plot
-
-within.xgboost_confusionmatrix:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/within/within_xgboost_metrics
-      <<: *save_partitioned_plt_plot
-
-across.xgboost_confusionmatrix:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/across/across_xgboost_metrics
       <<: *save_partitioned_plt_plot
 
 within.decision_tree_confusionmatrix:
@@ -586,18 +523,6 @@ across.lightgbm_feature_importance_plot:
       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_feature_importance
       <<: *save_partitioned_plt_plot
 
-within.xgboost_feature_importance_plot:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/within/within_xgboost_feature_importance
-      <<: *save_partitioned_plt_plot
-
-across.xgboost_feature_importance_plot:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/across/across_xgboost_feature_importance
-      <<: *save_partitioned_plt_plot
-
 within.decision_tree_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -644,18 +569,6 @@ across.lightgbm_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
       path: data/07_model_output/Homo_sapiens/across/across_lightgbm_feature_importance
-      <<: *save_partitioned_pandas_parquet
-
-within.xgboost_feature_importance_df:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/within/within_xgboost_feature_importance
-      <<: *save_partitioned_pandas_parquet
-
-across.xgboost_feature_importance_df:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-      path: data/07_model_output/Homo_sapiens/across/across_xgboost_feature_importance
       <<: *save_partitioned_pandas_parquet
 
 within.decision_tree_feature_importance_df:
@@ -890,12 +803,6 @@ FLY_lightgbm_params:
     type: yaml.YAMLDataSet
     filepath: data/05_model_input/D_melanogaster/lightgbm_params.yml
 
-FLY_xgboost_params:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: yaml.YAMLDataSet
-    filepath: data/05_model_input/D_melanogaster/xgboost_params.yml
-
 FLY_decision_tree_params:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -920,12 +827,6 @@ FLY_lightgbm_optimalization_plot:
   data_set:
     type: plotly.JSONDataSet
     filepath: data/08_reporting/D_melanogaster/lightgbm_optimalization.json
-
-FLY_xgboost_optimalization_plot:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: plotly.JSONDataSet
-    filepath: data/08_reporting/D_melanogaster/xgboost_optimalization.json
 
 FLY_decision_tree_optimalization_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
@@ -952,12 +853,6 @@ FLY_lightgbm_models:
     type: pickle.PickleDataSet
     filepath: data/06_models/D_melanogaster/lightgbm_models.pkl
 
-FLY_xgboost_models:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: pickle.PickleDataSet
-    filepath: data/06_models/D_melanogaster/xgboost_models.pkl
-
 FLY_decision_tree_models:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -983,12 +878,6 @@ FLY_lightgbm_metrics:
     type: yaml.YAMLDataSet
     filepath: data/07_model_output/D_melanogaster/lightgbm_metrics.yml
 
-FLY_xgboost_metrics:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    type: yaml.YAMLDataSet
-    filepath: data/07_model_output/D_melanogaster/xgboost_metrics.yml
-
 FLY_decision_tree_metrics:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -1013,12 +902,6 @@ FLY_lightgbm_confusionmatrix:
     filepath: data/07_model_output/D_melanogaster/lightgbm_confusion_matrix.png
     <<: *save_plt_plot
 
-FLY_xgboost_confusionmatrix:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    filepath: data/07_model_output/D_melanogaster/xgboost_confusion_matrix.png
-    <<: *save_plt_plot
-
 FLY_decision_tree_confusionmatrix:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -1041,12 +924,6 @@ FLY_lightgbm_roccurve:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
     filepath: data/07_model_output/D_melanogaster/lightgbm_roc_curve.png
-    <<: *save_plt_plot
-  
-FLY_xgboost_roccurve:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    filepath: data/07_model_output/D_melanogaster/xgboost_roc_curve.png
     <<: *save_plt_plot
 
 FLY_decision_tree_roccurve:
@@ -1074,12 +951,6 @@ FLY_lightgbm_feature_importance_plot:
     filepath: data/07_model_output/D_melanogaster/lightgbm_feature_importance.png
     <<: *save_plt_plot
 
-FLY_xgboost_feature_importance_plot:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    filepath: data/07_model_output/D_melanogaster/xgboost_feature_importance.png
-    <<: *save_plt_plot
-
 FLY_decision_tree_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
@@ -1102,12 +973,6 @@ FLY_lightgbm_feature_importance_df:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
   data_set:
     filepath: data/07_model_output/D_melanogaster/lightgbm_feature_importance.parquet
-    <<: *save_pandas_parquet
-
-FLY_xgboost_feature_importance_df:
-  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
-  data_set:
-    filepath: data/07_model_output/D_melanogaster/xgboost_feature_importance.parquet
     <<: *save_pandas_parquet
 
 FLY_decision_tree_feature_importance_df:

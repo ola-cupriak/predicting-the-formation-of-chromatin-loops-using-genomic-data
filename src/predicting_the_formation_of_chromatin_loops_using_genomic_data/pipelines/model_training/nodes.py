@@ -13,7 +13,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics  
 from typing import Any, Dict, List, Tuple, Callable
-import xgboost as xgb
 import random
 
 
@@ -169,23 +168,6 @@ def _train_random_forest(X_train: pd.DataFrame, y_train: pd.DataFrame, params: d
     return model
 
 
-def _train_xgboost(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> xgb.XGBClassifier:
-    """
-    Trains a XGBoost model on the training data and returns the trained model.
-    Args:
-        X_train: Data frame with the training data.
-        y_train: Data frame with the training labels.
-        params: Dictionary with the parameters for the model.
-    Returns:
-        The trained model.
-    """
-    params = params or {}
-    model = xgb.XGBClassifier(objective='binary:logistic', **params)
-    model.fit(X_train, y_train)
-
-    return model
-
-
 def _train_lightgbm(X_train: pd.DataFrame, y_train: pd.DataFrame, params: dict = None) -> lgb.LGBMClassifier:
     """
     Trains a LightGBM model on the training data and returns the trained model.
@@ -240,8 +222,6 @@ def _choose_model(model_type: str,
         model = _train_logistic_regression(X_train, y_train, params)
     elif model_type == 'random_forest':
         model = _train_random_forest(X_train, y_train, params)
-    elif model_type == 'XGBoost':
-        model = _train_xgboost(X_train, y_train, params)
     elif model_type == 'LightGBM':
         model = _train_lightgbm(X_train, y_train, params)
     elif model_type == 'decision_tree':
@@ -406,12 +386,7 @@ def _get_feature_importance_single_cell(model, cell_type: str, model_type: str) 
     Returns:
         A pandas data frame with the feature importances and a plot with the feature importances.
     """
-    if isinstance(model, xgb.XGBClassifier):
-        importances = model.feature_importances_
-        idxs = np.argsort(importances)
-        importances = importances[idxs]
-        names = np.array(model.get_booster().feature_names)[idxs]
-    elif isinstance(model, lgb.LGBMClassifier):
+    if isinstance(model, lgb.LGBMClassifier):
         importances = model.feature_importances_
         idxs = np.argsort(importances)
         importances = importances[idxs]
@@ -497,8 +472,6 @@ def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None) -
         model = LogisticRegression(**params)
     elif model_type == 'random_forest':
         model = RandomForestClassifier(**params)
-    elif model_type == 'XGBoost':
-        model = xgb.XGBClassifier(**params)
     elif model_type == 'LightGBM':
         model = lgb.LGBMClassifier(**params)
     elif model_type == 'decision_tree':

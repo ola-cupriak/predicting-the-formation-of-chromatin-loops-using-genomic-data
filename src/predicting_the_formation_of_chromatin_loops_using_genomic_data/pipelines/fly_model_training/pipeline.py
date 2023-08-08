@@ -48,13 +48,6 @@ def create_pipeline(**kwargs) -> Pipeline:
             outputs=["FLY_lightgbm_params", "FLY_lightgbm_optimalization_plot"],
             name="fly_optimize_parameters_lightgbm_node",
         ),
-        node(
-            func=fly_optimize_parameters,
-            inputs=["fly_read_data", "params:fly_xgb.type", "params:fly_xgb.params", "params:fly_xgb.optimize", 
-                    "params:fly_xgb.run", "params:fly_xgb.cv", "params:random_state", "params:fly_xgb.optim_time", "params:fly_xgb.n_trials"],
-            outputs=["FLY_xgboost_params", "FLY_xgboost_optimalization_plot"],
-            name="fly_optimize_parameters_xgboost_node",
-        ),
          node(
             func=fly_optimize_parameters,
             inputs=["fly_read_data", "params:fly_dt.type", "params:fly_dt.params", "params:fly_dt.optimize", 
@@ -88,15 +81,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                         "FLY_lightgbm_roccurve",
                      "FLY_lightgbm_feature_importance_df", "FLY_lightgbm_feature_importance_plot"],
             name="fly_train_and_eval_lightgbm_node",
-        ),
-        node(
-            func=fly_train_and_eval,
-            inputs=["fly_read_data", "params:fly_xgb.type", "FLY_xgboost_params", "params:fly_xgb.run", "params:fly_xgb.cv",
-                      "params:fly_run_name", "params:fly_neg_sampling_type"],
-            outputs=["FLY_xgboost_models", "FLY_xgboost_metrics", "FLY_xgboost_confusionmatrix",
-                        "FLY_xgboost_roccurve",
-                     "FLY_xgboost_feature_importance_df", "FLY_xgboost_feature_importance_plot"],
-            name="fly_train_and_eval_xgboost_node",
         ),
         node(
             func=fly_train_and_eval,
