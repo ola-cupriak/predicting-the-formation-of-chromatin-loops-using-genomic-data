@@ -1025,6 +1025,36 @@ FLY_decision_tree_confusionmatrix:
     filepath: data/07_model_output/D_melanogaster/decision_tree_confusion_matrix.png
     <<: *save_plt_plot
 
+FLY_logistic_regression_roccurve:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+    filepath: data/07_model_output/D_melanogaster/logistic_regression_roc_curve.png
+    <<: *save_plt_plot
+
+FLY_random_forest_roccurve:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+    filepath: data/07_model_output/D_melanogaster/random_forest_roc_curve.png
+    <<: *save_plt_plot
+
+FLY_lightgbm_roccurve:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+    filepath: data/07_model_output/D_melanogaster/lightgbm_roc_curve.png
+    <<: *save_plt_plot
+  
+FLY_xgboost_roccurve:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+    filepath: data/07_model_output/D_melanogaster/xgboost_roc_curve.png
+    <<: *save_plt_plot
+
+FLY_decision_tree_roccurve:
+  type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
+  data_set:
+    filepath: data/07_model_output/D_melanogaster/decision_tree_roc_curve.png
+    <<: *save_plt_plot
+
 #feature importance 
 FLY_logistic_regression_feature_importance_plot:
   type: kedro_mlflow.io.artifacts.MlflowArtifactDataSet
