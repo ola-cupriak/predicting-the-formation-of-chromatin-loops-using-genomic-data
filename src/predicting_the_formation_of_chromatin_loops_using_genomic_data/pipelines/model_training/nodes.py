@@ -603,10 +603,10 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
     params = params or {}
 
     if not run:
-        return {}, go.Figure()
+        return {}, {}
     
     if not optimize:
-        return params, go.Figure()
+        return params, {}
     
     print(f'Optimizing parameters of {model_type}...')
     params_opt_dict = {}
@@ -616,10 +616,10 @@ def optimize_parameters(df_dict: Dict[str, pd.DataFrame],
         # Choose cell type to validate on
         if mtype == 'within':
             validation_size_within = validation_size/(1-test_size)
-            df_train, df_val = train_test_split(df_dict[cell][0], test_size=validation_size_within, stratify=df_dict[cell].loc[:, stratify], random_state=random_state)
+            df_train, df_val = train_test_split(df_dict[cell][0], test_size=validation_size_within, stratify=df_dict[cell][0].loc[:, stratify], random_state=random_state)
         elif mtype == 'across':
             df_train = df_dict['df'][df_dict['df']['cell_type'] != cell]
-            df_train, df_val = train_test_split(df_train, test_size=validation_size, stratify=df_dict[cell].loc[:, stratify], random_state=random_state)
+            df_train, df_val = train_test_split(df_train, test_size=validation_size, stratify=df_train.loc[:, stratify], random_state=random_state)
         
         X_train = df_train.drop(['label', 'cell_type'], axis=1)
         y_train = df_train['label']
