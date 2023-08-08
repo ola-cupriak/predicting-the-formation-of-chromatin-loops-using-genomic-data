@@ -15,11 +15,6 @@ Rad21_ChIP_seq_bigWig: Rad21_ChIP_seq_bigWig
 SuHw_ChIP_seq_bigWig: SuHw_ChIP_seq_bigWig
 ZIPIC_ChIP_seq_bigWig: ZIPIC_ChIP_seq_bigWig
 Zw5_ChIP_seq_bigWig: Zw5_ChIP_seq_bigWig
-DNase_seq_4-6h_bigWig: DNase_seq_4-6h_bigWig
-DNase_seq_6-8h_bigWig: DNase_seq_6-8h_bigWig
-DNase_seq_8-10h_bigWig: DNase_seq_8-10h_bigWig
-DNase_seq_10-12h_bigWig: DNase_seq_10-12h_bigWig
-ATAC_seq_clustered_bigWig: ATAC_seq_clustered_bigWig
 CNS_L3_ATAC_seq_bigWig: CNS_L3_ATAC_seq_bigWig
 CNS_L3_ATAC_seq_peaks: CNS_L3_ATAC_seq_peaks
 

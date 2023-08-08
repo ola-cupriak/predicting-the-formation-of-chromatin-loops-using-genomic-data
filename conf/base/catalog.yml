@@ -579,26 +579,6 @@ FLY_HiC_loops_annoatations:
   path: data/01_raw/D_melanogaster/HiC_loops_annotations
   <<: *save_partitioned_pandas_csv
 
-FLY_DNase_seq_4-6h_bigWig:
-  <<: *save_partitioned_path
-  path: data/01_raw/D_melanogaster/DNase_seq_4-6h_bigWig
-  filename_suffix: ".bigwig"
-
-FLY_DNase_seq_6-8h_bigWig:
-  <<: *save_partitioned_path
-  path: data/01_raw/D_melanogaster/DNase_seq_6-8h_bigWig
-  filename_suffix: ".bigwig"
-
-FLY_DNase_seq_8-10h_bigWig:
-  <<: *save_partitioned_path
-  path: data/01_raw/D_melanogaster/DNase_seq_8-10h_bigWig
-  filename_suffix: ".bigwig"
-
-FLY_DNase_seq_10-12h_bigWig:
-  <<: *save_partitioned_path
-  path: data/01_raw/D_melanogaster/DNase_seq_10-12h_bigWig
-  filename_suffix: ".bigwig"
-
 FLY_Beaf-32_ChIP_seq_bigWig:
   <<: *save_partitioned_path
   path: data/01_raw/D_melanogaster/Beaf-32_ChIP_seq_bigWig
@@ -673,11 +653,6 @@ FLY_CNS_L3_ATAC_seq_peaks:
   <<: *save_partitioned_bed_file
   path: data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_peaks
 
-FLY_ATAC_seq_clustered_bigWig:
-  <<: *save_partitioned_path
-  path: data/01_raw/D_melanogaster/ATAC_seq_clustered_bigWig
-  filename_suffix: ".bw"
-
 n2.FLY_positive_and_negative_HiC_loops_anotations:
   path: data/02_intermediate/D_melanogaster/n2/n2_positive_and_negative_HiC_looplist
   <<: *save_partitioned_pandas_parquet
@@ -692,14 +667,6 @@ n2.FLY_merged_HiC_loops_anotations:
 
 n3.FLY_merged_HiC_loops_anotations:
   filepath: data/02_intermediate/D_melanogaster/n3/n3_merged_HiC_looplist.csv
-  <<: *save_pandas_csv
-
-n2.FLY_merged_DNase_seq_peaks:
-  filepath: data/02_intermediate/D_melanogaster/n2/n2_merged_DNase_seq_peaks.csv
-  <<: *save_pandas_csv
-
-n3.FLY_merged_DNase_seq_peaks:
-  filepath: data/02_intermediate/D_melanogaster/n3/n3_merged_DNase_seq_peaks.csv
   <<: *save_pandas_csv
 
 n2.FLY_overlaps_HiC_loops_DNase_seq_named:
