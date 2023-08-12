@@ -113,7 +113,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             ),
             node(
                 func=count_motifs,
-                inputs=["HiC_loops_anotations_with_CTCF_ChIP_seq_bigWig_data", "motifs_found_anchors_with_open_chromatin"],
+                inputs=["HiC_loops_anotations_with_DNase_seq_peaks", "motifs_found_anchors_with_open_chromatin"],
                 outputs="combined_functional_genomics_data",
                 name="add_motif_counts_node",
             ),

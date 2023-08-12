@@ -921,12 +921,12 @@ def find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
             f2.writelines(lines)
             del lines
     # Read temporary file as pandas DataFrame
-    dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string"}
+    dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string", "score": "float32"}
     df = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
     df.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
     subprocess.run('rm data/temp/temp.csv', shell=True)
-    subprocess.run('rm data/temp/temp2.csv', shell=True)
-    df = df[['chr', 'start', 'end', 'motif_id', 'cell_type']]
+    #subprocess.run('rm data/temp/temp2.csv', shell=True)
+    df = df[['chr', 'start', 'end', 'motif_id', 'cell_type', 'score']]
     len_before = len(df)
     # Count motif occurences
     df = pd.DataFrame(df.groupby(['chr', 'start', 'end', 'cell_type', 'motif_id'], observed=True).size(), columns=['count'])
@@ -960,12 +960,13 @@ def _reverse_names(colnames: list) :
     return to_reverse
 
 
-def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame, organism:str='human') -> pd.DataFrame:
+def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame, cell_type: str, organism:str='human') -> pd.DataFrame:
     """
     Counts motif occurances in both regions of each chromatin loop.
     Args:
         main_df: pandas DataFrame with chromatin loops.
         motifs_df: pandas DataFrame with motif occurrences found.
+        cell_type: name of the cell type. 
         organism: name of the organism.
     Returns:
         pandas DataFrame with added columns of each motif counts in both regions of each chromatin loop.
@@ -998,6 +999,62 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame, orga
     main_df_new = _sort_df(main_df_new, 'x_start',organism=organism)
     main_df_new = main_df_new.loc[:, main_df_new.columns != 'id']
 
+    dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string", "score": "float32"}
+    df_found_motifs = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
+    df_found_motifs = df_found_motifs[df_found_motifs['cell_type'] == cell_type]
+    df_found_motifs.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
+    df_found_motifs['motif_id_without_orientation'] = [motif_id.split('_')[0] for motif_id in df_found_motifs['motif_id']]
+    idx = df_found_motifs.groupby(['motif_id_without_orientation', 'chr', 'start', 'end'])['score'].transform(max) == df_found_motifs['score']
+    df_found_motifs = df_found_motifs[idx]
+    df_found_motifs = df_found_motifs.loc[:,['motif_id', 'chr', 'start', 'end', 'cell_type', 'motif_id_without_orientation']]
+
+    motifs_list = list(to_reverse.keys())
+    motifs_list = [motif_id.split('_')[0] for motif_id in motifs_list]
+    motifs_list = list(set(motifs_list))
+    
+    def find_pair_orientation(motif_id: str, row, df_found_motifs: pd.DataFrame):
+        
+        chromosome, x_start, x_end, y_start, y_end = row
+        x_motif = df_found_motifs.loc[(df_found_motifs.loc[:,'chr']==chromosome)&(df_found_motifs.loc[:,'start']==x_start)&(df_found_motifs.loc[:,'end']==x_end)&(df_found_motifs.loc[:,'motif_id_without_orientation']==motif_id), 'motif_id']
+        y_motif = df_found_motifs.loc[(df_found_motifs.loc[:,'chr']==chromosome)&(df_found_motifs.loc[:,'start']==y_start)&(df_found_motifs.loc[:,'end']==y_end)&(df_found_motifs.loc[:,'motif_id_without_orientation']==motif_id), 'motif_id']
+        if len(x_motif) == 0 and len(y_motif) == 0:
+            return 0
+        elif len(x_motif) == 0 or len(y_motif) == 0:
+            return 1
+        else:
+            x_motif_orientation = x_motif.to_string().split('_')[-1]
+            y_motif_orientation = y_motif.to_string().split('_')[-1]
+            if x_motif_orientation == y_motif_orientation:
+                return 4
+            elif x_motif_orientation == 'f' and y_motif_orientation == 'r':
+                return 2
+            elif x_motif_orientation == 'r' and y_motif_orientation == 'f':
+                return 3
+
+    main_df_new = pl.from_pandas(main_df_new)
+    for motif_id in motifs_list:
+        main_df_new = main_df_new.with_columns(main_df_new.select(['chr', 'x_start', 'x_end', 'y_start', 'y_end']).apply(
+            lambda row: find_pair_orientation(motif_id, row, df_found_motifs),
+            ).rename({'apply': f'{motif_id}_orientation'}))
+
+        #main_df_new[f'{motif_id}_orientation'] = main_df_new.apply(lambda row: find_pair_orientation(motif_id, row, df_found_motifs), axis=1)
+    main_df_new = main_df_new.to_pandas()
+
+    # Sum and join columns in main_df_new for the same motif on the same anchor (x or y)
+    for motif_id in motifs_list:
+        to_drop = [f'x_{motif_id}_f', f'x_{motif_id}_r', f'y_{motif_id}_f', f'y_{motif_id}_r']
+        motif_count = []
+        for motif_anchor_orientation in to_drop:
+            if motif_anchor_orientation in main_df_new.columns:
+                motif_count.append(main_df_new[motif_anchor_orientation])
+            else:
+                motif_count.append(pd.Series([0]*len(main_df_new), dtype='int16'))
+        
+        main_df_new[f'x_{motif_id}_count'] = motif_count[0] + motif_count[1]
+        main_df_new[f'y_{motif_id}_count'] = motif_count[2] + motif_count[3]
+        main_df_new.drop(to_drop, axis=1, inplace=True)
+            
+    
     return main_df_new
 
 
@@ -1027,7 +1084,7 @@ def count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame, organism:str='hum
         for main_name, main_df in main_dfs_dict.items():
             if main_name == cell_type:
                 motifs_df_group = motifs_df_group.loc[:, motifs_df_group.columns != 'cell_type']
-                main_df = _count_motifs_single_df(main_df, motifs_df_group, organism=organism)
+                main_df = _count_motifs_single_df(main_df, motifs_df_group, cell_type, organism=organism)
                 main_dfs_dict[main_name] = main_df
     print('Done!')
 
