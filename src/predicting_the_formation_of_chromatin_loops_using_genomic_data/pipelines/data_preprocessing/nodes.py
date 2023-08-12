@@ -89,9 +89,8 @@ def read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         # set dtypes
         df = df.astype({'x': 'int32', 'y': 'int32', 'x_start': 'int32', 'x_end': 'int32', 
                         'y_start': 'int32', 'y_end': 'int32', 'chr': 'string', 'cell_type': 'string'})
-
         new_dfs_dict[cell_type] = df
-
+        
     return new_dfs_dict
 
 
@@ -377,6 +376,19 @@ def _get_negatives_by_new_anchors_pairing(df: pd.DataFrame, cell_type: str,
 
     return df
 
+def _add_distances(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add column with distances between x and y anchors.
+    Args:
+        df: pandas DataFrame with anchors.
+    Returns:
+        pandas DataFrame with distances between x and y anchors.
+    """
+    df['distance'] = df['y'] - df['x']
+    df = df.astype({'distance': 'int32'})
+    
+    return df
+
 
 def add_labels(dfs_dict: Dict[str, pd.DataFrame], 
                mtype: str, 
@@ -435,6 +447,10 @@ def add_labels(dfs_dict: Dict[str, pd.DataFrame],
             with_neg = _create_pairs_each_with_each_single_df(cell_df, peaks_dict[name], name, r, neg_pos_ratio/2, random_state)
             with_neg = _get_negatives_by_new_anchors_pairing(with_neg, name, r, neg_pos_ratio/2, random_state, df_len, organism=organism)
             dfs_dict[name] = with_neg
+        
+    # add distances
+    for cell_type, df in dfs_dict.items():
+        dfs_dict[cell_type] = _add_distances(df)
     
     return dfs_dict
 
@@ -999,62 +1015,59 @@ def _count_motifs_single_df(main_df: pd.DataFrame, motifs_df: pd.DataFrame, cell
     main_df_new = _sort_df(main_df_new, 'x_start',organism=organism)
     main_df_new = main_df_new.loc[:, main_df_new.columns != 'id']
 
-    dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string", "score": "float32"}
-    df_found_motifs = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
-    df_found_motifs = df_found_motifs[df_found_motifs['cell_type'] == cell_type]
-    df_found_motifs.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
-    df_found_motifs['motif_id_without_orientation'] = [motif_id.split('_')[0] for motif_id in df_found_motifs['motif_id']]
-    idx = df_found_motifs.groupby(['motif_id_without_orientation', 'chr', 'start', 'end'])['score'].transform(max) == df_found_motifs['score']
-    df_found_motifs = df_found_motifs[idx]
-    df_found_motifs = df_found_motifs.loc[:,['motif_id', 'chr', 'start', 'end', 'cell_type', 'motif_id_without_orientation']]
+    # dtypes = {'chr': "string", 'anchor_start': "int32", 'anchor_end': "int32", 'motif_id': "string", 'cell_type': "string", "score": "float32"}
+    # df_found_motifs = pd.read_csv('data/temp/temp2.csv', sep='\t', dtype=dtypes, usecols=list(dtypes.keys()))
+    # df_found_motifs = df_found_motifs[df_found_motifs['cell_type'] == cell_type]
+    # df_found_motifs.rename(columns={'anchor_start': 'start', 'anchor_end': 'end'}, inplace=True)
+    # df_found_motifs['motif_id_without_orientation'] = [motif_id.split('_')[0] for motif_id in df_found_motifs['motif_id']]
+    # idx = df_found_motifs.groupby(['motif_id_without_orientation', 'chr', 'start', 'end'])['score'].transform(max) == df_found_motifs['score']
+    # df_found_motifs = df_found_motifs[idx]
+    # df_found_motifs = df_found_motifs.loc[:,['motif_id', 'chr', 'start', 'end', 'cell_type', 'motif_id_without_orientation']]
 
-    motifs_list = list(to_reverse.keys())
-    motifs_list = [motif_id.split('_')[0] for motif_id in motifs_list]
-    motifs_list = list(set(motifs_list))
+    # motifs_list = list(to_reverse.keys())
+    # motifs_list = [motif_id.split('_')[0] for motif_id in motifs_list]
+    # motifs_list = list(set(motifs_list))
     
-    def find_pair_orientation(motif_id: str, row, df_found_motifs: pd.DataFrame):
+    # def find_pair_orientation(motif_id: str, row, df_found_motifs: pd.DataFrame):
         
-        chromosome, x_start, x_end, y_start, y_end = row
-        x_motif = df_found_motifs.loc[(df_found_motifs.loc[:,'chr']==chromosome)&(df_found_motifs.loc[:,'start']==x_start)&(df_found_motifs.loc[:,'end']==x_end)&(df_found_motifs.loc[:,'motif_id_without_orientation']==motif_id), 'motif_id']
-        y_motif = df_found_motifs.loc[(df_found_motifs.loc[:,'chr']==chromosome)&(df_found_motifs.loc[:,'start']==y_start)&(df_found_motifs.loc[:,'end']==y_end)&(df_found_motifs.loc[:,'motif_id_without_orientation']==motif_id), 'motif_id']
-        if len(x_motif) == 0 and len(y_motif) == 0:
-            return 0
-        elif len(x_motif) == 0 or len(y_motif) == 0:
-            return 1
-        else:
-            x_motif_orientation = x_motif.to_string().split('_')[-1]
-            y_motif_orientation = y_motif.to_string().split('_')[-1]
-            if x_motif_orientation == y_motif_orientation:
-                return 4
-            elif x_motif_orientation == 'f' and y_motif_orientation == 'r':
-                return 2
-            elif x_motif_orientation == 'r' and y_motif_orientation == 'f':
-                return 3
+    #     chromosome, x_start, x_end, y_start, y_end = row
+    #     x_motif = df_found_motifs.loc[(df_found_motifs.loc[:,'chr']==chromosome)&(df_found_motifs.loc[:,'start']==x_start)&(df_found_motifs.loc[:,'end']==x_end)&(df_found_motifs.loc[:,'motif_id_without_orientation']==motif_id), 'motif_id']
+    #     y_motif = df_found_motifs.loc[(df_found_motifs.loc[:,'chr']==chromosome)&(df_found_motifs.loc[:,'start']==y_start)&(df_found_motifs.loc[:,'end']==y_end)&(df_found_motifs.loc[:,'motif_id_without_orientation']==motif_id), 'motif_id']
+    #     if len(x_motif) == 0 and len(y_motif) == 0:
+    #         return 0
+    #     elif len(x_motif) == 0 or len(y_motif) == 0:
+    #         return 1
+    #     else:
+    #         x_motif_orientation = x_motif.to_string().split('_')[-1]
+    #         y_motif_orientation = y_motif.to_string().split('_')[-1]
+    #         if x_motif_orientation == y_motif_orientation:
+    #             return 4
+    #         elif x_motif_orientation == 'f' and y_motif_orientation == 'r':
+    #             return 2
+    #         elif x_motif_orientation == 'r' and y_motif_orientation == 'f':
+    #             return 3
 
-    main_df_new = pl.from_pandas(main_df_new)
-    for motif_id in motifs_list:
-        main_df_new = main_df_new.with_columns(main_df_new.select(['chr', 'x_start', 'x_end', 'y_start', 'y_end']).apply(
-            lambda row: find_pair_orientation(motif_id, row, df_found_motifs),
-            ).rename({'apply': f'{motif_id}_orientation'}))
+    # main_df_new = pl.from_pandas(main_df_new)
+    # for motif_id in motifs_list:
+    #     main_df_new = main_df_new.with_columns(main_df_new.select(['chr', 'x_start', 'x_end', 'y_start', 'y_end']).apply(
+    #         lambda row: find_pair_orientation(motif_id, row, df_found_motifs),
+    #         ).rename({'apply': f'{motif_id}_orientation'}))
+    # main_df_new = main_df_new.to_pandas()
 
-        #main_df_new[f'{motif_id}_orientation'] = main_df_new.apply(lambda row: find_pair_orientation(motif_id, row, df_found_motifs), axis=1)
-    main_df_new = main_df_new.to_pandas()
-
-    # Sum and join columns in main_df_new for the same motif on the same anchor (x or y)
-    for motif_id in motifs_list:
-        to_drop = [f'x_{motif_id}_f', f'x_{motif_id}_r', f'y_{motif_id}_f', f'y_{motif_id}_r']
-        motif_count = []
-        for motif_anchor_orientation in to_drop:
-            if motif_anchor_orientation in main_df_new.columns:
-                motif_count.append(main_df_new[motif_anchor_orientation])
-            else:
-                motif_count.append(pd.Series([0]*len(main_df_new), dtype='int16'))
+    # # Sum and join columns in main_df_new for the same motif on the same anchor (x or y)
+    # for motif_id in motifs_list:
+    #     to_drop = [f'x_{motif_id}_f', f'x_{motif_id}_r', f'y_{motif_id}_f', f'y_{motif_id}_r']
+    #     motif_count = []
+    #     for motif_anchor_orientation in to_drop:
+    #         if motif_anchor_orientation in main_df_new.columns:
+    #             motif_count.append(main_df_new[motif_anchor_orientation])
+    #         else:
+    #             motif_count.append(pd.Series([0]*len(main_df_new), dtype='int16'))
         
-        main_df_new[f'x_{motif_id}_count'] = motif_count[0] + motif_count[1]
-        main_df_new[f'y_{motif_id}_count'] = motif_count[2] + motif_count[3]
-        main_df_new.drop(to_drop, axis=1, inplace=True)
+    #     main_df_new[f'x_{motif_id}_count'] = motif_count[0] + motif_count[1]
+    #     main_df_new[f'y_{motif_id}_count'] = motif_count[2] + motif_count[3]
+    #     main_df_new.drop(to_drop, axis=1, inplace=True)
             
-    
     return main_df_new
 
 
