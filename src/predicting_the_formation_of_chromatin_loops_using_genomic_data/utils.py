@@ -1,7 +1,6 @@
 from typing import Any, Callable, Dict
 
 
-
 def _dict_partitions(partitioned_input: Dict[str, Callable[[], Any]]) -> dict:
     """
     Load all partitions and save them in a dictionary.

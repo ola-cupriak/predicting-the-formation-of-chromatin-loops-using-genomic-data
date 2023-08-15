@@ -5,23 +5,32 @@ import numpy as np
 import optuna
 import pandas as pd
 import plotly.graph_objects as go
-from sklearn import metrics  
+from sklearn import metrics
 from sklearn.model_selection import LeaveOneOut, StratifiedKFold
 from typing import Any, Dict, List, Tuple, Callable
 from tqdm import tqdm
 import random
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import _filter_features
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import _generate_metrics, _generate_confusion_matrix
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import _get_feature_importance_single_cell
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import _choose_model
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import _optimize_parameters
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import (
+    _filter_features,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import (
+    _generate_metrics,
+    _generate_confusion_matrix,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import (
+    _get_feature_importance_single_cell,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import (
+    _choose_model,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import (
+    _optimize_parameters,
+)
 
 
-
-def fly_read_data(df: pd.DataFrame,
-              features_include_only: list = None, 
-              features_exclude: list = None
-              ) -> pd.DataFrame:
+def fly_read_data(
+    df: pd.DataFrame, features_include_only: list = None, features_exclude: list = None
+) -> pd.DataFrame:
     """
     Reads the data from the data frame and returns the data frame with the
     selected cell types, removes the columns that are not needed for the model.
@@ -30,25 +39,24 @@ def fly_read_data(df: pd.DataFrame,
         features_include_only: List of columns to be included in the data frame.
         features_exclude: List of columns to be excluded from the data frame.
     Returns:
-        Dictionary with DataFrames with the selected cell types 
+        Dictionary with DataFrames with the selected cell types
         and dropped columns that are not needed for the models.
     """
     features_include_only = features_include_only or []
     features_exclude = features_exclude or []
 
-    df = df.drop(['chr', 'x', 'x_start', 'x_end', 'y', 'y_start', 'y_end'], axis=1)
-    
+    df = df.drop(["chr", "x", "x_start", "x_end", "y", "y_start", "y_end"], axis=1)
+
     df = _filter_features(df, features_include_only, features_exclude)
-    
+
     return df
 
 
-def _train_and_pred_with_CV(df: pd.DataFrame, 
-                                model_type: str = 'log_reg', 
-                                params: dict = None,
-                                cv: int = 5) -> Dict[str, Any]:
+def _train_and_pred_with_CV(
+    df: pd.DataFrame, model_type: str = "log_reg", params: dict = None, cv: int = 5
+) -> Dict[str, Any]:
     """
-    Train choosen model with k-fold cross-validation 
+    Train choosen model with k-fold cross-validation
     and return the true and predicted labels.
     Args:
         df: pandas DataFrame with the data for model training.
@@ -59,33 +67,31 @@ def _train_and_pred_with_CV(df: pd.DataFrame,
     """
     params = params or {}
 
-    true_and_pred = {'true': [], 'pred': []}
+    true_and_pred = {"true": [], "pred": []}
 
     kfoldcv = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
-    print(f'Performing {str(cv)}-fold CV for {model_type} model...')
+    print(f"Performing {str(cv)}-fold CV for {model_type} model...")
 
-    X = df.drop(['label', 'cell_type'], axis=1)
-    y = df['label']
+    X = df.drop(["label", "cell_type"], axis=1)
+    y = df["label"]
 
     for train_index, test_index in tqdm(kfoldcv.split(X, y)):
-
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-        y_train, y_test = df.iloc[train_index]['label'], df.iloc[test_index]['label']
+        y_train, y_test = df.iloc[train_index]["label"], df.iloc[test_index]["label"]
 
         model = _choose_model(model_type, X_train, y_train, params)
-        
+
         pred = model.predict(X_test)
-        true_and_pred['true'] += list(y_test)
-        true_and_pred['pred'] += list(pred)
+        true_and_pred["true"] += list(y_test)
+        true_and_pred["pred"] += list(pred)
 
     true_and_pred = pd.DataFrame(true_and_pred)
     return true_and_pred
- 
-def _generate_ROC_curve(y_test: np.array,
-                        y_pred: np.array,
-                        cell_type: str,
-                        model_type: str
-                        ) -> go.Figure:
+
+
+def _generate_ROC_curve(
+    y_test: np.array, y_pred: np.array, cell_type: str, model_type: str
+) -> go.Figure:
     from sklearn.metrics import RocCurveDisplay
 
     fig = RocCurveDisplay.from_predictions(
@@ -98,15 +104,13 @@ def _generate_ROC_curve(y_test: np.array,
     plt.axis("square")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
-    plt.title(f"ROC curve for {cell_type} {model_type} model") 
+    plt.title(f"ROC curve for {cell_type} {model_type} model")
     plt.legend()
-    
+
     return fig.figure_
 
 
-def _evaluate_CV(true_and_pred: pd.DataFrame,
-                    model_type: str
-                    ) -> Dict[str, Any]:
+def _evaluate_CV(true_and_pred: pd.DataFrame, model_type: str) -> Dict[str, Any]:
     """
     Evaluate the CV results and return the metrics.
     Logs the AUC to MLflow.
@@ -117,31 +121,42 @@ def _evaluate_CV(true_and_pred: pd.DataFrame,
         Dictionary with the metrics and confusion matrix plot.
     """
     plt.ioff()
-    y_test = np.array(true_and_pred['true'])
-    y_pred = np.array(true_and_pred['pred'])
+    y_test = np.array(true_and_pred["true"])
+    y_pred = np.array(true_and_pred["pred"])
 
-    mlflow.log_metrics({f'fly_CNS_L3/{model_type}/auc': metrics.roc_auc_score(y_test, y_pred)})
-    mlflow.log_metrics({f'fly_CNS_L3/{model_type}/acc': metrics.accuracy_score(y_test, y_pred)})
-    
-    metrics_dict = _generate_metrics(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
-    confusion_matrix = _generate_confusion_matrix(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
-    roc_curve = _generate_ROC_curve(y_test, y_pred, cell_type='fly_CNS_L3', model_type=model_type)
-    
+    mlflow.log_metrics(
+        {f"fly_CNS_L3/{model_type}/auc": metrics.roc_auc_score(y_test, y_pred)}
+    )
+    mlflow.log_metrics(
+        {f"fly_CNS_L3/{model_type}/acc": metrics.accuracy_score(y_test, y_pred)}
+    )
+
+    metrics_dict = _generate_metrics(
+        y_test, y_pred, cell_type="fly_CNS_L3", model_type=model_type
+    )
+    confusion_matrix = _generate_confusion_matrix(
+        y_test, y_pred, cell_type="fly_CNS_L3", model_type=model_type
+    )
+    roc_curve = _generate_ROC_curve(
+        y_test, y_pred, cell_type="fly_CNS_L3", model_type=model_type
+    )
+
     return metrics_dict, confusion_matrix, roc_curve
 
 
-def fly_optimize_parameters(df: pd.DataFrame, 
-                        model_type: str = 'log_reg', 
-                        params: dict = None,
-                        optimize: bool = True,
-                        run: bool = True,
-                        cv: int = 5,
-                        random_state: int = None,
-                        optim_time: int = None,
-                        n_trials: int = 10,
-                        eval_metric: Callable = metrics.roc_auc_score,
-                        direction: str = "maximize",
-                        ) -> tuple:
+def fly_optimize_parameters(
+    df: pd.DataFrame,
+    model_type: str = "log_reg",
+    params: dict = None,
+    optimize: bool = True,
+    run: bool = True,
+    cv: int = 5,
+    random_state: int = None,
+    optim_time: int = None,
+    n_trials: int = 10,
+    eval_metric: Callable = metrics.roc_auc_score,
+    direction: str = "maximize",
+) -> tuple:
     """
     Optimize the parameters for the model with optuna and cross-validation.
     Args:
@@ -165,31 +180,38 @@ def fly_optimize_parameters(df: pd.DataFrame,
 
     if not run:
         return {}, go.Figure()
-    
+
     if not optimize:
         return params, go.Figure()
-    
-    print(f'Optimizing parameters of {model_type}...')
-    X = df.drop(['label', 'cell_type'], axis=1)
-    y = df['label']
 
-    best_params, fig = _optimize_parameters([X, y], 
-                                            model_type, params, 
-                                            optim_time, n_trials, 
-                                            eval_metric, direction, 
-                                            random_state, cross_val=cv)
+    print(f"Optimizing parameters of {model_type}...")
+    X = df.drop(["label", "cell_type"], axis=1)
+    y = df["label"]
+
+    best_params, fig = _optimize_parameters(
+        [X, y],
+        model_type,
+        params,
+        optim_time,
+        n_trials,
+        eval_metric,
+        direction,
+        random_state,
+        cross_val=cv,
+    )
 
     return best_params, fig
 
 
-def fly_train_and_eval(df: pd.DataFrame, 
-                    model_type: str = 'log_reg', 
-                    params: dict = None, 
-                    run: bool = True,
-                    cv: int = 5,
-                    run_name: str = None,
-                    neg_sampling_type: str = None,
-                    ) -> Tuple[dict, dict, dict, dict, dict]:
+def fly_train_and_eval(
+    df: pd.DataFrame,
+    model_type: str = "log_reg",
+    params: dict = None,
+    run: bool = True,
+    cv: int = 5,
+    run_name: str = None,
+    neg_sampling_type: str = None,
+) -> Tuple[dict, dict, dict, dict, dict]:
     """
     Trains and evaluates the model.
     Args:
@@ -207,21 +229,39 @@ def fly_train_and_eval(df: pd.DataFrame,
     params = params or {}
 
     if not run:
-        return {'empty_model': ''}, {'empty_model': plt.figure()}, {'empty_model': pd.DataFrame()}, {'empty_model': plt.figure()}
-    
+        return (
+            {"empty_model": ""},
+            {"empty_model": plt.figure()},
+            {"empty_model": pd.DataFrame()},
+            {"empty_model": plt.figure()},
+        )
+
     if run_name:
         mlflow.set_tag("mlflow.runName", run_name)
 
-    print(f'Evaluating {model_type} model...')
+    print(f"Evaluating {model_type} model...")
     true_and_pred = _train_and_pred_with_CV(df, model_type, params, cv)
     metrics, confusion_matrix, roc_curve = _evaluate_CV(true_and_pred, model_type)
 
-    print(f'Training {model_type} model on full data...')
-    X = df.drop(['label', 'cell_type'], axis=1)
-    y = df['label']
+    print(f"Training {model_type} model on full data...")
+    X = df.drop(["label", "cell_type"], axis=1)
+    y = df["label"]
     model = _choose_model(model_type, X, y, params)
 
-    feature_importances, feature_importances_plot = _get_feature_importance_single_cell(model, cell_type='fly_CNS_L3', model_type=model_type)
-    feature_importances = pd.DataFrame(feature_importances, columns=['importances']).reset_index().rename({'index': 'feature'}, axis=1)
+    feature_importances, feature_importances_plot = _get_feature_importance_single_cell(
+        model, cell_type="fly_CNS_L3", model_type=model_type
+    )
+    feature_importances = (
+        pd.DataFrame(feature_importances, columns=["importances"])
+        .reset_index()
+        .rename({"index": "feature"}, axis=1)
+    )
 
-    return model, metrics, confusion_matrix, roc_curve, feature_importances, feature_importances_plot
+    return (
+        model,
+        metrics,
+        confusion_matrix,
+        roc_curve,
+        feature_importances,
+        feature_importances_plot,
+    )

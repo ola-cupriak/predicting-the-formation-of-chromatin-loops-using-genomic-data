@@ -4,7 +4,13 @@ generated using Kedro 0.18.6
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import download_data, simplify_human_genome_file, simplify_flies_genome_file, map_dm3_to_dm6
+from .nodes import (
+    download_data,
+    simplify_human_genome_file,
+    simplify_flies_genome_file,
+    map_dm3_to_dm6,
+)
+
 
 def create_pipeline(**kwargs) -> Pipeline:
     return pipeline(
@@ -12,7 +18,13 @@ def create_pipeline(**kwargs) -> Pipeline:
             node(
                 func=download_data,
                 inputs="params:to_download",
-                outputs=["path_hg19_raw", "path_dm6_raw", "cells2names", "FLY_cells2names", "dm3_to_dm6_chain"],
+                outputs=[
+                    "path_hg19_raw",
+                    "path_dm6_raw",
+                    "cells2names",
+                    "FLY_cells2names",
+                    "dm3_to_dm6_chain",
+                ],
                 name="download_data_node",
             ),
             node(
@@ -29,9 +41,13 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=map_dm3_to_dm6,
-                inputs=["FLY_cells2names", "params:dm3todm6_mapping", "dm3_to_dm6_chain"],
+                inputs=[
+                    "FLY_cells2names",
+                    "params:dm3todm6_mapping",
+                    "dm3_to_dm6_chain",
+                ],
                 outputs=None,
                 name="map_dm3_to_dm6_node",
-            )
+            ),
         ]
     )

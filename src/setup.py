@@ -1,8 +1,6 @@
 from setuptools import find_packages, setup
 
-entry_point = (
-    "predicting-the-formation-of-chromatin-loops-using-genomic-data = predicting_the_formation_of_chromatin_loops_using_genomic_data.__main__:main"
-)
+entry_point = "predicting-the-formation-of-chromatin-loops-using-genomic-data = predicting_the_formation_of_chromatin_loops_using_genomic_data.__main__:main"
 
 
 # get the dependencies and installs

@@ -1,14 +1,34 @@
 import pandas as pd
 import polars as pl
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import _dict_partitions
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import add_labels
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import read_peaks, count_peaks_and_distances
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import read_bigWig, add_bigWig_data
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import all_anchors2one_df, getfasta_bedfile, all_peaks2one_df, get_overlaps_with_names
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import find_motifs, count_motifs
-from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import remove_overlapping, concat_dfs_from_dict
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import (
+    _dict_partitions,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
+    add_labels,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
+    read_peaks,
+    count_peaks_and_distances,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
+    read_bigWig,
+    add_bigWig_data,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
+    all_anchors2one_df,
+    getfasta_bedfile,
+    all_peaks2one_df,
+    get_overlaps_with_names,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
+    find_motifs,
+    count_motifs,
+)
+from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
+    remove_overlapping,
+    concat_dfs_from_dict,
+)
 from typing import Any, Callable, Dict
-
 
 
 def _prepare_fly_loops_data(df: pd.DataFrame, r: int) -> pd.DataFrame:
@@ -20,26 +40,47 @@ def _prepare_fly_loops_data(df: pd.DataFrame, r: int) -> pd.DataFrame:
     Returns:
         pandas DataFrame with pairs of anchors creating chromatin loops.
     """
-    df = df[['loop_id', 'anchor', 'anchor_chr', 'anchor_summit']]
+    df = df[["loop_id", "anchor", "anchor_chr", "anchor_summit"]]
     df = pl.from_pandas(df)
-    df = df.join(df, on='loop_id', suffix='_y').filter(pl.col('anchor_summit') != pl.col('anchor_summit_y')).filter(pl.col('anchor') == 1).filter(pl.col('anchor_y') == 2).filter(pl.col('anchor_chr') == pl.col('anchor_chr_y'))
+    df = (
+        df.join(df, on="loop_id", suffix="_y")
+        .filter(pl.col("anchor_summit") != pl.col("anchor_summit_y"))
+        .filter(pl.col("anchor") == 1)
+        .filter(pl.col("anchor_y") == 2)
+        .filter(pl.col("anchor_chr") == pl.col("anchor_chr_y"))
+    )
     df = df.to_pandas()
-    df = df[['anchor_chr', 'anchor_summit', 'anchor_summit_y']]
-    df.rename(columns={'anchor_chr': 'chr', 'anchor_summit': 'x', 'anchor_summit_y': 'y'}, inplace=True)
-    df['x_start'] = df['x'] - r
-    df['x_end'] = df['x'] + r
-    df['y_start'] = df['y'] - r
-    df['y_end'] = df['y'] + r
-    df = df.astype({'x': 'int32', 'y': 'int32', 'x_start': 'int32', 'x_end': 'int32', 
-                    'y_start': 'int32', 'y_end': 'int32', 'chr': 'string'})
-    df = df = df.sort_values(by=['chr', 'x'])
-    
+    df = df[["anchor_chr", "anchor_summit", "anchor_summit_y"]]
+    df.rename(
+        columns={"anchor_chr": "chr", "anchor_summit": "x", "anchor_summit_y": "y"},
+        inplace=True,
+    )
+    df["x_start"] = df["x"] - r
+    df["x_end"] = df["x"] + r
+    df["y_start"] = df["y"] - r
+    df["y_end"] = df["y"] + r
+    df = df.astype(
+        {
+            "x": "int32",
+            "y": "int32",
+            "x_start": "int32",
+            "x_end": "int32",
+            "y_start": "int32",
+            "y_end": "int32",
+            "chr": "string",
+        }
+    )
+    df = df = df.sort_values(by=["chr", "x"])
+
     return df
 
 
-def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]], 
-                cells2names: Dict[str, dict],
-                dataset_name: str, r: int) -> Dict[str, pd.DataFrame]:
+def fly_read_hic(
+    partitioned_input: Dict[str, Callable[[], Any]],
+    cells2names: Dict[str, dict],
+    dataset_name: str,
+    r: int,
+) -> Dict[str, pd.DataFrame]:
     """
     Load and modify the dataframes with chromatin loops anotations for fly.
     Args:
@@ -49,7 +90,7 @@ def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         r: radius of the region.
     Returns:
         dictionary:
-            keys: cell types 
+            keys: cell types
             values: pandas DataFrames with chromatin loops anotations.
     """
     dfs_dict = _dict_partitions(partitioned_input)
@@ -59,15 +100,17 @@ def fly_read_hic(partitioned_input: Dict[str, Callable[[], Any]],
         cell_type = cells2names_dataset_dict[name]
         df = _prepare_fly_loops_data(df, r)
         # set dtypes
-        df['cell_type'] = cell_type
+        df["cell_type"] = cell_type
         new_dfs_dict[cell_type] = df
 
     return new_dfs_dict
 
 
-def fly_read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
-                cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
+def fly_read_peaks(
+    partitioned_input: Dict[str, Callable[[], Any]],
+    cells2names: Dict[str, dict],
+    dataset_name: str,
+) -> Dict[str, pd.DataFrame]:
     """
     Load dataframes with experiment peaks saved in bed file and modify the chromosome columns.
     Args:
@@ -76,15 +119,19 @@ def fly_read_peaks(partitioned_input: Dict[str, Callable[[], Any]],
         dataset_name: name of the dataset to select from cells2names.
     Returns:
         dictionary:
-            keys: cell types 
+            keys: cell types
             values: pandas DataFrames with DNase-seq/ChIP-seq peaks.
     """
-    return read_peaks(partitioned_input, cells2names, dataset_name, cells_to_use=[], organism='fly')
+    return read_peaks(
+        partitioned_input, cells2names, dataset_name, cells_to_use=[], organism="fly"
+    )
 
 
-def fly_read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
-                cells2names: Dict[str, dict],
-                dataset_name: str) -> Dict[str, pd.DataFrame]:
+def fly_read_bigWig(
+    partitioned_input: Dict[str, Callable[[], Any]],
+    cells2names: Dict[str, dict],
+    dataset_name: str,
+) -> Dict[str, pd.DataFrame]:
     """
     Create a dictionary with paths to DNase-seq/CTCF ChIP-seq bigWig files for each cell type.
     Args:
@@ -93,23 +140,24 @@ def fly_read_bigWig(partitioned_input: Dict[str, Callable[[], Any]],
         dataset_name: name of the dataset to select from cells2names.
     Returns:
         dictionary:
-            keys: cell types 
+            keys: cell types
             values: paths to DNase-seq/CTCF ChIP-seq bigWig files.
     """
     return read_bigWig(partitioned_input, cells2names, dataset_name, cells_to_use=[])
 
 
-def fly_add_labels(dfs_dict: Dict[str, pd.DataFrame], 
-                mtype: str, 
-                peaks_dict: Dict[str, pd.DataFrame], 
-                r: int, 
-                neg_pos_ratio: float, 
-                random_state: int
-                ) -> Dict[str, pd.DataFrame]:
+def fly_add_labels(
+    dfs_dict: Dict[str, pd.DataFrame],
+    mtype: str,
+    peaks_dict: Dict[str, pd.DataFrame],
+    r: int,
+    neg_pos_ratio: float,
+    random_state: int,
+) -> Dict[str, pd.DataFrame]:
     """
     Add labels to the dataframes depending on the cell type and type of model to train.
     Within model: 1 if cell type is the same as the cell type of the loop, 0 otherwise.
-    Across model: negative sampling involving the use of open regions of chromatin that 
+    Across model: negative sampling involving the use of open regions of chromatin that
                 do not overlap with any positive example
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
@@ -117,18 +165,22 @@ def fly_add_labels(dfs_dict: Dict[str, pd.DataFrame],
         peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
         r: radius of the region around the anchor.
         neg_pos_ratio: ratio of negative to positive examples.
-        random_state: random state. 
+        random_state: random state.
     Returns:
         dictionary:
             keys: cell types
             values: pandas DataFrames with labels added.
     """
-    return add_labels(dfs_dict, mtype, peaks_dict, r, neg_pos_ratio, random_state, organism='fly')
+    return add_labels(
+        dfs_dict, mtype, peaks_dict, r, neg_pos_ratio, random_state, organism="fly"
+    )
 
 
-def fly_count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]], 
-                                  peaks_dfs_dict: Dict[str, pd.DataFrame], 
-                                  experiment: str) -> pd.DataFrame:
+def fly_count_peaks_and_distances(
+    main_dfs_dict: Dict[str, Callable[[], Any]],
+    peaks_dfs_dict: Dict[str, pd.DataFrame],
+    experiment: str,
+) -> pd.DataFrame:
     """
     Count the number of peaks in both regions of each chromatin loop
     and find the distance of the closest peak from the center of each anchor from the chromatin loop,
@@ -143,15 +195,19 @@ def fly_count_peaks_and_distances(main_dfs_dict: Dict[str, Callable[[], Any]],
             values: pandas DataFrame with added columns of numbers of experiment peaks in both regions of each chromatin loop
                     and columns of distances of the closest peak of the experiment from the center of each anchor from the chromatin loop.
     """
-    return count_peaks_and_distances(main_dfs_dict, peaks_dfs_dict, experiment, organism='fly')
+    return count_peaks_and_distances(
+        main_dfs_dict, peaks_dfs_dict, experiment, organism="fly"
+    )
 
 
-def fly_add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
-                    bigWig_data_dict: dict,
-                    experiment: str,
-                    res: int) -> pd.DataFrame:
+def fly_add_bigWig_data(
+    main_dfs_dict: Dict[str, Callable[[], Any]],
+    bigWig_data_dict: dict,
+    experiment: str,
+    res: int,
+) -> pd.DataFrame:
     """
-    Count statistics (weighted mean, arithmetic mean, minimum and maximum) 
+    Count statistics (weighted mean, arithmetic mean, minimum and maximum)
     of the bigWig data in both regions of each chromatin loop,
     for each dataframe from the main_dfs_dict dictionary.
     Args:
@@ -161,24 +217,34 @@ def fly_add_bigWig_data(main_dfs_dict: Dict[str, Callable[[], Any]],
         res: resolution
     Returns:
         dictionary:
-            keys: cell types 
+            keys: cell types
             values: pandas DataFrames with added columns of bigWig data statistics in both regions of each loop
     """
     if len(bigWig_data_dict) > 1:
-        assert len(main_dfs_dict) == 1, 'The fly pipeline is only suitable for 1 type of cell.'
+        assert (
+            len(main_dfs_dict) == 1
+        ), "The fly pipeline is only suitable for 1 type of cell."
         cell_name = list(main_dfs_dict.keys())[0]
         for name, path in bigWig_data_dict.items():
-            new_experiment = f'{name}_{experiment}'
-            main_dfs_dict = add_bigWig_data(main_dfs_dict, {cell_name: path}, new_experiment, res=res, organism='fly')
+            new_experiment = f"{name}_{experiment}"
+            main_dfs_dict = add_bigWig_data(
+                main_dfs_dict,
+                {cell_name: path},
+                new_experiment,
+                res=res,
+                organism="fly",
+            )
         return main_dfs_dict
     else:
-        return add_bigWig_data(main_dfs_dict, bigWig_data_dict, experiment, res=res, organism='fly')
+        return add_bigWig_data(
+            main_dfs_dict, bigWig_data_dict, experiment, res=res, organism="fly"
+        )
 
 
 def fly_all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    Concatenates all anchors DataFrames from dfs_dict into one DataFrame and 
-    combines the columns describing x regions and the columns describing y regions 
+    Concatenates all anchors DataFrames from dfs_dict into one DataFrame and
+    combines the columns describing x regions and the columns describing y regions
     into one set of columns describing all regions.
     (columns: x_chr, x_start, x_end, y_chr, y_start, y_end -> columns: chr, start, end)
     Args:
@@ -186,7 +252,7 @@ def fly_all_anchors2one_df(dfs_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     Returns:
         pandas DataFrame with one set of columns describing all regions.
     """
-    return all_anchors2one_df(dfs_dict, organism='fly')
+    return all_anchors2one_df(dfs_dict, organism="fly")
 
 
 def fly_all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -197,10 +263,12 @@ def fly_all_peaks2one_df(peaks_dict: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     Returns:
         pandas DataFrame with all peaks.
     """
-    return all_peaks2one_df(peaks_dict, organism='fly')
+    return all_peaks2one_df(peaks_dict, organism="fly")
 
 
-def fly_get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame) -> pd.DataFrame:
+def fly_get_overlaps_with_names(
+    anchors_df: pd.DataFrame, peaks_df: pd.DataFrame
+) -> pd.DataFrame:
     """
     Get overlapping regions between anchors and peaks.
     Args:
@@ -212,7 +280,9 @@ def fly_get_overlaps_with_names(anchors_df: pd.DataFrame, peaks_df: pd.DataFrame
     return get_overlaps_with_names(anchors_df, peaks_df)
 
 
-def fly_getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: str) -> str:
+def fly_getfasta_bedfile(
+    df: pd.DataFrame, path_simp_genome: str, path_to_save: str
+) -> str:
     """
     Cut sequences from chromosomes using BEDTools for coordinates from the pandas DataFrame.
     Args:
@@ -222,7 +292,7 @@ def fly_getfasta_bedfile(df: pd.DataFrame, path_simp_genome: str, path_to_save: 
     Returns:
         path_to_save: path to fasta file.
     """
-    return getfasta_bedfile(df, path_simp_genome, path_to_save, organism='fly')
+    return getfasta_bedfile(df, path_simp_genome, path_to_save, organism="fly")
 
 
 def fly_find_motifs(path_motifs: str, path_fasta: list) -> pd.DataFrame:
@@ -246,10 +316,10 @@ def fly_count_motifs(main_dfs_dict: dict, motifs_df: pd.DataFrame):
         motifs_df: dictionary with cell types as keys and pandas DataFrame with motif occurrences found as values.
     Returns:
         dictionary:
-            keys: cell types 
+            keys: cell types
             values: pandas DataFrame with added columns of each motif counts in both regions of each chromatin loop
     """
-    return count_motifs(main_dfs_dict, motifs_df, organism='fly')
+    return count_motifs(main_dfs_dict, motifs_df, organism="fly")
 
 
 def fly_remove_overlapping(main_dfs_dict: dict):
@@ -267,13 +337,13 @@ def fly_remove_overlapping(main_dfs_dict: dict):
 
 
 def fly_concat_dfs_from_dict(main_dfs_dict: dict) -> pd.DataFrame:
-    '''
+    """
     Concatenates dataframes from dictionary.
-    Args:   
+    Args:
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         cells_to_use: list of cell types to be used. If empty, all cell types from main_dfs_dict will be used.
     Returns:
         pandas DataFrame with concatenated dataframes from dictionary.
-    '''
+    """
     cells_to_use = list(main_dfs_dict.keys())
-    return concat_dfs_from_dict(main_dfs_dict, cells_to_use, organism='fly')
+    return concat_dfs_from_dict(main_dfs_dict, cells_to_use, organism="fly")
