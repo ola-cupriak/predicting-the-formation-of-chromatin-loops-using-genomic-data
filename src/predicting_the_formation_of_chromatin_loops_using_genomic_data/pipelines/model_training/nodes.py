@@ -518,6 +518,8 @@ def _optimize_parameters(data: list,
                 params_to_opt[name] = trial.suggest_int(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
             elif val_dict['type'] == 'float':
                 params_to_opt[name] = trial.suggest_float(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
+            elif val_dict['type'] == 'uniform':
+                params_to_opt[name] = trial.suggest_float(name, **{k: val_dict[k] for k in set(list(val_dict.keys())) - set(['type'])})
         
         if cross_val:
             X, y = data
