@@ -17,6 +17,10 @@ logs/**
 notebooks/**
 plots/**
 mlruns/**
+params/**
+runs.sh
+colnames_fly.txt
+colnames_human.txt
 
 !notebooks/exploratory_data_analysis.ipynb
 
