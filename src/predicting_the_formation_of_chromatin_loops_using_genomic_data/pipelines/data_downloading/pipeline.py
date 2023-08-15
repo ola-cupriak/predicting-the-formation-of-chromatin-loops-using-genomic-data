@@ -21,8 +21,8 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs=[
                     "path_hg19_raw",
                     "path_dm6_raw",
-                    "cells2names",
-                    "FLY_cells2names",
+                    "cells2names_param",
+                    "FLY_cells2names_param",
                     "dm3_to_dm6_chain",
                 ],
                 name="download_data_node",
@@ -42,7 +42,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             node(
                 func=map_dm3_to_dm6,
                 inputs=[
-                    "FLY_cells2names",
+                    "FLY_cells2names_param",
                     "params:dm3todm6_mapping",
                     "dm3_to_dm6_chain",
                 ],

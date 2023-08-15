@@ -41,4 +41,4 @@ HiC_loops_annotations:
 reference_genomes:
   GRCh37_latest_genomic.fna: hg19
 motifs_JASPAR:
-  JASPAR2022_CORE_non-redundant_pfms_jaspar.txt: motifs_JASPAR_vertebrates
+  JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt: motifs_JASPAR_vertebrates

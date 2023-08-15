@@ -76,6 +76,10 @@ to_download:
       neuronal: http://chorogenome.ie-freiburg.mpg.de/data/zw5.bw
     M1BP_ChIP_seq_bigWig:
       neuronal: http://chorogenome.ie-freiburg.mpg.de/data/M1BP.bw
+    CNS_L3_ATAC_seq_peaks:
+      neuronal: https://github.com/gambettalab/meta-loops-2022/blob/main/scATACseq/data/scATACseq/filtered_tracks/bulk_peaks.bed
+    CNS_L3_ATAC_seq_bigWig:
+      neuronal: https://github.com/gambettalab/meta-loops-2022/blob/main/scATACseq/data/scATACseq/filtered_tracks/bulk_coverage.bw
 
 dm3todm6_mapping:
   Beaf-32_ChIP_seq_bigWig:
