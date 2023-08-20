@@ -40,25 +40,18 @@ def _prepare_fly_loops_data(df: pd.DataFrame, r: int) -> pd.DataFrame:
     Returns:
         pandas DataFrame with pairs of anchors creating chromatin loops.
     """
-    df = df[["loop_id", "anchor", "anchor_chr", "anchor_summit"]]
-    df = pl.from_pandas(df)
-    df = (
-        df.join(df, on="loop_id", suffix="_y")
-        .filter(pl.col("anchor_summit") != pl.col("anchor_summit_y"))
-        .filter(pl.col("anchor") == 1)
-        .filter(pl.col("anchor_y") == 2)
-        .filter(pl.col("anchor_chr") == pl.col("anchor_chr_y"))
-    )
-    df = df.to_pandas()
-    df = df[["anchor_chr", "anchor_summit", "anchor_summit_y"]]
+    df = df[["chr1", "x1", "x2", "y1", "y2"]]
+    df["x"] = (df["x1"] + df["x2"]) // 2
+    df["y"] = (df["y1"] + df["y2"]) // 2
     df.rename(
-        columns={"anchor_chr": "chr", "anchor_summit": "x", "anchor_summit_y": "y"},
+        columns={"chr1": "chr"},
         inplace=True,
     )
     df["x_start"] = df["x"] - r
     df["x_end"] = df["x"] + r
     df["y_start"] = df["y"] - r
     df["y_end"] = df["y"] + r
+    df.drop(["x1", "x2", "y1", "y2"], axis=1, inplace=True)
     df = df.astype(
         {
             "x": "int32",
