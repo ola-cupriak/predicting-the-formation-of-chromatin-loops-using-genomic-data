@@ -78,7 +78,7 @@ def download_data(datasources_dict: dict) -> str:
         with open(f"data/01_raw/{organism}/cells2names.yml", mode="w") as f:
             if organism == "D_melanogaster":
                 f.write(
-                    "HiC_loops_annotations:\n\tlong_and_short_range_loops_D_mel.tsv: neuronal\n"
+                    "HiC_loops_annotations:\n  long_and_short_range_loops_D_mel.tsv: neuronal\n"
                 )
             f.write(yaml_string)
         if organism == "Homo_sapiens":
