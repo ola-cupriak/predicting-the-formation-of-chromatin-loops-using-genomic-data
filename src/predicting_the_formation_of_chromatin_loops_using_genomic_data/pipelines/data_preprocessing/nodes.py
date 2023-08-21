@@ -494,7 +494,7 @@ def _add_distances(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_labels(
     dfs_dict: Dict[str, pd.DataFrame],
-    mtype: str,
+    negtype: str,
     peaks_dict: Dict[str, pd.DataFrame],
     r: int,
     neg_pos_ratio: float,
@@ -508,7 +508,7 @@ def add_labels(
                 do not overlap with any positive example
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-        mtype: type of model to train, either 'within' or 'across'.
+        negtype: type of negative sampling.
         peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
         r: radius of the region around the anchor.
         neg_pos_ratio: ratio of negative to positive examples.
@@ -519,31 +519,31 @@ def add_labels(
             keys: cell types
             values: pandas DataFrames with labels added.
     """
-    assert mtype in [
+    assert negtype in [
         "anchors_from_other_cell_types",
         "new_pairs_of_anchors",
         "open_chromatin_regions",
         "new_pairs_and_open_chromatin",
     ], f"Negative sampling type should be either 'anchors_from_other_cell_types', 'new_pairs_of_anchors' or 'open_chromatin_regions, but got {type}."
-    if mtype == "anchors_from_other_cell_types":
+    if negtype == "anchors_from_other_cell_types":
         df = _concat_dfs(dfs_dict)
         df = _sort_df(df, "x", organism=organism)
 
     for name, cell_df in dfs_dict.items():
         print("Creating negative examples for cell type", name, "...")
 
-        if mtype == "anchors_from_other_cell_types":
+        if negtype == "anchors_from_other_cell_types":
             f = lambda x: 1 if x["cell_type"] == name else 0
             df["label"] = df.apply(f, axis=1)
             df["label"] = df["label"].astype("int16")
             dfs_dict[name] = copy.deepcopy(df)
-        elif mtype == "new_pairs_of_anchors":
+        elif negtype == "new_pairs_of_anchors":
             cell_df["label"] = 1
             df_len = len(cell_df)
             dfs_dict[name] = _get_negatives_by_new_anchors_pairing(
                 cell_df, name, r, neg_pos_ratio, random_state, df_len, organism=organism
             )
-        elif mtype == "open_chromatin_regions":
+        elif negtype == "open_chromatin_regions":
             assert (
                 peaks_dict != None
             ), "peaks_dict should be provided for this type of negative sampling"
@@ -570,10 +570,6 @@ def add_labels(
                 organism=organism,
             )
             dfs_dict[name] = with_neg
-
-    # add distances
-    for cell_type, df in dfs_dict.items():
-        dfs_dict[cell_type] = _add_distances(df)
 
     return dfs_dict
 
@@ -730,7 +726,8 @@ def count_peaks_and_distances(
     organism: str = "human",
 ) -> Dict[str, pd.DataFrame]:
     """
-    Count the number of peaks in both regions of each chromatin loop
+    Add a distance beetwen the anchors,
+    count the number of peaks in both regions of each chromatin loop
     and find the distance of the closest peak from the center of each anchor from the chromatin loop,
     for each dataframe from the main_dfs_dict dictionary.
     Args:
@@ -748,6 +745,9 @@ def count_peaks_and_distances(
     # if main_dfs_dict values are not DataFrames, load them
     if not isinstance(list(main_dfs_dict.values())[0], pd.DataFrame):
         main_dfs_dict = _dict_partitions(main_dfs_dict)
+    # add distances
+    for cell_type, df in main_dfs_dict.items():
+        main_dfs_dict[cell_type] = _add_distances(df)
     for peaks_name, peaks_df in peaks_dfs_dict.items():
         print(f"...for {peaks_name} cell...")
         for main_name, main_df in main_dfs_dict.items():
