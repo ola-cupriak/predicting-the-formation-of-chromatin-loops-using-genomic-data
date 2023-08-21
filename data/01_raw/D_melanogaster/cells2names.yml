@@ -1,3 +1,9 @@
+HiC_loops_annotations:
+  long_and_short_range_loops_D_mel.tsv: neuronal
+CNS_L3_ATAC_seq_bigWig:
+  bulk_coverage.bw: neuronal
+CNS_L3_ATAC_seq_peaks:
+  bulk_peaks.bed: neuronal
 Beaf-32_ChIP_seq_bigWig:
   Beaf32.bw: neuronal
 CP190_ChIP_seq_bigWig:
@@ -24,14 +30,8 @@ ZIPIC_ChIP_seq_bigWig:
   zipic.bw: neuronal
 Zw5_ChIP_seq_bigWig:
   zw5.bw: neuronal
-CNS_L3_ATAC_seq_bigWig:
-  bulk_coverage.bw: neuronal
-CNS_L3_ATAC_seq_peaks:
-  bulk_peaks.bed: neuronal
 motifs_JASPAR:
   JASPAR2022_CORE_insects_non-redundant_pfms_jaspar.txt: motifs_JASPAR_insects
 reference_genomes:
   dm3ToDm6.over.chain: dm3todm6_chain
   dm6.fa: dm6
-HiC_loops_annotations:
-  long_and_short_range_loops_D_mel.tsv: neuronal
