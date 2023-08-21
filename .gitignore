@@ -24,6 +24,11 @@ colnames_human.txt
 
 !notebooks/exploratory_data_analysis.ipynb
 
+# except some data for fruit fly
+!data/01_raw/D_melanogaster/HiC_loops_annotations/**
+!data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_peaks/**
+!data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_bigWig/**
+
 # except their sub-folders
 !data/**/
 !logs/**/
