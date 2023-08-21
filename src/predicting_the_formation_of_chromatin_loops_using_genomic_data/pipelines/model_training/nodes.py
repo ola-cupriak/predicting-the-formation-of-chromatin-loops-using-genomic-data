@@ -476,9 +476,9 @@ def _get_feature_importance_single_cell(
 
     importances = pd.Series(importances, index=names)
     fig, ax = plt.subplots()
-    importances[-20:].plot.bar(ax=ax)
+    importances[-20:].plot.barh(ax=ax)
     ax.set_title(
-        f"Top20 feature importances for {cell_type} cell for {model_type} model"
+        f"Top 20 feature importances for {cell_type} cell for {model_type} model"
     )
     ax.set_ylabel("Feature importance")
     fig.tight_layout()
