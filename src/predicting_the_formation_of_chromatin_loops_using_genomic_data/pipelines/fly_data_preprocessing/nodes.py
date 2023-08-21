@@ -5,6 +5,7 @@ from predicting_the_formation_of_chromatin_loops_using_genomic_data.utils import
 )
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
     add_labels,
+    _remove_overlapping_single_df,
 )
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.data_preprocessing.nodes import (
     read_peaks,
@@ -139,13 +140,23 @@ def fly_read_bigWig(
     return read_bigWig(partitioned_input, cells2names, dataset_name, cells_to_use=[])
 
 
+def _neg_sampling_short_loops(df: pd.DataFrame, short_long_limit: int) -> pd.DataFrame:
+    """ """
+    df["label"] = [1 if diff > short_long_limit else 0 for diff in df["y"] - df["x"]]
+    len_before = len(df)
+    df = _remove_overlapping_single_df(df)
+    print(f"Removed {len_before - len(df)} overlapping negative loops.")
+    return df
+
+
 def fly_add_labels(
     dfs_dict: Dict[str, pd.DataFrame],
-    mtype: str,
+    negtype: str,
     peaks_dict: Dict[str, pd.DataFrame],
     r: int,
     neg_pos_ratio: float,
     random_state: int,
+    short_long_limit: int = 1000000,
 ) -> Dict[str, pd.DataFrame]:
     """
     Add labels to the dataframes depending on the cell type and type of model to train.
@@ -154,19 +165,39 @@ def fly_add_labels(
                 do not overlap with any positive example
     Args:
         dfs_dict: dictionary with cell types as keys and pandas DataFrames as values.
-        type: type of model to train, either 'within' or 'across'.
+        negtype: type of negative sampling to use.
         peaks_dict: dictionary with cell types as keys and pandas DataFrames with peaks as values.
         r: radius of the region around the anchor.
         neg_pos_ratio: ratio of negative to positive examples.
         random_state: random state.
+        short_long_limit: limit for short loops.
     Returns:
         dictionary:
             keys: cell types
             values: pandas DataFrames with labels added.
     """
-    return add_labels(
-        dfs_dict, mtype, peaks_dict, r, neg_pos_ratio, random_state, organism="fly"
-    )
+    if negtype in [
+        "anchors_from_other_cell_types",
+        "new_pairs_of_anchors",
+        "open_chromatin_regions",
+    ]:
+        return add_labels(
+            dfs_dict,
+            negtype,
+            peaks_dict,
+            r,
+            neg_pos_ratio,
+            random_state,
+            organism="fly",
+        )
+    elif negtype == "FLY_short_loops_as_negatives":
+        for name, cell_df in dfs_dict.items():
+            print("Creating negative examples for cell type", name, "...")
+            cell_df = _neg_sampling_short_loops(cell_df, short_long_limit)
+            dfs_dict[name] = cell_df
+        return dfs_dict
+    else:
+        raise ValueError("Wrong negative sampling type.")
 
 
 def fly_count_peaks_and_distances(

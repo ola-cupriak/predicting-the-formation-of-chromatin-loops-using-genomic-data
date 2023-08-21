@@ -192,6 +192,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
                     "params:fly_radius",
                     "params:fly_neg_pos_ratio",
                     "params:random_state",
+                    "params:fly_short_long_limit",
                 ],
                 outputs="FLY_positive_and_negative_HiC_loops_anotations",
                 name="FLY_add_positive_and_negative_HiC_loops_anotations_node",
@@ -467,6 +468,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
             "params:CNS_L3_ATAC_seq_peaks",
             "params:path_dm6_simplified",
             "params:path_motifs_JASPAR_insects",
+            "params:fly_short_long_limit",
         ],
         namespace=namespace,
     )

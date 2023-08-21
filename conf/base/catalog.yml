@@ -661,12 +661,20 @@ n3.FLY_positive_and_negative_HiC_loops_anotations:
   path: data/02_intermediate/D_melanogaster/n3/n3_positive_and_negative_HiC_looplist
   <<: *save_partitioned_pandas_parquet
 
+n4.FLY_positive_and_negative_HiC_loops_anotations:
+  path: data/02_intermediate/D_melanogaster/n4/n4_positive_and_negative_HiC_looplist
+  <<: *save_partitioned_pandas_parquet
+
 n2.FLY_merged_HiC_loops_anotations:
   filepath: data/02_intermediate/D_melanogaster/n2/n2_merged_HiC_looplist.csv
   <<: *save_pandas_csv
 
 n3.FLY_merged_HiC_loops_anotations:
   filepath: data/02_intermediate/D_melanogaster/n3/n3_merged_HiC_looplist.csv
+  <<: *save_pandas_csv
+
+n4.FLY_merged_HiC_loops_anotations:
+  filepath: data/02_intermediate/D_melanogaster/n4/n4_merged_HiC_looplist.csv
   <<: *save_pandas_csv
 
 n2.FLY_overlaps_HiC_loops_DNase_seq_named:
@@ -677,12 +685,20 @@ n3.FLY_overlaps_HiC_loops_DNase_seq_named:
   filepath: data/02_intermediate/D_melanogaster/n3/n3_overlaps_HiC_loops_DNase_seq.csv
   <<: *save_pandas_csv
 
+n4.FLY_overlaps_HiC_loops_DNase_seq_named:
+  filepath: data/02_intermediate/D_melanogaster/n4/n4_overlaps_HiC_loops_DNase_seq.csv
+  <<: *save_pandas_csv
+
 n2.FLY_motifs_found_anchors_with_open_chromatin:
   filepath: data/02_intermediate/D_melanogaster/n2/n2_motifs_found_anchors_with_open_chromatin.parquet
   <<: *save_pandas_parquet
 
 n3.FLY_motifs_found_anchors_with_open_chromatin:
   filepath: data/02_intermediate/D_melanogaster/n3/n3_motifs_found_anchors_with_open_chromatin.parquet
+  <<: *save_pandas_parquet
+
+n4.FLY_motifs_found_anchors_with_open_chromatin:
+  filepath: data/02_intermediate/D_melanogaster/n4/n4_motifs_found_anchors_with_open_chromatin.parquet
   <<: *save_pandas_parquet
 
 n2.FLY_combined_functional_genomics_data:
@@ -693,12 +709,20 @@ n3.FLY_combined_functional_genomics_data:
   path: data/03_primary/D_melanogaster/n3
   <<: *save_partitioned_pandas_parquet
 
+n4.FLY_combined_functional_genomics_data:
+  path: data/03_primary/D_melanogaster/n4
+  <<: *save_partitioned_pandas_parquet
+
 n2.FLY_concatenated_combined_functional_genomics_data:
   filepath: data/04_feature/D_melanogaster/n2/n2_concatenated_combined_functional_genomics_data.parquet
   <<: *save_pandas_parquet
 
 n3.FLY_concatenated_combined_functional_genomics_data:
   filepath: data/04_feature/D_melanogaster/n3/n3_concatenated_combined_functional_genomics_data.parquet
+  <<: *save_pandas_parquet
+
+n4.FLY_concatenated_combined_functional_genomics_data:
+  filepath: data/04_feature/D_melanogaster/n4/n4_concatenated_combined_functional_genomics_data.parquet
   <<: *save_pandas_parquet
 
 # Model training
