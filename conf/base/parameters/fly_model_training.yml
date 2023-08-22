@@ -1,9 +1,9 @@
-fly_run_name: fly.n3.FULL_DATA.CV10_stratify
+fly_run_name: fly.n2.all_features.CV10_stratify
 
 fly_stratify:
   - label
 
-fly_neg_sampling_type: n3
+fly_neg_sampling_type: n2
 
 fly_features_include_only: # list
 
@@ -13,95 +13,249 @@ fly_features_exclude: # list
 # if optimize=True specify parameters grid to search
 
 # Logistic regression parameters
-fly_log_reg:
+log_reg:
   type: logistic_regression # DO NOT CHANGE
   run: True
-  optimize: False 
-  cv: 10
-  optim_time:
-  n_trials: 
-  params:
-# Random forest parameters
-fly_rf:
-  type: random_forest # DO NOT CHANGE
-  run: True 
-  optimize: False 
-  cv: 10
-  optim_time:
-  n_trials: 
-  params:
-# LightGBM parameters
-fly_lgbm:
-  type: LightGBM # DO NOT CHANGE
-  run: True 
-  optimize: False 
-  cv: 10
+  optimize: True 
   optim_time:
   n_trials: 20
   params:
-    # num_leaves:
-    #   type: int
-    #   low: 10
-    #   high: 300
-    # max_depth:
-    #   type: int
-    #   low: -1
-    #   high: 20
-    # min_child_samples:
-    #   type: int
-    #   low: 10
-    #   high: 200
-    #   step: 10
-    # max_bin:
-    #   type: int
-    #   low: 200
-    #   high: 300
-    #   step: 10
-    # learning_rate:
-    #   type: float
-    #   low: 0.01
-    #   high: 0.3
-    #   step: 0.01
-    # n_estimators:
-    #   type: categorical
-    #   choices:
-    #     - 100
-    #     - 1000
-    #     - 10000
-    # reg_alpha:
-    #   type: int
-    #   low: 0
-    #   high: 100
-    #   step: 5
-    # reg_lambda:
-    #   type: int
-    #   low: 0
-    #   high: 100
-    #   step: 5
-    # min_split_gain:
-    #   type: int
-    #   low: 0
-    #   high: 15
-    # subsample:
-    #   type: float
-    #   low: 0.3
-    #   high: 1
-    #   step: 0.1
-    # subsample_freq:
-    #   type: categorical
-    #   choices:
-    #     - 1
-    # colsample_bytree:
-    #   type: float
-    #   low: 0.3
-    #   high: 1
-    #   step: 0.1
+    C:
+      type: float
+      low: 0
+      high: 10
+      step: 0.1
+    tol:
+      type: uniform
+      low: 0.000001
+      high: 0.001
+# Random forest parameters
+rf:
+  type: random_forest # DO NOT CHANGE
+  run: True 
+  optimize: True 
+  optim_time:
+  n_trials: 20
+  params:
+    criterion:
+      type: categorical
+      choices:
+        - gini
+        - entropy
+    n_estimators:
+      type: int
+      low: 100
+      high: 1000
+      step: 50
+    max_depth:
+      type: categorical
+      choices:
+        - 10
+        - 20
+        - 30
+        - 40
+        - 50
+        - 60
+        - 70
+        - 80
+        - 90
+        - 100
+        - 1000
+        - 10000
+    min_samples_split:
+      type: float
+      low: 0.001
+      high: 0.999
+      step: 0.01
+    min_samples_leaf:
+      type: int
+      low: 1
+      high: 10
+      step: 1
+    min_weight_fraction_leaf:
+      type: float
+      low: 0
+      high: 0.5
+      step: 0.1
+    max_features:
+      type: categorical
+      choices:
+        - sqrt
+        - log2
+        - auto
+    max_leaf_nodes:
+      type: categorical
+      choices:
+        - 10
+        - 20
+        - 30
+        - 40
+        - 50
+        - 60
+        - 70
+        - 80
+        - 90
+        - 100
+        - 1000
+        - 10000
+    min_impurity_decrease:
+      type: float
+      low: 0
+      high: 0.5
+      step: 0.1
+    ccp_alpha:
+      type: float
+      low: 0
+      high: 0.5
+      step: 0.1
+    bootstrap:
+      type: categorical
+      choices:
+        - True
+        - False
+
+# LightGBM parameters
+lgbm:
+  type: LightGBM # DO NOT CHANGE
+  run: True 
+  optimize: True 
+  optim_time:
+  n_trials: 20
+  params:
+    num_leaves:
+      type: int
+      low: 10
+      high: 300
+    max_depth:
+      type: int
+      low: -1
+      high: 20
+    min_child_samples:
+      type: int
+      low: 10
+      high: 200
+      step: 10
+    max_bin:
+      type: int
+      low: 200
+      high: 300
+      step: 10
+    learning_rate:
+      type: float
+      low: 0.01
+      high: 0.3
+      step: 0.01
+    n_estimators:
+      type: categorical
+      choices:
+        - 50
+        - 100
+        - 150
+        - 200
+    reg_alpha:
+      type: int
+      low: 0
+      high: 100
+      step: 5
+    reg_lambda:
+      type: int
+      low: 0
+      high: 100
+      step: 5
+    min_split_gain:
+      type: int
+      low: 0
+      high: 15
+    subsample:
+      type: float
+      low: 0.3
+      high: 1
+      step: 0.1
+    subsample_freq:
+      type: categorical
+      choices:
+        - 1
+    colsample_bytree:
+      type: float
+      low: 0.3
+      high: 1
+      step: 0.1
 # Decision tree parameters
-fly_dt:
+dt:
   type: decision_tree # DO NOT CHANGE
   run: True 
-  optimize: False 
-  cv: 10
+  optimize: True 
   optim_time:
-  n_trials: 
+  n_trials: 20
   params:
+    criterion:
+      type: categorical
+      choices:
+        - gini
+        - entropy
+    splitter:
+      type: categorical
+      choices:
+        - best
+        - random
+    max_depth:
+      type: categorical
+      choices:
+        - 10
+        - 20
+        - 30
+        - 40
+        - 50
+        - 60
+        - 70
+        - 80
+        - 90
+        - 100
+        - 1000
+        - 10000
+    min_samples_split:
+      type: float
+      low: 0.001
+      high: 0.999
+      step: 0.01
+    min_samples_leaf:
+      type: int
+      low: 1
+      high: 10
+      step: 1
+    min_weight_fraction_leaf:
+      type: float
+      low: 0
+      high: 0.5
+      step: 0.1
+    max_features:
+      type: categorical
+      choices:
+        - sqrt
+        - log2
+        - auto
+    max_leaf_nodes:
+      type: categorical
+      choices:
+        - 10
+        - 20
+        - 30
+        - 40
+        - 50
+        - 60
+        - 70
+        - 80
+        - 90
+        - 100
+        - 1000
+        - 10000
+    min_impurity_decrease:
+      type: float
+      low: 0
+      high: 0.5
+      step: 0.1
+    ccp_alpha:
+      type: float
+      low: 0
+      high: 0.5
+      step: 0.1

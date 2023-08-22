@@ -1,4 +1,4 @@
-run_name: within.n1.all_features.opt
+run_name: within.n1.all_features
 
 across:
   stratify:
@@ -29,10 +29,6 @@ cell_types: # list
 features_include_only: # list
 
 features_exclude: # list
-  # - x_DNase_seq_peaks_distance
-  # - y_DNase_seq_peaks_distance
-  # - x_DNase_seq_peaks_counts
-  # - y_DNase_seq_peaks_counts
 
   
 # MODELS SECTION
@@ -41,8 +37,8 @@ features_exclude: # list
 # Logistic regression parameters
 log_reg:
   type: logistic_regression # DO NOT CHANGE
-  run: False
-  optimize: False 
+  run: True
+  optimize: True 
   optim_time:
   n_trials: 20
   params:
@@ -58,8 +54,8 @@ log_reg:
 # Random forest parameters
 rf:
   type: random_forest # DO NOT CHANGE
-  run: False 
-  optimize: False 
+  run: True 
+  optimize: True 
   optim_time:
   n_trials: 20
   params:
@@ -143,8 +139,8 @@ rf:
 # LightGBM parameters
 lgbm:
   type: LightGBM # DO NOT CHANGE
-  run: False 
-  optimize: False 
+  run: True 
+  optimize: True 
   optim_time:
   n_trials: 20
   params:
