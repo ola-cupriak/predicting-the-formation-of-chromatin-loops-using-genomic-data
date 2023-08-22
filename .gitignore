@@ -21,13 +21,15 @@ params/**
 runs.sh
 colnames_fly.txt
 colnames_human.txt
+data_cp/**
 
 !notebooks/exploratory_data_analysis.ipynb
 
-# except some data for fruit fly
+# except some data for fruit fly and CTCF motifs for human
 !data/01_raw/D_melanogaster/HiC_loops_annotations/**
 !data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_peaks/**
 !data/01_raw/D_melanogaster/CNS_L3_ATAC_seq_bigWig/**
+!data/01_raw/Homo_sapiens/motifs_JASPAR/CTCF_motifs.txt
 
 # except their sub-folders
 !data/**/
@@ -35,10 +37,6 @@ colnames_human.txt
 
 # also keep all .gitkeep files
 !.gitkeep
-
-# also keep the file with cell type to file name conversion
-!data/01_raw/Homo_sapiens/cells2names.yml
-!data/01_raw/D_melanogaster/cells2names.yml
 
 ##########################
 # Common files
