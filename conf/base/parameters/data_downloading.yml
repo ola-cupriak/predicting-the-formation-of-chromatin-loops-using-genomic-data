@@ -43,7 +43,7 @@ to_download:
     reference_genomes:
       hg19: https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh37_latest/refseq_identifiers/GRCh37_latest_genomic.fna.gz
     motifs_JASPAR:
-      motifs_JASPAR_vertebrates: https://jaspar.genereg.net/download/data/2022/CORE/JASPAR2022_CORE_non-redundant_pfms_jaspar.txt
+      motifs_JASPAR_vertebrates: https://jaspar.genereg.net/download/data/2022/CORE/JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt
   D_melanogaster:
     reference_genomes:
       dm6: http://hgdownload.cse.ucsc.edu/goldenPath/dm6/bigZips/dm6.fa.gz
