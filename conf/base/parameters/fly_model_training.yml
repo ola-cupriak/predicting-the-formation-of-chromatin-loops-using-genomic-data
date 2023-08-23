@@ -1,9 +1,9 @@
-fly_run_name: fly.n2.all_features.CV10_stratify
+fly_run_name: fly.n4.all_features.CV10_stratify
 
 fly_stratify:
   - label
 
-fly_neg_sampling_type: n2
+fly_neg_sampling_type: n4
 
 fly_features_include_only: # list
 
@@ -13,7 +13,7 @@ fly_features_exclude: # list
 # if optimize=True specify parameters grid to search
 
 # Logistic regression parameters
-log_reg:
+fly_log_reg:
   type: logistic_regression # DO NOT CHANGE
   run: True
   optimize: True 
@@ -30,7 +30,7 @@ log_reg:
       low: 0.000001
       high: 0.001
 # Random forest parameters
-rf:
+fly_rf:
   type: random_forest # DO NOT CHANGE
   run: True 
   optimize: True 
@@ -115,7 +115,7 @@ rf:
         - False
 
 # LightGBM parameters
-lgbm:
+fly_lgbm:
   type: LightGBM # DO NOT CHANGE
   run: True 
   optimize: True 
@@ -181,7 +181,7 @@ lgbm:
       high: 1
       step: 0.1
 # Decision tree parameters
-dt:
+fly_dt:
   type: decision_tree # DO NOT CHANGE
   run: True 
   optimize: True 
