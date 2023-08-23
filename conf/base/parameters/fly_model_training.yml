@@ -16,6 +16,7 @@ fly_features_exclude: # list
 fly_log_reg:
   type: logistic_regression # DO NOT CHANGE
   run: True
+  cv: 10
   optimize: True 
   optim_time:
   n_trials: 20
@@ -33,6 +34,7 @@ fly_log_reg:
 fly_rf:
   type: random_forest # DO NOT CHANGE
   run: True 
+  cv: 10
   optimize: True 
   optim_time:
   n_trials: 20
@@ -118,6 +120,7 @@ fly_rf:
 fly_lgbm:
   type: LightGBM # DO NOT CHANGE
   run: True 
+  cv: 10
   optimize: True 
   optim_time:
   n_trials: 20
@@ -184,6 +187,7 @@ fly_lgbm:
 fly_dt:
   type: decision_tree # DO NOT CHANGE
   run: True 
+  cv: 10
   optimize: True 
   optim_time:
   n_trials: 20
