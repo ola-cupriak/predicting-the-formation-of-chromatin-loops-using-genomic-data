@@ -1,4 +1,6 @@
 import json
+import yaml
+import os
 import lightgbm as lgb
 import matplotlib.pyplot as plt
 import mlflow
@@ -717,10 +719,20 @@ def optimize_parameters(
     stratify = stratify or []
     params = params or {}
 
-    if not run:
-        return {}, {}
-
-    if not optimize:
+    if not run or not optimize:
+        for mt in ["logistic_regression", "random_forest", "LightGBM", "decision_tree"]:
+            if model_type == mt:
+                if mt == "LightGBM":
+                    mt = "lightgbm"
+                if f"{mtype}_{mt}_params.yml" in os.listdir(
+                    f"data/05_model_input/Homo_sapiens/{mtype}"
+                ):
+                    with open(
+                        f"data/05_model_input/Homo_sapiens/{mtype}/{mtype}_{mt}_params.yml",
+                        "r",
+                    ) as f:
+                        params = yaml.safe_load(f)
+        params = params or {}
         return params, {}
 
     print(f"Optimizing parameters of {model_type}...")
