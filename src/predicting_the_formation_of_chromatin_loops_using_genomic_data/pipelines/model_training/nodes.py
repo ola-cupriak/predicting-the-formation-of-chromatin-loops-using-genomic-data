@@ -535,7 +535,7 @@ def _train_predic_eval(
     return valid_score
 
 
-def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None) -> float:
+def _cross_val(model_type, X, y, folds: int, params: dict = None) -> float:
     """
     Performs cross validation for the given model type.
     Args:
@@ -548,6 +548,7 @@ def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None) -
     Returns:
         The mean cross validation score.
     """
+    params = params or {}
     if model_type == "logistic_regression":
         model = LogisticRegression(**params)
     elif model_type == "random_forest":
@@ -559,11 +560,7 @@ def _cross_val(model_type, X, y, eval_metric, folds: int, params: dict = None) -
     else:
         raise ValueError(f"Invalid model type: {model_type}")
 
-    def score_func(y_true, proba):
-        return eval_metric(y_true, proba[:, 1])
-
-    auc = metrics.make_scorer(score_func, needs_proba=True)
-    cv_scores = cross_val_score(model, X, y, cv=folds, scoring=auc)
+    cv_scores = cross_val_score(model, X, y, cv=folds, scoring="roc_auc")
 
     return cv_scores.mean()
 
@@ -631,7 +628,7 @@ def _optimize_parameters(
         if cross_val:
             X, y = data
             valid_score = _cross_val(
-                model_type, X, y, eval_metric, folds=cross_val, params=params_to_opt
+                model_type, X, y, folds=cross_val, params=params_to_opt
             )
         else:
             X_train, y_train, X_val, y_val = data
@@ -661,7 +658,7 @@ def _optimize_parameters(
     # check if the best parameters are better than the default ones
     if cross_val:
         X, y = data
-        valid_score_default = _cross_val(model_type, X, y, eval_metric, folds=cross_val)
+        valid_score_default = _cross_val(model_type, X, y, folds=cross_val)
     else:
         X_train, y_train, X_val, y_val = data
         valid_score_default = _train_predic_eval(
