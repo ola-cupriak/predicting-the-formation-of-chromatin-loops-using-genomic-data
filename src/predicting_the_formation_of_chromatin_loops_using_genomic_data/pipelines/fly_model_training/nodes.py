@@ -1,4 +1,6 @@
 import json
+import yaml
+import os
 import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
@@ -178,10 +180,20 @@ def fly_optimize_parameters(
     random.seed(random_state)
     params = params or {}
 
-    if not run:
-        return {}, go.Figure()
-
-    if not optimize:
+    if not run or not optimize:
+        for mt in ["logistic_regression", "random_forest", "LightGBM", "decision_tree"]:
+            if model_type == mt:
+                if mt == "LightGBM":
+                    mt = "lightgbm"
+                if f"{mt}_params.yml" in os.listdir(
+                    "data/05_model_input/D_melanogaster"
+                ):
+                    with open(
+                        f"data/05_model_input/D_melanogaster/{mt}_params.yml",
+                        "r",
+                    ) as f:
+                        params = yaml.safe_load(f)
+        params = params or {}
         return params, go.Figure()
 
     print(f"Optimizing parameters of {model_type}...")
