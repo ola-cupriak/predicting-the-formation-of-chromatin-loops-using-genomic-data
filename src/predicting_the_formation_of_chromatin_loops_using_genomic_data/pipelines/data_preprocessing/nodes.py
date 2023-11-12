@@ -425,6 +425,7 @@ def _get_negatives_by_new_anchors_pairing(
     random_state: int,
     df_len: int,
     organism: str = "human",
+    df_neg: pd.DataFrame = None,
 ) -> pd.DataFrame:
     """
     Create negative examples by pairing anchors derived from the same chromosome.
@@ -439,8 +440,9 @@ def _get_negatives_by_new_anchors_pairing(
     Returns:
         pandas DataFrame with positive and negative examples.
     """
-    df_neg = _create_new_anchors_pairs(df, organism=organism)
-    df_neg = _remove_duplicated_pairs(df, df_neg)
+    if df_neg is None:
+        df_neg = _create_new_anchors_pairs(df, organism=organism)
+        df_neg = _remove_duplicated_pairs(df, df_neg)
     df_neg["x_start"] = df_neg["x"] - r
     df_neg["x_end"] = df_neg["x"] + r
     df_neg["y_start"] = df_neg["y"] - r
@@ -492,6 +494,64 @@ def _add_distances(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _remove_negative_anchors_overlapping_positives(df: pd.DataFrame):
+    """
+    Remove negative anchors that overlap with positive anchors.
+    Args:
+        df: pandas DataFrame.
+    Returns:
+        pandas DataFrame with removed negative anchors that overlap with positive anchors.
+    """
+    # create new df with positive and negative anchors (both x and y) in the same columns
+    df_pos = _x_and_y_anchors2one_col(df[df["label"] == 1])
+    df_pos["id"] = [i for i in range(len(df_pos))]
+    df_neg = _x_and_y_anchors2one_col(df[df["label"] == 0])
+    df_neg["id"] = [i for i in range(len(df_neg))]
+    # find negatives overlapping with positives
+    df_overlap = _get_overlapping_regions(
+        df_pos,
+        df_neg,
+        names=["chr1", "start1", "end1", "id_pos", "chr2", "start2", "end2", "id_neg"],
+        wa=True,
+        wb=True,
+    )
+    # drop negatives overlapping with positives from df_neg
+    df_neg = df_neg.loc[~df_neg["id"].isin(df_overlap["id_neg"]), :]
+    df_neg.drop(["id"], axis=1, inplace=True)
+    # add x and y anchors to df_neg from df
+    df_neg["center"] = (round((df_neg[f"start"] + df_neg[f"end"]) / 2)).astype(int)
+    return df_neg
+
+
+def _get_negatives_by_random_pairing_other_cell_types(
+    df: pd.DataFrame, neg_pos_ratio: int, random_state: int, cell_type: str, r: int
+):
+    df_neg = _remove_negative_anchors_overlapping_positives(df)
+    # random choose half of the negative examples
+    df_neg = df_neg.sample(
+        frac=0.5,
+        random_state=random_state,
+        replace=False,
+    )
+    df = df[df["label"] == 1]
+    # Create pairs of anchors
+    df_neg = df_neg[["chr", "center"]]
+    df_neg = pl.from_pandas(df_neg)
+    df_neg = df_neg.join(df_neg, how="outer", on="chr", suffix="_y").filter(
+        pl.col("center") < pl.col("center_y")
+    )
+    df_neg = df_neg.rename({"center": "x", "center_y": "y"})
+    df_neg = df_neg.to_pandas()
+    df_neg = df_neg[df_neg["x"] < df_neg["y"]]
+    # Randomly sample negative examples WITHOUT REPEATS to get the desired neg_pos_retio
+    pos_num = len(df)
+    df = _get_negatives_by_new_anchors_pairing(
+        df, cell_type, r, neg_pos_ratio, random_state, pos_num, df_neg=df_neg
+    )
+
+    return df
+
+
 def add_labels(
     dfs_dict: Dict[str, pd.DataFrame],
     negtype: str,
@@ -536,7 +596,9 @@ def add_labels(
             f = lambda x: 1 if x["cell_type"] == name else 0
             df["label"] = df.apply(f, axis=1)
             df["label"] = df["label"].astype("int16")
-            dfs_dict[name] = copy.deepcopy(df)
+            dfs_dict[name] = _get_negatives_by_random_pairing_other_cell_types(
+                copy.deepcopy(df), neg_pos_ratio, random_state, name, r
+            )
         elif negtype == "new_pairs_of_anchors":
             cell_df["label"] = 1
             df_len = len(cell_df)
@@ -1483,8 +1545,111 @@ def remove_overlapping(main_dfs_dict: dict):
     return main_dfs_dict
 
 
+def _set_cell_type(df: pd.DataFrame, cell_type: str) -> pd.DataFrame:
+    """
+    Set cell type in the dataframe.
+    Args:
+        df: pandas DataFrame.
+        cell_type: name of the cell type.
+    Returns:
+        pandas DataFrame with set cell type.
+    """
+    df["cell_type"] = cell_type
+
+    return df
+
+
+def _drop_negs_with_same_anchors(df: pd.DataFrame) -> pd.DataFrame:
+    df["chr;x"] = [df.iloc[i, 0] + ";" + str(df.iloc[i, 1]) for i in range(len(df))]
+    df["chr;y"] = [df.iloc[i, 0] + ";" + str(df.iloc[i, 4]) for i in range(len(df))]
+    df.reset_index(inplace=True)
+    positive_x = set(df[df["label"] == 1]["chr;x"])
+    negative_x = set(df[df["label"] == 0]["chr;x"])
+    common_x = list(negative_x & positive_x)
+    print("Common x number: " + str(len(common_x)))
+    indexes_to_drop = df[(df["label"] == 0) & (df["chr;x"].isin(common_x))].index
+    print("Shape before x drop: " + str(df.shape))
+    df.drop(indexes_to_drop, axis=0, inplace=True)
+    print("Shape after x drop: " + str(df.shape))
+
+    positive_y = set(df[df["label"] == 1]["chr;y"])
+    negative_y = set(df[df["label"] == 0]["chr;y"])
+    common_y = list(negative_y & positive_y)
+    print("Common y number: " + str(len(common_y)))
+    indexes_to_drop = df[(df["label"] == 0) & (df["chr;y"].isin(common_y))].index
+    print("Shape before y drop: " + str(df.shape))
+    df.drop(indexes_to_drop, axis=0, inplace=True)
+    print("Shape after y drop: " + str(df.shape))
+    df.drop(["chr;x", "chr;y", "index"], axis=1, inplace=True)
+
+    return df
+
+
+def _random_negatives(df: pd.DataFrame):
+    """
+    Randomly select negative examples from other cell types.
+    Args:
+        df: pandas DataFrame.
+        cell_type: name of the cell type.
+    Returns:
+        pandas DataFrame with randomly selected negative examples.
+    """
+    pos_num = len(df[df["label"] == 1])
+    neg_num = len(df[df["label"] == 0])
+    pos_indexes = df[df["label"] == 1].index
+    neg_indexes = (
+        df[df["label"] == 0].sample(frac=pos_num / neg_num, replace=False).index
+    )
+
+    df = df.loc[pos_indexes.union(neg_indexes), :]
+
+    return df
+
+
+def _random_pairing_negatives(
+    df: pd.DataFrame, df_neg: pd.DataFrame, neg_pos_ratio: int, random_state: int = 42
+):
+    """
+    Random pairing of negatives lying on the same chromosome from the df_neg dataframe.
+    Filling with features from df dataframe.
+    Args:
+        df: pandas DataFrame with features.
+        df_neg: pandas DataFrame with negative anchors.
+        neg_pos_ratio: ratio of positive to negative examples.
+        random_state: random state.
+    """
+    # random pairing of negatives lying on the same chromosome
+    df_neg_pairs = df_neg[["chr", "center"]]
+    df_neg_pairs = pl.from_pandas(df_neg_pairs)
+    df_neg_pairs = df_neg_pairs.join(
+        df_neg_pairs, how="outer", on="chr", suffix="_y"
+    ).filter(pl.col("center") < pl.col("center_y"))
+    df_neg_pairs = df_neg_pairs.rename({"center": "x", "center_y": "y"})
+    df_neg_pairs = df_neg_pairs.to_pandas()
+    df_neg_pairs = df_neg_pairs[df_neg_pairs["x"] < df_neg_pairs["y"]]
+    # randomy sample negative examples WITHOUT REPEATS to get the desired neg_pos_retio
+    positives_num = len(df[df["label"] == 1])
+    if neg_pos_ratio:
+        df_neg_pairs = df_neg_pairs.sample(
+            n=round(int(neg_pos_ratio * positives_num)),
+            random_state=random_state,
+            replace=False,
+        )
+    # add features from df to df_neg_pairs
+    df_neg = df[df["label"] == 0]
+    df_neg = df_neg.drop_duplicates()
+    df = df[df["label"] == 1]
+    columns_to_add = list(df.columns)[9:]
+    df_neg_pairs
+
+    return df_neg_pairs
+
+
 def concat_dfs_from_dict(
-    main_dfs_dict: dict, cells_to_use: list = None, organism: str = "human"
+    main_dfs_dict: dict,
+    cells_to_use: list = None,
+    negtype=None,
+    organism: str = "human",
 ) -> pd.DataFrame:
     """
     Concatenates dataframes from dictionary.
@@ -1492,6 +1657,7 @@ def concat_dfs_from_dict(
         main_dfs_dict: dictionary with cell types as keys and load functions of pandas DataFrames with chromatin loops as values.
         cells_to_use: list of cell types to be used. If empty, all cell types from main_dfs_dict will be used.
         organism: name of the organism.
+        negtype: type of negative examples to be used.
     Returns:
         pandas DataFrame with concatenated dataframes from dictionary.
     """
@@ -1502,20 +1668,24 @@ def concat_dfs_from_dict(
         main_dfs_dict.keys()
     ), "Something went wrong when filtering out the cell types to be used. Check data_preprocessing.yml file."
 
-    expected_len = sum([len(main_dfs_dict[key]) for key in cells_to_use])
+    balanced = input("Do you want to balance the dataset? (y/n): ")
 
-    for i in range(len(cells_to_use)):
+    for i, cell in enumerate(cells_to_use):
+        print(cell)
         if i == 0:
-            main_df = main_dfs_dict[cells_to_use[i]]
+            main_df = _set_cell_type(main_dfs_dict[cell], cell)
+            if balanced == "y":
+                main_df = _random_negatives(main_df)
+            if "distance" not in main_df.columns:
+                main_df["distance"] = main_df["y"] - main_df["x"]
         else:
-            main_df = pd.concat(
-                [main_df, main_dfs_dict[cells_to_use[i]]], ignore_index=True
-            )
-        main_dfs_dict.pop(cells_to_use[i])
-
-    assert (
-        len(main_df) == expected_len
-    ), "Something went wrong with concatenating dataframes from dictionary - expected length is not equal to actual length."
+            df_to_concat = _set_cell_type(main_dfs_dict[cell], cell)
+            if balanced == "y":
+                df_to_concat = _random_negatives(df_to_concat)
+            if "distance" not in df_to_concat.columns:
+                df_to_concat["distance"] = df_to_concat["y"] - df_to_concat["x"]
+            main_df = pd.concat([main_df, df_to_concat], ignore_index=True)
+        main_dfs_dict.pop(cell)
 
     main_df = _sort_df(main_df, "x_start", organism=organism)
 

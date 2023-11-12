@@ -189,6 +189,7 @@ def create_pipeline(neg_sampling_type: str, **kwargs) -> Pipeline:
                 inputs=[
                     "combined_functional_genomics_data_no_overlapping",
                     "params:cell_types_to_use",
+                    "params:type",
                 ],
                 outputs="concatenated_combined_functional_genomics_data",
                 name="concatenate_combined_functional_genomics_data_node",
