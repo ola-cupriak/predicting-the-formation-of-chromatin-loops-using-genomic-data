@@ -158,7 +158,6 @@ def create_pipeline(mtype: str, **kwargs) -> Pipeline:
                     "params:neg_sampling_type",
                 ],
                 outputs=[
-                    "logistic_regression_models",
                     "logistic_regression_metrics",
                     "logistic_regression_confusionmatrix",
                     "logistic_regression_feature_importance_df",
@@ -178,7 +177,6 @@ def create_pipeline(mtype: str, **kwargs) -> Pipeline:
                     "params:neg_sampling_type",
                 ],
                 outputs=[
-                    "random_forest_models",
                     "random_forest_metrics",
                     "random_forest_confusionmatrix",
                     "random_forest_feature_importance_df",
@@ -198,7 +196,6 @@ def create_pipeline(mtype: str, **kwargs) -> Pipeline:
                     "params:neg_sampling_type",
                 ],
                 outputs=[
-                    "lightgbm_models",
                     "lightgbm_metrics",
                     "lightgbm_confusionmatrix",
                     "lightgbm_feature_importance_df",
@@ -218,7 +215,6 @@ def create_pipeline(mtype: str, **kwargs) -> Pipeline:
                     "params:neg_sampling_type",
                 ],
                 outputs=[
-                    "decision_tree_models",
                     "decision_tree_metrics",
                     "decision_tree_confusionmatrix",
                     "decision_tree_feature_importance_df",

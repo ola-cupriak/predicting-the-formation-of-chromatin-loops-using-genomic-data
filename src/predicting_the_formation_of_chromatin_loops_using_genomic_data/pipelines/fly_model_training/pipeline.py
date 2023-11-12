@@ -117,7 +117,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "params:fly_neg_sampling_type",
                 ],
                 outputs=[
-                    "FLY_logistic_regression_models",
                     "FLY_logistic_regression_metrics",
                     "FLY_logistic_regression_confusionmatrix",
                     "FLY_logistic_regression_roccurve",
@@ -138,7 +137,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "params:fly_neg_sampling_type",
                 ],
                 outputs=[
-                    "FLY_random_forest_models",
                     "FLY_random_forest_metrics",
                     "FLY_random_forest_confusionmatrix",
                     "FLY_random_forest_roccurve",
@@ -159,7 +157,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "params:fly_neg_sampling_type",
                 ],
                 outputs=[
-                    "FLY_lightgbm_models",
                     "FLY_lightgbm_metrics",
                     "FLY_lightgbm_confusionmatrix",
                     "FLY_lightgbm_roccurve",
@@ -180,7 +177,6 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "params:fly_neg_sampling_type",
                 ],
                 outputs=[
-                    "FLY_decision_tree_models",
                     "FLY_decision_tree_metrics",
                     "FLY_decision_tree_confusionmatrix",
                     "FLY_decision_tree_roccurve",
