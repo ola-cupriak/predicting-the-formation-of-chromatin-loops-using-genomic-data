@@ -12,6 +12,7 @@ from sklearn.model_selection import LeaveOneOut, StratifiedKFold
 from typing import Any, Dict, List, Tuple, Callable
 from tqdm import tqdm
 import random
+import shap
 from predicting_the_formation_of_chromatin_loops_using_genomic_data.pipelines.model_training.nodes import (
     _filter_features,
 )
@@ -54,8 +55,33 @@ def fly_read_data(
     return df
 
 
+def _fly_get_shap(model, X_test):
+    explainer = shap.Explainer(model)
+    shap_values = explainer.shap_values(X_test)
+
+    return shap_values
+
+
+def _fly_plot_shap(shap_values, X_test_full, model_type):
+    fig, ax = plt.subplots()
+    shap.summary_plot(shap_values[1], X_test_full, show=False)
+    ax.tick_params(axis="y", labelsize=10)
+    negtype = "B"
+    ax.set_title(
+        f'Wykres wartości SHAP dla {model_type} typu "w obrębie"\ntrenowanego na danych muszki owocowej\nwygenerowanych metodą {negtype}',
+        fontsize=12,
+    )
+    ax.set_xlabel("Wartość SHAP (wpływ na predykcję dla klasy pozytywnej)", fontsize=10)
+    fig.tight_layout()
+    mlflow.log_figure(fig, f"{model_type}/SHAP_plot.png")
+
+
 def _train_and_pred_with_CV(
-    df: pd.DataFrame, model_type: str = "log_reg", params: dict = None, cv: int = 5
+    df: pd.DataFrame,
+    model_type: str = "log_reg",
+    params: dict = None,
+    cv: int = 5,
+    SHAP: bool = False,
 ) -> Dict[str, Any]:
     """
     Train choosen model with k-fold cross-validation
@@ -77,15 +103,26 @@ def _train_and_pred_with_CV(
     X = df.drop(["label", "cell_type"], axis=1)
     y = df["label"]
 
+    shap_values = [np.empty((0, df.shape[1] - 2)), np.empty((0, df.shape[1] - 2))]
+    X_test_full = pd.DataFrame()
+
     for train_index, test_index in tqdm(kfoldcv.split(X, y)):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = df.iloc[train_index]["label"], df.iloc[test_index]["label"]
 
         model = _choose_model(model_type, X_train, y_train, params)
+        if SHAP:
+            shap_val = _fly_get_shap(model, X_test)
+            shap_values[0] = np.vstack((shap_values[0], shap_val[0]))
+            shap_values[1] = np.vstack((shap_values[1], shap_val[1]))
+            X_test_full = pd.concat([X_test_full, X_test])
 
         pred = model.predict(X_test)
         true_and_pred["true"] += list(y_test)
         true_and_pred["pred"] += list(pred)
+
+    if SHAP:
+        _fly_plot_shap(shap_values, X_test_full, model_type)
 
     true_and_pred = pd.DataFrame(true_and_pred)
     return true_and_pred
@@ -244,7 +281,8 @@ def fly_train_and_eval(
         return (
             {"empty_model": ""},
             {"empty_model": plt.figure()},
-            {"empty_model": pd.DataFrame()},
+            {"empty_model": plt.figure()},
+            pd.DataFrame(),
             {"empty_model": plt.figure()},
         )
 
@@ -252,7 +290,12 @@ def fly_train_and_eval(
         mlflow.set_tag("mlflow.runName", run_name)
 
     print(f"Evaluating {model_type} model...")
-    true_and_pred = _train_and_pred_with_CV(df, model_type, params, cv)
+    input_shap = input(f'Do you want to generate SHAP values plot for {model_type}? ("y" or "n") ')
+    if input_shap == "y":
+        SHAP = True
+    else:
+        SHAP = False
+    true_and_pred = _train_and_pred_with_CV(df, model_type, params, cv, SHAP=SHAP)
     metrics, confusion_matrix, roc_curve = _evaluate_CV(true_and_pred, model_type)
 
     print(f"Training {model_type} model on full data...")
@@ -270,10 +313,9 @@ def fly_train_and_eval(
     )
 
     return (
-        model,
         metrics,
         confusion_matrix,
         roc_curve,
-        feature_importances,
+        pd.DataFrame(feature_importances),
         feature_importances_plot,
     )

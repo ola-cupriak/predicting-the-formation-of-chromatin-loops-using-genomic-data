@@ -18,6 +18,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from typing import Any, Dict, List, Tuple, Callable
 import random
+import time
+import shap
 
 
 def _filter_features(
@@ -85,6 +87,8 @@ def read_data(
         Dictionary with DataFrames with the selected cell types
         and dropped columns that are not needed for the models.
     """
+    data_fraction = 0.3
+
     features_include_only = features_include_only or []
     features_exclude = features_exclude or []
 
@@ -275,11 +279,37 @@ def _choose_model(model_type: str, X_train, y_train, params: dict = None) -> Cal
     return model
 
 
+def _create_SHAP_plot(model, X_test, cell_type, model_type):
+    fig, ax = plt.subplots()
+    explainer = shap.Explainer(model)
+    shap_values = explainer.shap_values(X_test)
+    shap.summary_plot(shap_values[1], X_test, show=False)
+    ax.tick_params(axis="y", labelsize=10)
+    odm = "trenowanego"
+    mtype = "pomiędzy"
+    negtype = "B"
+    if model_type == "random_forest":
+        model_type = "lasu losowego"
+    elif model_type == "logistic_regression":
+        model_type = "regresji logistycznej"
+        odm = "trenowanej"
+    elif model_type == "decision_tree":
+        model_type = "drzewa decyzyjnego"
+    ax.set_title(
+        f'Wykres wartości SHAP dla {model_type} typu "{mtype}"\n{odm} na danych wygenerowanych metodą {negtype}',
+        fontsize=12,
+    )
+    ax.set_xlabel("Wartość SHAP (wpływ na predykcję dla klasy pozytywnej)", fontsize=10)
+    fig.tight_layout()
+    mlflow.log_figure(fig, f"{cell_type}/{model_type}/SHAP_plot.png")
+
+
 def _train_model(
     df_dict: Dict[str, pd.DataFrame],
     mtype: str,
     model_type: str = "log_reg",
     params: dict = None,
+    SHAP: bool = False,
 ) -> Dict[str, Any]:
     """
     Train choosen model on the training data.
@@ -318,6 +348,10 @@ def _train_model(
         model = _choose_model(model_type, X_train, y_train, cell_params)
 
         model_dict[cell_type] = model
+
+        shap_cell = input(f"Do you want to generate SHAP plot for cell {cell_type}? (y/n): ")
+        if SHAP and shap_cell == "y":
+            _create_SHAP_plot(model, X_train, cell_type, model_type)
 
     return model_dict
 
@@ -482,7 +516,7 @@ def _get_feature_importance_single_cell(
     ax.set_title(
         f"Top 20 feature importances for {cell_type} cell for {model_type} model"
     )
-    ax.set_ylabel("Feature importance")
+    ax.set_xlabel("Feature importance")
     fig.tight_layout()
 
     return importances, fig
@@ -738,7 +772,13 @@ def optimize_parameters(
     print(f"Optimizing parameters of {model_type}...")
     params_opt_dict = {}
     optim_fig_dict = {}
-    for cell in df_dict.keys():
+
+    if mtype == "within":
+        cells = df_dict.keys()
+    else:
+        cells = list(set(df_dict["df"]["cell_type"]))
+
+    for cell in cells:
         print(f"Optimizing parameters for cell {cell}...")
         # Choose cell type to validate on
         if mtype == "within":
@@ -810,7 +850,6 @@ def train_and_eval(
     if not run:
         return (
             {"empty_model": ""},
-            {"empty_model": ""},
             {"empty_model": plt.figure()},
             {"empty_model": pd.DataFrame()},
             {"empty_model": plt.figure()},
@@ -819,16 +858,27 @@ def train_and_eval(
     if run_name:
         mlflow.set_tag("mlflow.runName", run_name)
 
-    model_dict = _train_model(df_dict, mtype, model_type, params)
+    start_time = time.time()
+    shap_input = input(f"Do you want to generate SHAP plots for {model_type}? (y/n): ")
+    if shap_input == "y":
+        SHAP = True
+    else:
+        SHAP = False
+    model_dict = _train_model(df_dict, mtype, model_type, params, SHAP=SHAP)
     metrics_dict_all, matrices_dict = _evaluate_model(
         model_dict, df_dict, mtype, model_type
     )
     feature_importances_dict, feature_importances_plot_dict = _get_feature_importances(
         model_dict, model_type
     )
+    end_time = time.time()
+
+    with open(f"data/08_reporting/Homo_sapiens/{mtype}/times.txt", "a") as file:
+        file.write(
+            f"Run_name: {run_name}\nTraining and evaluation of {model_type} for all cell types took: {str(round((end_time - start_time),2))} seconds.\n\n"
+        )
 
     return (
-        model_dict,
         metrics_dict_all,
         matrices_dict,
         feature_importances_dict,
