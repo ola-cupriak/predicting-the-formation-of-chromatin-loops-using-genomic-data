@@ -1,5 +1,4 @@
 run_name: within.n1.all_features
-
 across:
   stratify:
     - label
@@ -29,6 +28,7 @@ cell_types: # list
 features_include_only: # list
 
 features_exclude: # list
+  - distance
 
   
 # MODELS SECTION
@@ -44,13 +44,14 @@ log_reg:
   params:
     C:
       type: float
-      low: 0
+      low: 0.1
       high: 10
       step: 0.1
     tol:
       type: uniform
       low: 0.000001
       high: 0.001
+
 # Random forest parameters
 rf:
   type: random_forest # DO NOT CHANGE
@@ -102,9 +103,7 @@ rf:
     max_features:
       type: categorical
       choices:
-        - sqrt
-        - log2
-        - auto
+        - null
     max_leaf_nodes:
       type: categorical
       choices:
@@ -148,25 +147,27 @@ lgbm:
       type: int
       low: 10
       high: 300
+      step: 5
     max_depth:
       type: int
       low: -1
       high: 20
+      step: 5
     min_child_samples:
       type: int
       low: 10
-      high: 200
+      high: 100
       step: 10
     max_bin:
       type: int
       low: 200
       high: 300
-      step: 10
+      step: 25
     learning_rate:
       type: float
       low: 0.01
-      high: 0.3
-      step: 0.01
+      high: 0.51
+      step: 0.1
     n_estimators:
       type: categorical
       choices:
@@ -175,19 +176,20 @@ lgbm:
         - 150
         - 200
     reg_alpha:
-      type: int
+      type: float
       low: 0
-      high: 100
-      step: 5
+      high: 10
+      step: 1
     reg_lambda:
-      type: int
+      type: float
       low: 0
-      high: 100
-      step: 5
+      high: 10
+      step: 1
     min_split_gain:
       type: int
       low: 0
-      high: 15
+      high: 10
+      step: 1
     subsample:
       type: float
       low: 0.3
@@ -202,6 +204,7 @@ lgbm:
       low: 0.3
       high: 1
       step: 0.1
+
 # Decision tree parameters
 dt:
   type: decision_tree # DO NOT CHANGE
@@ -255,7 +258,7 @@ dt:
       choices:
         - sqrt
         - log2
-        - auto
+        - null
     max_leaf_nodes:
       type: categorical
       choices:

@@ -8,7 +8,7 @@ DNase-seq_peaks: DNase_seq_peaks
 DNase-seq_bigWig: DNase_seq_bigWig
 # file paths
 path_hg19_simplified: data/02_intermediate/Homo_sapiens/reference_genomes_simp/hg19.fasta
-path_motifs_JASPAR_vertebrates: data/01_raw/Homo_sapiens/motifs_JASPAR/CTCF_motifs.txt
+path_motifs_JASPAR_vertebrates: data/01_raw/Homo_sapiens/motifs_JASPAR/JASPAR2022_CORE_vertebrates_non-redundant_pfms_jaspar.txt
 # list of cell types to use
 cell_types_to_use:
   - GM12878

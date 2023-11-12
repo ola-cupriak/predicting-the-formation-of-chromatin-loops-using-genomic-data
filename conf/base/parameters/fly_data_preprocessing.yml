@@ -1,4 +1,4 @@
-fly_radius: 150
+fly_radius: 2500
 fly_resolution: 20
 fly_short_long_limit: 1000000
 # datasets names 
