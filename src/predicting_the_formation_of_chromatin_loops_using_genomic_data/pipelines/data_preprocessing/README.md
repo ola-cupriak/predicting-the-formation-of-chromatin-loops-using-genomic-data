@@ -3,6 +3,7 @@
 ## Overview
 
 A pipeline used to prepare human datasets for training machine learning models based on data downloaded via the data_downloading pipeline. Pipeline can be run in 3 versions, depending on which method of generating negative examples is to be used:
+
     - data_preprocessing_n1 - random pairing of regions constituting positive examples in other cell types,
     - data_preprocessing_n2 - random pairing of regions constituting positive examples in the same cell type,
     - data_preprocessing_n3 - random pairing of open chromatin regions in the same cell type.
