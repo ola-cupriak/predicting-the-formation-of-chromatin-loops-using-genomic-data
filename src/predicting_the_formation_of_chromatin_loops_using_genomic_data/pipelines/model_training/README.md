@@ -7,6 +7,7 @@ Pipeline used to train and evaluate machine learning models on human datasets. P
 - model_training_across_cells - models trained on data from multiple cell types and evaluated on data from a new cell type unknown to the model.
 
 The best way to track the results received is to use the MLFlow UI. You can run it with the command: 
+
 ``` kedro mlflow ui ```
 
 ## Configuration
