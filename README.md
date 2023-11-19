@@ -70,14 +70,14 @@ Parameter configurations for each pipeline are discussed in the corresponding RE
 ## Examples
 
 1. Run with the default settings (data_downloading + data_preprocessing_n1 + model_training_within_cells):
+   
+    kedro run
     
-    ` kedro run `
-
 2. Run only 1 pipeline (e.g., preparation of human data with n1 negative generation method):
 
-    ` kedro run -p data_preprocessing_n1 `
+    kedro run -p data_preprocessing_n1
 
 3. Enable MLflow UI:
 
-    ` kedro mlflow ui `
+    kedro mlflow ui
 
