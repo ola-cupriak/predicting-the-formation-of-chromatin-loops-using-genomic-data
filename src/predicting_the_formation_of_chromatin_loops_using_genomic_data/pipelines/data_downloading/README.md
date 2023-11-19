@@ -23,4 +23,4 @@ The configuration file is an yml file and is divided into 2 sections: "to_downlo
 
 Running only the data download pipeline: 
 
-    ` kedro run -p data_downloading ` 
+    kedro run -p data_downloading 
