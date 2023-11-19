@@ -40,10 +40,10 @@ If both lists, features_include_only and features_exclude, are not empty, only f
 For a detailed description of the parameters that can be passed, see the scikit-learn documentation for specific model.
 
 ## Example
-Run ...
+Run training and evaluation of within models:
 
     kedro run -p model_training_within_cells
 
-Run ...
+Run training and evaluation of across models:
 
     kedro run -p model_training_across_cells
