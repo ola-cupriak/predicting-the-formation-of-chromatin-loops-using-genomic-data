@@ -1,122 +1,83 @@
 # Predicting the formation of chromatin loops using genomic data
 
-## Overview
+## Contents
+  * [General Description](#general-description)
+  * [Installation](#installation)
+  * [General Information](#general-information)
+  * [Configuration](#configuration)
+  * [Examples](#examples)
 
-This is your new Kedro project, which was generated using `Kedro 0.18.6`. 
+## General Description
 
-Take a look at the [Kedro documentation](https://kedro.readthedocs.io) to get started.
+The project aims to use machine learning models to predict chromatin loop formation based on genomic data. The models  are designed to perform binary classification to assess whether two genomic regions form a chromatin loop or not, based on DNase-seq, CTCF ChIP-seq and vertebrate motifs data from 7 human cell types or scATAC-seq, various ChIP-seq and insect motifs data from from the central nervous system of the fruit fly. The project consists of 5 pipelines: for data downloading, for human data preprocessing, for fruit fly data preprocessing, for training and evaluation of models for human data and for training and evaluation of models on fruit fly data.
 
-## Rules and guidelines
+## Requirments
+  * [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
 
-In order to get the best out of the template:
+## Installation
+The best way to install the project with all necessary dependencies is to use conda and the environment.yml file.
 
-* Don't remove any lines from the `.gitignore` file we provide
-* Make sure your results can be reproduced by following a [data engineering convention](https://kedro.readthedocs.io/en/stable/faq/faq.html#what-is-data-engineering-convention)
-* Don't commit data to your repository
-* Don't commit any credentials or your local configuration to your repository. Keep all your credentials and local configuration in `conf/local/`
+    conda env create -f environment.yml
+    
+## General Information
+1. The project was built using Kedro (https://kedro.org/) - Python framework for creating reproducible, maintainable and modular data-science code.
 
-## How to install dependencies
+2. Detailed documentation and the main code of each pipeline can be found in the node.py and pipeline.py files located in the directory of each of the pipelines found in the directory "src/predicting_the_formation_of_chromatin_loops_using_genomic_data/pipelines/".
 
-Declare any dependencies in `src/requirements.txt` for `pip` installation and `src/environment.yml` for `conda` installation.
+3. There are 3 methods of generating negative examples during data preprocessing:
+ - anchors_from_other_cell_types (n1) - random pairing of regions constituting positive examples in other cell types,
+ - new_pairs_of_anchors (n2) - random pairing of regions constituting positive examples in the same cell type,
+ - open_chromatin_regions (n3) - random pairing of open chromatin regions in the same cell type,
+ - FLY_short_loops_as_negatives (n4) - positive examples are long-range chromatin loops, and negative examples are short-range chromatin loops. 
 
-To install them, run:
+4. There aretypes of machine learning models:
+    - within - models trained and evaluated on data from the same cell type,
+    - across - models trained on data from multiple cell types and evaluated on data from a new cell type unknown to the model.
 
-```
-pip install -r src/requirements.txt
-```
+5. Available algorithms for machine learning models:
+    - logistic regression,
+    - decision tree,
+    - random forest,
+    - LightGBM.
 
-## How to run your Kedro pipeline
+6. 5 pipelines were created for various tasks. Some of them can be run in different versions (considering point 3. and 4.):
+    - data_downloading - pipeline for downloading data specified in conf/base/parameters/data_downloading.yml file,
+    - data_preprocessing - pipeline for preparing human data. It can be run in 3 versions, depending on which method of generating negative examples is to be used:
+        - data_preprocessing_n1,
+        - data_preprocessing_n2,
+        - data_preprocessing_n3.
+    - fly_data_preprocessing - pipeline for preparing fruit fly data. It can be run in 3 versions, depending on which method of generating negative examples is to be used.
+        - fly_data_preprocessing_n2,
+        - fly_data_preprocessing_n3,
+        - fly_data_preprocessing_n4.
+    - model_training - pipeline for training and evaluating machine learning models on human data. It can be run in 2 versions, depending on whether to train within or across models:
+        - model_training_within_cells,
+        - model_training_across_cells.
+    - fly_model_training -  pipeline for training and evaluating machine learning models (type: within) on fruit fly data.
 
-You can run your Kedro project with:
+7. Various configurations of pipelining launches are possible. Do not combine pipelines for fruit fly (with the prefix "fly") with pipelines for humans (without the prefix "fly"). Only the data_downloading pipeline is universal for both organisms. By default, a configuration consisting of the pipelines: data_downloading + data_preprocessing_n1 + model_training_within_cells.
 
-```
-kedro run
-```
+8. Tracking of models is possible with MLflow (local host).
 
-## How to test your Kedro project
+9. A summary of the metrics (accuracy, auc) and learning times is saved to the file run_stats.txt in the data/08_reportiong directory.
 
-Have a look at the file `src/tests/test_run.py` for instructions on how to write your tests. You can run your tests as follows:
+10. The exact values of the metrics, optimalization info and feature importances for each trained model are saved in the directory corresponding to the experiment in the mlruns directory.
 
-```
-kedro test
-```
+## Configuration
 
-To configure the coverage threshold, go to the `.coveragerc` file.
+Parameter configurations for each pipeline are discussed in the corresponding README files.
 
-## Project dependencies
+## Examples
 
-To generate or update the dependency requirements for your project:
+1. Run with the default settings (data_downloading + data_preprocessing_n1 + model_training_within_cells):
+    
+    ` kedro run `
 
-```
-kedro build-reqs
-```
+2. Run only 1 pipeline (e.g., preparation of human data with n1 negative generation method):
 
-This will `pip-compile` the contents of `src/requirements.txt` into a new file `src/requirements.lock`. You can see the output of the resolution by opening `src/requirements.lock`.
+    ` kedro run -p data_preprocessing_n1 `
 
-After this, if you'd like to update your project requirements, please update `src/requirements.txt` and re-run `kedro build-reqs`.
+3. Enable MLflow UI:
 
-[Further information about project dependencies](https://kedro.readthedocs.io/en/stable/kedro_project_setup/dependencies.html#project-specific-dependencies)
+    ` kedro mlflow ui `
 
-## How to work with Kedro and notebooks
-
-> Note: Using `kedro jupyter` or `kedro ipython` to run your notebook provides these variables in scope: `context`, `catalog`, and `startup_error`.
->
-> Jupyter, JupyterLab, and IPython are already included in the project requirements by default, so once you have run `pip install -r src/requirements.txt` you will not need to take any extra steps before you use them.
-
-### Jupyter
-To use Jupyter notebooks in your Kedro project, you need to install Jupyter:
-
-```
-pip install jupyter
-```
-
-After installing Jupyter, you can start a local notebook server:
-
-```
-kedro jupyter notebook
-```
-
-### JupyterLab
-To use JupyterLab, you need to install it:
-
-```
-pip install jupyterlab
-```
-
-You can also start JupyterLab:
-
-```
-kedro jupyter lab
-```
-
-### IPython
-And if you want to run an IPython session:
-
-```
-kedro ipython
-```
-
-### How to convert notebook cells to nodes in a Kedro project
-You can move notebook code over into a Kedro project structure using a mixture of [cell tagging](https://jupyter-notebook.readthedocs.io/en/stable/changelog.html#release-5-0-0) and Kedro CLI commands.
-
-By adding the `node` tag to a cell and running the command below, the cell's source code will be copied over to a Python file within `src/<package_name>/nodes/`:
-
-```
-kedro jupyter convert <filepath_to_my_notebook>
-```
-> *Note:* The name of the Python file matches the name of the original notebook.
-
-Alternatively, you may want to transform all your notebooks in one go. Run the following command to convert all notebook files found in the project root directory and under any of its sub-folders:
-
-```
-kedro jupyter convert --all
-```
-
-### How to ignore notebook output cells in `git`
-To automatically strip out all output cell contents before committing to `git`, you can run `kedro activate-nbstripout`. This will add a hook in `.git/config` which will run `nbstripout` before anything is committed to `git`.
-
-> *Note:* Your output cells will be retained locally.
-
-## Package your Kedro project
-
-[Further information about building project documentation and packaging your project](https://kedro.readthedocs.io/en/stable/tutorial/package_a_project.html)
