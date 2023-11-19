@@ -8,7 +8,7 @@ Pipeline used to train and evaluate machine learning models on human datasets. P
 
 The best way to track the results received is to use the MLFlow UI. You can run it with the command: 
 
-``` kedro mlflow ui ```
+    kedro mlflow ui
 
 ## Configuration
 The pipeline parameters can be passed through configuration file: conf/base/parameters/model_training.yml
@@ -39,3 +39,11 @@ If both lists, features_include_only and features_exclude, are not empty, only f
 
 For a detailed description of the parameters that can be passed, see the scikit-learn documentation for specific model.
 
+## Example
+Run ...
+
+    kedro run -p model_training_within_cells
+
+Run ...
+
+    kedro run -p model_training_across_cells

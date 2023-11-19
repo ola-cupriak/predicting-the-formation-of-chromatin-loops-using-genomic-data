@@ -19,3 +19,9 @@ The list of pipeline inputs.
 <!---
 The list of pipeline outputs.
 -->
+
+
+## Example
+Run ...
+
+    kedro run -p fly_model_training
