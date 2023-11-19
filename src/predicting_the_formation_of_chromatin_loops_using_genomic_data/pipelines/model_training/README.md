@@ -11,14 +11,16 @@ The pipeline parameters can be passed through configuration file: conf/base/para
 
 The below lists describe the parameters that can be changed to obtain the desired results. Parameters that are not in the lists below should not be changed, as they ensure the correct operation of the pipeline.
 
-- run_name - name of experiment to be recorded in MLflow; it is **good practice** to set unique names for experiments that **start with "within" or "across" word** depending on the type of models being trained
-- random_state
-- data_fraction: fraction of data to be used for training and evaluation of models (the same percentage of positive and negative examples will be drawn); float in the range 0-1
-- cell_types: list of cell types to be used for training and evaluation of models
-- features_include_only: the list of features (columns in the data) to be used for training and evaluation of models.
-- features_exclude: the list of features (columns in the data) to be excluded from training and evaluation of models.
-
-IMPORTANT: If both lists, features_include_only and features_exclude, are empty, all features available in the data will be used for training and evaluation of models.
+- run_name - name of experiment to be recorded in MLflow; it is **good practice** to set unique names for experiments that **start with "within" or "across" word** depending on the type of models being trained,
+- data_fraction - fraction of data to be used for training and evaluation of models (the same percentage of positive and negative examples will be drawn); float in the range 0-1,
+- neg_sampling_type - type of data to be used (depending on the method of generating negatives); choice: n1/n2/n3,
+- test_size - size of the test dataset; float in the range 0-1,
+- validation_size - size of the validation dataset; used only when hyperparameter optimization is running; float in the range 0-1,
+- cell_types - list of cell types to be used for training and evaluation of models,
+- features_include_only: the list of features (columns in the data) to be used for training and evaluation of models,
+- features_exclude: the list of features (columns in the data) to be excluded from training and evaluation of models,
+If both lists, features_include_only and features_exclude, are empty, all features available in the data will be used for training and evaluation of models.
+If both lists, features_include_only and features_exclude, are not empty, only features_include_only will be taken into account.
 
 Parameters for individual models:
 - run: decides whether the model will be launched; bool
