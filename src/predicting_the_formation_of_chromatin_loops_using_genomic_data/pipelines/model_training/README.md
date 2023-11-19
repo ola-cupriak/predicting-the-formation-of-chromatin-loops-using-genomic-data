@@ -1,14 +1,16 @@
 # Pipeline model_training
 
-> *Note:* This is a `README.md` boilerplate generated using `Kedro 0.18.7`.
-
 ## Overview
 
-Pipeline used to train and evaluate machine learning models on human datasets.
+Pipeline used to train and evaluate machine learning models on human datasets. Pipeline can be run in 2 versions:
+- model_training_within_cells - models trained and evaluated on data from the same cell type,
+- model_training_across_cells - models trained on data from multiple cell types and evaluated on data from a new cell type unknown to the model.
 
 ## Configuration
-It is possible to change the pipeline parameters through the model_training.yml configuration file located in the conf/base/parameters directory.
-Available parameters:
+The pipeline parameters can be passed through configuration file: conf/base/parameters/model_training.yml
+
+The below lists describe the parameters that can be changed to obtain the desired results. Parameters that are not in the lists below should not be changed, as they ensure the correct operation of the pipeline.
+
 - run_name: name of experiment to be recorded in MLflow
 - random_state
 - data_fraction: fraction of data to be used for training and evaluation of models (the same percentage of positive and negative examples will be drawn); float in the range 0-1
