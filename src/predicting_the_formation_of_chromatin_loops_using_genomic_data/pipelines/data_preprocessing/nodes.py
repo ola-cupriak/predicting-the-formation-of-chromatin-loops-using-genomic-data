@@ -1668,20 +1668,14 @@ def concat_dfs_from_dict(
         main_dfs_dict.keys()
     ), "Something went wrong when filtering out the cell types to be used. Check data_preprocessing.yml file."
 
-    balanced = input("Do you want to balance the dataset? (y/n): ")
-
     for i, cell in enumerate(cells_to_use):
         print(cell)
         if i == 0:
             main_df = _set_cell_type(main_dfs_dict[cell], cell)
-            if balanced == "y":
-                main_df = _random_negatives(main_df)
             if "distance" not in main_df.columns:
                 main_df["distance"] = main_df["y"] - main_df["x"]
         else:
             df_to_concat = _set_cell_type(main_dfs_dict[cell], cell)
-            if balanced == "y":
-                df_to_concat = _random_negatives(df_to_concat)
             if "distance" not in df_to_concat.columns:
                 df_to_concat["distance"] = df_to_concat["y"] - df_to_concat["x"]
             main_df = pd.concat([main_df, df_to_concat], ignore_index=True)
