@@ -87,8 +87,6 @@ def read_data(
         Dictionary with DataFrames with the selected cell types
         and dropped columns that are not needed for the models.
     """
-    data_fraction = 0.3
-
     features_include_only = features_include_only or []
     features_exclude = features_exclude or []
 
