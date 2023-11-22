@@ -99,15 +99,19 @@ def read_data(
         df = df.groupby("cell_type")
         return {cell_type: df_cell for cell_type, df_cell in df}
     elif mtype == "across":
-        new_df = pd.DataFrame()
-        for cell_type in pd.unique(df["cell_type"]):
-            df_cell_pos = df[
-                (df["cell_type"] == cell_type) & (df["label"] == 1)
-            ].sample(frac=data_fraction, random_state=random_state, replace=False)
-            df_cell_neg = df[
-                (df["cell_type"] == cell_type) & (df["label"] == 0)
-            ].sample(frac=data_fraction, random_state=random_state, replace=False)
-            new_df = pd.concat([new_df, df_cell_pos, df_cell_neg])
+        if data_fraction < 1:
+            new_df = pd.DataFrame()
+            for cell_type in pd.unique(df["cell_type"]):
+                df_cell_pos = df[
+                    (df["cell_type"] == cell_type) & (df["label"] == 1)
+                ].sample(frac=data_fraction, random_state=random_state, replace=False)
+                df_cell_neg = df[
+                    (df["cell_type"] == cell_type) & (df["label"] == 0)
+                ].sample(frac=data_fraction, random_state=random_state, replace=False)
+                new_df = pd.concat([new_df, df_cell_pos, df_cell_neg])
+        else:
+            new_df = df    
+
         return {"df": new_df}
 
 
